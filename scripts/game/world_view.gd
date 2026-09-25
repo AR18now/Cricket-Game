@@ -51,6 +51,14 @@ var batting_kit := Color(0.05, 0.42, 0.32)
 var fielding_kit := Color(0.2, 0.42, 0.75)
 var two_batters := true
 var umpire_signal := ""
+var atm: Atmosphere = Atmosphere.make("evening")
+var canvas_mod: CanvasModulate
+var floodlights: Floodlights
+var weather_layer: CanvasLayer
+var weather: WeatherOverlay
+var view_mode := "batter"
+var batter_layer: CanvasLayer
+var batter_view: BatterView
 var signal_t := 0.0
 
 
@@ -105,10 +113,53 @@ func build(v: VenueConfig, t: GameTuning) -> void:
 	effects = WorldEffects.new()
 	effects.z_index = 12
 	add_child(effects)
+	floodlights = Floodlights.new()
+	floodlights.z_index = -15
+	add_child(floodlights)
+	canvas_mod = CanvasModulate.new()
+	add_child(canvas_mod)
+	weather_layer = CanvasLayer.new()
+	weather_layer.layer = 4
+	add_child(weather_layer)
+	weather = WeatherOverlay.new()
+	weather_layer.add_child(weather)
+	batter_layer = CanvasLayer.new()
+	batter_layer.layer = 2
+	add_child(batter_layer)
+	batter_view = BatterView.new()
+	batter_layer.add_child(batter_view)
+	batter_view.setup(self)
+	batter_view.visible = false
 	cam = Camera2D.new()
 	add_child(cam)
 	cam.make_current()
+	set_atmosphere(atm)
 	_compute_release_root()
+
+
+func set_view_mode(m: String) -> void:
+	view_mode = m if m in ["batter", "side"] else "batter"
+
+
+## Batter's-eye view covers the delivery; the side camera takes the ball into the field.
+func batter_view_active(t: float) -> bool:
+	if view_mode != "batter" or menu_mode or delivery == null:
+		return false
+	if resolved == null:
+		return true
+	if resolved.contact.is_contact():
+		return t < resolved.contact.t_contact + 0.12
+	return t < delivery.stumps_time() + 0.8
+
+
+func set_atmosphere(a: Atmosphere) -> void:
+	atm = a
+	sky.atm = a
+	canvas_mod.color = a.ambient
+	floodlights.set_on(a.floodlights)
+	weather.atm = a
+	# Keep the ball vivid regardless of ambient light.
+	ball.modulate = Color(minf(1.0 / a.ambient.r, 1.8), minf(1.0 / a.ambient.g, 1.8), minf(1.0 / a.ambient.b, 1.8))
 
 
 func _rig(kit: Color, headgear: String, bat: bool) -> CricketerRig:
@@ -191,6 +242,10 @@ func render(t: float) -> void:
 	_render_ball(t)
 	_render_stumps(t)
 	effects.render(self, t)
+	var bv := batter_view_active(t)
+	if bv and not batter_view.visible:
+		snap_camera_to_delivery()
+	batter_view.visible = bv
 	for r in actors.get_children():
 		if r is CricketerRig:
 			r.queue_redraw()
@@ -199,6 +254,7 @@ func render(t: float) -> void:
 func render_menu(delta: float) -> void:
 	idle_t += delta
 	menu_mode = true
+	batter_view.visible = false
 	striker.position = Proj.ground_v(STRIKER_BASE)
 	striker.facing = -1.0
 	striker.set_pose(Poses.bat_stance(idle_t))
@@ -595,6 +651,7 @@ func update_camera(delta: float) -> void:
 	cam.zoom = Vector2(cam_zoom, cam_zoom)
 	sky.cam_offset = cam.position
 	sky.reduced_motion = reduced_motion
+	weather.reduced_motion = reduced_motion
 
 
 func snap_camera_to_delivery() -> void:
@@ -605,4 +662,6 @@ func snap_camera_to_delivery() -> void:
 
 ## Canvas (screen) position of a world point, for HUD overlays.
 func screen_of(p: Vector3) -> Vector2:
+	if batter_view.visible:
+		return batter_view.project(p)
 	return get_viewport().get_canvas_transform() * Proj.to_screen(p)

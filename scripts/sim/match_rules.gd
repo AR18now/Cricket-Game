@@ -7,6 +7,7 @@ const QUICK := "quick"
 const ENDLESS := "endless"
 const TUTORIAL := "tutorial"
 const CHALLENGE := "challenge"
+const CLASSIC := "classic"
 
 var mode := QUICK
 var overs := 2               # 0 = unlimited
@@ -21,6 +22,12 @@ var batters: Array = ["Ayaan", "Bilal", "Zain", "Faisal"]
 var bowlers_by_over: Array = ["daniyal", "hamza"]   # bowler ids, cycled per over
 var difficulty_ramp := 0.0   # difficulty added per legal ball (endless), clamped to 1
 var window_scale := 1.0
+## Over index where the bowler list starts repeating (earlier entries are an intro).
+var bowler_cycle_start := 0
+## Progressive (Doodle-style) pacing: balls to reach full pace, then balls to max boost.
+var progressive := false
+var ease_balls := 36
+var ramp_balls := 72
 var title := "Quick Match"
 
 
@@ -34,6 +41,28 @@ static func quick_match(target_runs: int, player_name: String = "Ayaan") -> Matc
 	r.two_batters = true
 	r.batters = [player_name, "Bilal", "Zain", "Faisal"]
 	r.bowlers_by_over = ["daniyal", "hamza"]
+	return r
+
+
+## The main mode: keep batting, pace starts gentle and builds up; 2 wickets.
+static func classic(player_name: String = "Ayaan", bowling: String = "mixed") -> MatchRules:
+	var r := MatchRules.new()
+	r.mode = CLASSIC
+	r.title = "Classic"
+	r.overs = 0
+	r.max_wickets = 2
+	r.target = 0
+	r.two_batters = false
+	r.batters = [player_name, "Bilal"]
+	r.progressive = true
+	match bowling:
+		"pace":
+			r.bowlers_by_over = ["hamza"]
+		"spin":
+			r.bowlers_by_over = ["saad"]
+		_:
+			r.bowlers_by_over = ["ayaan_coach", "daniyal", "saad", "hamza", "daniyal", "saad", "hamza"]
+			r.bowler_cycle_start = 3
 	return r
 
 

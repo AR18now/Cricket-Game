@@ -8,8 +8,13 @@ const MAX_PACE_BOOST := 0.12
 ## Tutorial deliveries: slow, straight, good length. Level 0..2 adds modest pace.
 const TUTORIAL_SPEEDS := [13.5, 15.0, 17.5]
 
+## Classic mode starts every bowler at this gentle pace and eases toward their real pace.
+const START_SPEED := 13.5
 
-static func generate(profile: BowlerProfile, seed_value: int, tuning: GameTuning, difficulty: float = 0.0) -> Delivery:
+
+## `ease_in` 0..1 blends from a slow, straight, gentle ball (0) to the bowler's real
+## behaviour (1). Classic mode raises it gradually, Doodle-style.
+static func generate(profile: BowlerProfile, seed_value: int, tuning: GameTuning, difficulty: float = 0.0, ease_in: float = 1.0) -> Delivery:
 	var rng := DetRng.new(seed_value)
 	var d := Delivery.new()
 	d.seed = seed_value
@@ -19,15 +24,17 @@ static func generate(profile: BowlerProfile, seed_value: int, tuning: GameTuning
 	d.retention = tuning.pitch_retention
 	d.release = Vector3(tuning.release_x, profile.release_y, tuning.release_height)
 	var boost := 1.0 + MAX_PACE_BOOST * clampf(difficulty, 0.0, 1.0)
-	if rng.chance(profile.slower_chance):
+	var ease := clampf(ease_in, 0.0, 1.0)
+	if rng.chance(profile.slower_chance * clampf((ease - 0.6) / 0.4, 0.0, 1.0)):
 		d.kind = "slower"
 		d.speed = rng.range_f(profile.slower_min, profile.slower_max)
 	else:
 		d.kind = "stock"
 		d.speed = rng.range_f(profile.speed_min, profile.speed_max) * boost
-	d.line_y = rng.range_f(profile.line_min, profile.line_max)
+	d.speed = lerpf(minf(START_SPEED, d.speed), d.speed, ease)
+	d.line_y = rng.range_f(profile.line_min, profile.line_max) * lerpf(0.4, 1.0, ease)
 	if profile.deviation_max > 0.0:
-		d.deviation = rng.range_f(-profile.deviation_max, profile.deviation_max)
+		d.deviation = rng.range_f(-profile.deviation_max, profile.deviation_max) * lerpf(0.35, 1.0, ease)
 		d.kind = "spin" if profile.style == "spin" else "seam"
 	# Pick a length whose contact heights stay within bat reach; retry deterministically.
 	var ok := false

@@ -63,6 +63,7 @@ shown on the mini-map.
 
 | Mode | Overs | Wickets | Batters | Target |
 | --- | --- | --- | --- | --- |
+| **Classic** (main PLAY) | unlimited | 2 | one at a time (next batter replaces) | none — highest score |
 | Quick Match | 2 | 3 (4-player arcade squad) | 2 at the crease, strike rotation | Challenge target (16–24) |
 | Endless | unlimited | 1 | single batter | none — bat as long as possible |
 | Practice | unlimited | dismissals counted, innings never ends | single batter | none |
@@ -79,6 +80,19 @@ shown on the mini-map.
   **Challenge target**; no fictional opposition innings is shown.
 - **Rates:** strike rate = runs × 100 ÷ balls; economy = runs × 6 ÷ legal balls; required rate
   = runs needed × 6 ÷ balls remaining. Zero-ball rates show "-" (never NaN/Infinity).
+
+## Classic mode pacing (Doodle-style)
+
+The first balls are gentle (13.5 m/s ≈ 49 km/h, straighter, less spin, no slower balls) and ease
+up to each bowler's real pace over the first 36 balls; after that pace may rise by at most
++12 % over the next 72 balls. Bowlers: *Mixed* (coach → Daniyal → Saad → Hamza, then the main
+three rotate every over), *Fast* (Hamza only) or *Spin* (Saad only). Timing windows never change.
+
+## Time of day and weather
+
+Day, Evening and Night change only lighting and sound. **Rain** also makes the outfield wet:
+rolling deceleration ×1.4, so the ball slows sooner (fewer fours along the ground). Rain never
+changes timing windows, bounce or catching.
 
 ## Deliberately not in this release
 

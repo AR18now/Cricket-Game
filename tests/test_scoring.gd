@@ -183,3 +183,38 @@ func test_scorecard_totals_match_event_log() -> void:
 	eq(bowl_runs, total, "bowling card sums (no extras)")
 	eq(st.card.fours, fours)
 	eq(st.card.sixes, sixes)
+
+
+func test_classic_mode_rules() -> void:
+	var st := MatchState.new(MatchRules.classic("Ayaan"), 1)
+	near(st.ease_in(), 0.0, 1e-6, "starts gentle")
+	eq(st.current_bowler_id(), "ayaan_coach")
+	_play(st, [1, 1, 1, 1, 1, 1])
+	eq(st.card.striker, 0, "single batter keeps strike")
+	eq(st.current_bowler_id(), "daniyal")
+	_play(st, [_o(BallOutcome.BOWLED, 0, true)])
+	check(not st.is_complete(), "two wickets in classic")
+	eq(st.card.batters[st.card.striker]["name"], "Bilal", "next batter comes in")
+	for i in 40:
+		_play(st, [0])
+	near(st.ease_in(), 1.0, 1e-6, "full pace after the intro")
+	# Bowler rotation cycles the main attack, never the gentle intro bowler again.
+	var seen := {}
+	var probe := MatchState.new(MatchRules.classic(), 1)
+	for i in 120:
+		seen[probe.current_bowler_id()] = true
+		probe.record(i, _runs(0), probe.current_bowler_id())
+	eq(probe.current_bowler_id() != "ayaan_coach", true)
+	_play(st, [_o(BallOutcome.CAUGHT, 0, true, "Imran")])
+	check(st.is_complete(), "second wicket ends classic")
+	eq(st.card.result, "ended")
+
+
+func test_classic_pace_ramps_up_and_stays_bounded() -> void:
+	var t := tuning()
+	var b := bowler("hamza")
+	var early := DeliveryGenerator.generate(b, 11, t, 0.0, 0.0)
+	var late := DeliveryGenerator.generate(b, 11, t, 1.0, 1.0)
+	check(early.speed <= DeliveryGenerator.START_SPEED + 0.001, "first ball is gentle (%.1f)" % early.speed)
+	check(late.speed > 20.0, "full pace later (%.1f)" % late.speed)
+	check(late.speed <= b.speed_max * (1.0 + DeliveryGenerator.MAX_PACE_BOOST) + 0.001, "bounded")

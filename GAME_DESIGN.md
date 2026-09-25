@@ -34,7 +34,23 @@ commentary voices or stadiums.
 A large **SWING** pad teaches the action for the first balls; taps are accepted anywhere, so
 either thumb works. Every accepted tap gets a visible pulse on the batter.
 
-## Modes
+## Main flow (simplified after owner feedback)
+
+Menu = one big **PLAY** plus three optional, remembered chips: **Bowlers** (Mixed / Fast / Spin),
+**Time** (Day / Evening / Night / Rain) and **View** (Batter's eye / Side-on). PLAY starts
+*Classic*: bat until you lose two wickets; the pace starts slow and builds up. The first three
+balls of a new player show a timing ring. Boundaries are celebrated by a decorated truck-art
+lorry that drives across the screen ("CHAUKA!" / "CHHAKKA!") with horn and bell chains.
+
+### Camera views
+
+- **Batter's eye (default):** perspective from behind the striker looking at the bowler, the
+  umpire, the fielders and the whole ground (houses, rooftop crowd, bunting, floodlights).
+  After contact the game cuts to the side camera, which follows the ball into the field.
+- **Side-on:** the original fixed oblique view for the whole delivery.
+Switch any time with the camera button in the match HUD.
+
+## Other modes (kept in code, not on the main menu)
 
 - **First launch:** identity mark → living ground menu → **PLAY** → three nets balls with a
   timing ring (slow, forgiving, truthful) → *First Challenge* (6 runs off 6 balls) → result →

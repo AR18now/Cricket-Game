@@ -25,6 +25,17 @@ _Last updated: 2026-09-25 (session 1)._
    ducking, cooldowns and eligibility (logic already implemented and tested).
 7. Credits/licences screen, store screenshots, privacy policy draft, release exports.
 
+## Owner feedback round 1 (implemented)
+
+| Request | Done |
+| --- | --- |
+| Batter's-point-of-view camera with bowler and whole stadium | Perspective BatterView (default) + side cut after contact; toggle in HUD/menu |
+| Truck celebration on 4 / 6 | Truck-art lorry overlay, horn + chain bells, reduced-motion variant |
+| One mode, slow start then harder (Doodle-style), optional spin/fast | Classic mode with gentle opening → full pace; Bowlers chip Mixed/Fast/Spin |
+| Day / night / rain | Atmosphere presets: sky, ambient light, floodlights, stars/moon, rain overlay + wet outfield, ambience loops |
+| Better swing button | Large glossy SWING button: fires on press, glows while the ball can be hit, burst on accept |
+| Simple, immersive UX | One PLAY; score pill HUD; minimap/scorecard hidden in Classic; simple result screen with PLAY AGAIN |
+
 ## What exists now (evidence)
 
 - Deterministic simulation: analytic delivery path (bounce, deviation), timing → contact at the

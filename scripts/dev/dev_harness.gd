@@ -39,6 +39,8 @@ func _go() -> void:
 			await _smoke()
 		"quick":
 			await _quick_tour()
+		"visual":
+			await _visual_tour()
 		_:
 			await _capture_tour()
 	_finish()
@@ -231,6 +233,61 @@ func _capture_tour() -> void:
 	await wait(2.5)
 	await shot("13_result")
 	check(app.screen == app.Screen.RESULT, "endless ends on a wicket and shows the result")
+
+
+func _visual_tour() -> void:
+	var save = get_node("/root/Save")
+	await wait(1.6)
+	await shot("v01_menu")
+	app.start_mode("classic")
+	await wait(0.2)
+	# Batter's-eye run-up + ring, then the side camera takes the ball; truck on a boundary.
+	var c = app.controller
+	await until_phase(MatchController.Phase.FLIGHT)
+	await until_clock(ideal_swing() - 0.12)
+	await shot("v02_batter_view_flight")
+	await swing_at(ideal_swing())
+	await until_clock(ideal_swing() + 0.2)
+	await shot("v03_contact")
+	await until_clock(ideal_swing() + 1.2)
+	await shot("v04_side_follow")
+	await until_phase(MatchController.Phase.OUTCOME)
+	await wait(1.0)
+	await shot("v05_outcome_truck")
+	_log("first ball: %s" % c.resolver.outcome.kind)
+	for tod in ["night", "rain", "day"]:
+		save.set_setting("time_of_day", tod)
+		app.start_mode("classic")
+		await until_phase(MatchController.Phase.RUNUP)
+		await until_clock(-0.35)
+		await shot("v06_%s_runup" % tod)
+		await swing_at(ideal_swing())
+		await until_clock(ideal_swing() + 1.0)
+		await shot("v07_%s_side" % tod)
+	save.set_setting("time_of_day", "evening")
+	save.set_setting("view", "side")
+	app.start_mode("classic")
+	await until_phase(MatchController.Phase.FLIGHT)
+	await until_clock(ideal_swing() - 0.1)
+	await shot("v08_side_view_flight")
+	save.set_setting("view", "batter")
+	# Result screen from a scripted innings (same event pipeline as live play).
+	var st := MatchState.new(MatchRules.classic("Ayaan"), 5)
+	for r in [1, 4, 0, 6, 2, 1, 0, 4, 6, 1]:
+		var o := BallOutcome.new()
+		o.runs = r
+		o.kind = BallOutcome.DOT if r == 0 else (BallOutcome.FOUR if r == 4 else (BallOutcome.SIX if r == 6 else BallOutcome.RUNS))
+		st.record(st.events.size(), o, st.current_bowler_id())
+	var w := BallOutcome.new()
+	w.kind = BallOutcome.BOWLED
+	w.wicket = true
+	st.record(st.events.size(), w, st.current_bowler_id())
+	st.record(st.events.size(), w, st.current_bowler_id())
+	var cr := ClassicResult.new()
+	cr.build(st, 12, app.venue)
+	app._open_overlay(cr)
+	await frames(3)
+	await shot("v09_result")
 
 
 func _quick_tour() -> void:

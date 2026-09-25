@@ -23,11 +23,25 @@ func next_ball_index() -> int:
 
 func current_bowler_id() -> String:
 	var over_idx := events.size() / 6
-	return rules.bowlers_by_over[over_idx % rules.bowlers_by_over.size()]
+	var list := rules.bowlers_by_over
+	if over_idx < list.size():
+		return list[over_idx]
+	var start := clampi(rules.bowler_cycle_start, 0, list.size() - 1)
+	return list[start + (over_idx - list.size()) % (list.size() - start)]
 
 
 func difficulty() -> float:
+	if rules.progressive:
+		return clampf(float(events.size() - rules.ease_balls) / rules.ramp_balls, 0.0, 1.0)
 	return clampf(events.size() * rules.difficulty_ramp, 0.0, 1.0)
+
+
+## 0 = gentle opening balls, 1 = the bowler's full pace (progressive modes only).
+func ease_in() -> float:
+	if not rules.progressive:
+		return 1.0
+	var u := clampf(float(events.size()) / rules.ease_balls, 0.0, 1.0)
+	return u * u * (3.0 - 2.0 * u)
 
 
 ## Records a settled outcome. Returns false (and changes nothing) for duplicates or

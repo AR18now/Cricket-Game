@@ -159,8 +159,8 @@ func _loop(player: AudioStreamPlayer, key: String, volume_db: float) -> void:
 	player.volume_db = volume_db
 
 
-func start_ambience(venue_id: String) -> void:
-	_loop(_ambience, "amb_" + venue_id, -8.0)
+func start_ambience(key: String) -> void:
+	_loop(_ambience, key, -8.0)
 	_loop(_crowd, "crowd_loop", -14.0)
 
 

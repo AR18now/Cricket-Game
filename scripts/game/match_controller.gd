@@ -99,7 +99,7 @@ func _next_delivery() -> void:
 		delivery = DeliveryGenerator.tutorial(tutorial_level, seed_value, tuning)
 	else:
 		profile = bowlers[state.current_bowler_id()]
-		delivery = DeliveryGenerator.generate(profile, seed_value, tuning, state.difficulty())
+		delivery = DeliveryGenerator.generate(profile, seed_value, tuning, state.difficulty(), state.ease_in())
 	var names := [profile.display_name, keeper_name]
 	names.append_array(fielding_names)
 	fielders = FielderSpec.from_layout(venue.field_layout, names, tuning)
@@ -227,7 +227,7 @@ func _process(delta: float) -> void:
 	if resolver != null and not _recorded and t >= resolver.outcome.t_settle:
 		_settle()
 	if phase == Phase.OUTCOME and _recorded and auto_continue:
-		var hold := OUTCOME_HOLD_BIG if (resolver.outcome.is_boundary() or resolver.outcome.wicket) else OUTCOME_HOLD
+		var hold := 2.9 if resolver.outcome.is_boundary() else (OUTCOME_HOLD_BIG if resolver.outcome.wicket else OUTCOME_HOLD)
 		if t - _outcome_at >= hold:
 			_advance_after_outcome()
 

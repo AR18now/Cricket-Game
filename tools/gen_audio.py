@@ -226,6 +226,73 @@ def anticipation(sec=1.2):
     return out
 
 
+def ambience_rain(sec=8.0):
+    r = random.Random(71)
+    L = n(sec)
+    lp, hp = Biquad("lp", 5000), Biquad("hp", 400)
+    out = [hp(lp(r.uniform(-1, 1))) * 0.5 for i in range(L)]
+    for k in range(int(sec * 40)):
+        at = r.uniform(0, sec - 0.05)
+        drop = [r.uniform(-1, 1) * env_exp(i, 0.004) * 0.6 for i in range(n(0.02))]
+        place(out, drop, at, r.uniform(0.2, 0.8))
+    xf = n(0.5)
+    for i in range(xf):
+        a = i / xf
+        out[i] = out[i] * a + out[L - xf + i] * (1 - a)
+    return out[: L - xf]
+
+
+def ambience_night(sec=8.0):
+    r = random.Random(81)
+    L = n(sec)
+    lp = Biquad("lp", 250)
+    out = [lp(r.uniform(-1, 1)) * 0.3 for i in range(L)]
+    # Crickets: rapid pulsed high sine trills.
+    for k in range(10):
+        at = r.uniform(0, sec - 0.6)
+        f = r.uniform(4200, 5200)
+        tr = []
+        for i in range(n(0.45)):
+            t = i / SR
+            pulse = 1.0 if (int(t * 38) % 2 == 0) else 0.0
+            tr.append(math.sin(2 * math.pi * f * t) * pulse * 0.12 * math.sin(math.pi * i / n(0.45)))
+        place(out, tr, at)
+    xf = n(0.5)
+    for i in range(xf):
+        a = i / xf
+        out[i] = out[i] * a + out[L - xf + i] * (1 - a)
+    return out[: L - xf]
+
+
+def truck_horn():
+    # Two-tone musical truck horn (original synthesis), three short blasts.
+    out = [0.0] * n(1.6)
+    for k, (at, dur) in enumerate([(0.0, 0.22), (0.3, 0.22), (0.62, 0.7)]):
+        blast = []
+        for i in range(n(dur)):
+            t = i / SR
+            e = min(1.0, t / 0.02) * min(1.0, (dur - t) / 0.05)
+            v = 0.0
+            for f in (311.0, 392.0):
+                ph = 2 * math.pi * f * t
+                v += math.sin(ph) + 0.5 * math.sin(2 * ph) + 0.3 * math.sin(3 * ph)
+            blast.append(v * e * 0.3)
+        place(out, blast, at)
+    return out
+
+
+def jingle():
+    # Bells/chains swinging (like decorated truck chains).
+    r = random.Random(91)
+    out = [0.0] * n(1.8)
+    for k in range(26):
+        at = r.uniform(0, 1.5)
+        f = r.uniform(2400, 3600)
+        bell = [(math.sin(2 * math.pi * f * i / SR) + 0.5 * math.sin(2 * math.pi * f * 2.76 * i / SR)) * env_exp(i, 0.08) * 0.2 for i in range(n(0.3))]
+        place(out, bell, at, r.uniform(0.4, 1.0))
+    return out
+
+
 # ---------------------------------------------------------------- UI & music
 def tone(f, sec, decay, amp=1.0, harm=0.0):
     return [(math.sin(2 * math.pi * f * i / SR) + harm * math.sin(2 * math.pi * f * 2 * i / SR)) * env_exp(i, decay) * amp for i in range(n(sec))]
@@ -318,6 +385,10 @@ if __name__ == "__main__":
         write("step_%d" % k, step(400 + k))
     write("crowd_loop", crowd_loop())
     write("amb_pindi", ambience_pindi())
+    write("amb_rain", ambience_rain())
+    write("amb_night", ambience_night())
+    write("truck_horn", truck_horn())
+    write("jingle", jingle())
     write("cheer_big", cheer(2.4, 41, True))
     write("cheer_small", cheer(1.4, 43, False))
     write("groan", groan())

@@ -56,6 +56,10 @@ func _draw() -> void:
 		"card":
 			for i in 3:
 				draw_line(c + Vector2(-s, -s * 0.7 + i * s * 0.7), c + Vector2(s, -s * 0.7 + i * s * 0.7), col, 4.0, true)
+		"camera":
+			draw_rect(Rect2(c + Vector2(-s * 1.2, -s * 0.7), Vector2(s * 1.8, s * 1.4)), col, false, 3.0)
+			draw_colored_polygon(PackedVector2Array([c + Vector2(s * 0.6, -s * 0.2), c + Vector2(s * 1.3, -s * 0.7), c + Vector2(s * 1.3, s * 0.7), c + Vector2(s * 0.6, s * 0.2)]), col)
+			draw_circle(c + Vector2(-s * 0.3, 0), s * 0.35, col)
 		"replay":
 			draw_arc(c, s, 0.6, TAU - 0.2, 20, col, 4.0, true)
 			var tip := c + Vector2(cos(0.6), sin(0.6)) * s

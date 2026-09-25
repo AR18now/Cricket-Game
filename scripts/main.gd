@@ -50,15 +50,22 @@ func _ready() -> void:
 	hud.mute_pressed.connect(toggle_mute)
 	hud.card_pressed.connect(open_scorecard)
 	hud.replay_pressed.connect(func(): controller.start_replay())
-	hud.stance_changed.connect(func(s): controller.stance = s)
 	menu = MainMenu.new()
 	ui_root.add_child(menu)
 	menu.build()
 	menu.visible = false
 	menu.play_pressed.connect(_on_play)
-	menu.mode_pressed.connect(start_mode)
 	menu.settings_pressed.connect(open_settings)
 	menu.mute_pressed.connect(toggle_mute)
+	menu.option_changed.connect(func(k, v): save.set_setting(k, v))
+	hud.swing_pressed.connect(func():
+		if overlay == null and (screen == Screen.MATCH or screen == Screen.TUTORIAL):
+			controller.swing_input(Time.get_ticks_usec()))
+	hud.view_pressed.connect(func():
+		save.set_setting("view", "side" if String(save.data["settings"]["view"]) == "batter" else "batter"))
+	hud.truck.horn.connect(func():
+		audio.play("truck_horn", "SFX", -3.0, 0.0)
+		audio.play("jingle", "SFX", -6.0, 0.0))
 	controller.match_over.connect(_on_match_over)
 	controller.tutorial_step.connect(_on_tutorial_step)
 	controller.commentary_line.connect(func(line): audio.say(line, "Bilal"))
@@ -84,6 +91,13 @@ func _ready() -> void:
 func _apply_settings() -> void:
 	var s: Dictionary = save.data["settings"]
 	world.reduced_motion = bool(s["reduced_motion"])
+	hud.truck.reduced_motion = world.reduced_motion
+	var atm := Atmosphere.make(String(s["time_of_day"]))
+	if world.atm == null or world.atm.id != atm.id:
+		world.set_atmosphere(atm)
+		if screen != Screen.SPLASH:
+			audio.start_ambience(atm.ambience)
+	world.set_view_mode(String(s["view"]))
 	world.effects.reduced_motion = world.reduced_motion
 	controller.commentary.language = String(s["language"])
 	hud.set_muted(bool(s["muted"]))
@@ -152,7 +166,7 @@ func show_menu() -> void:
 	menu.visible = true
 	menu.refresh(save.data)
 	world.menu_mode = true
-	audio.start_ambience(venue.id)
+	audio.start_ambience(world.atm.ambience)
 	audio.start_music()
 	audio.set_crowd_intensity(0.2)
 	menu.play_btn.call_deferred("grab_focus")
@@ -164,10 +178,7 @@ func _process(delta: float) -> void:
 
 
 func _on_play() -> void:
-	if not bool(save.data["tutorial_done"]):
-		start_tutorial()
-	else:
-		start_mode("quick")
+	start_mode("classic")
 
 
 func start_tutorial() -> void:
@@ -184,6 +195,8 @@ func start_mode(mode: String) -> void:
 	var seed_value := int(Time.get_unix_time_from_system()) ^ Time.get_ticks_usec()
 	var r: MatchRules
 	match mode:
+		"classic":
+			r = MatchRules.classic(name, String(save.data["settings"]["bowling"]))
 		"practice":
 			r = MatchRules.practice(name)
 			r.bowlers_by_over = ["daniyal", "hamza", "saad"]
@@ -197,6 +210,8 @@ func start_mode(mode: String) -> void:
 	_begin(r, false, seed_value)
 	if mode in ["quick", "challenge_first", "endless"]:
 		_show_rule_card(r)
+	elif world.atm.rain:
+		hud.show_toast("Rain: the wet outfield slows the ball down")
 
 
 func _begin(r: MatchRules, tutorial: bool, seed_value: int = 1) -> void:
@@ -208,7 +223,12 @@ func _begin(r: MatchRules, tutorial: bool, seed_value: int = 1) -> void:
 	world.snap_camera_to_delivery()
 	audio.stop_music()
 	audio.set_crowd_intensity(0.35)
-	controller.stance = hud.stance if hud.stance_unlocked else ContactResult.Stance.AUTO
+	controller.stance = ContactResult.Stance.AUTO
+	# Weather changes the outfield (rain = slower), never the timing windows.
+	var v: VenueConfig = venue.duplicate()
+	v.roll_decel = venue.roll_decel * world.atm.roll_decel_mult
+	controller.venue = v
+	hud.best_runs = int(save.data["best"]["classic_runs"])
 	controller.start_match(r, seed_value, tutorial)
 
 
@@ -331,6 +351,14 @@ func _on_match_over(state: MatchState) -> void:
 	save.apply_result_once(rid, func(d: Dictionary): _apply_progress(d, mode, card))
 	audio.play("sting_win" if card.result == "won" else "sting_lose", "Music", -3.0, 0.0)
 	await get_tree().create_timer(1.0).timeout
+	if mode == "classic":
+		var prev_best: int = int(hud.best_runs)
+		var cr := ClassicResult.new()
+		cr.build(state, prev_best, venue)
+		cr.play_again.connect(func(): start_mode("classic"))
+		cr.to_menu.connect(show_menu)
+		_open_overlay(cr)
+		return
 	var p := ScorecardPanel.new()
 	var headline := ""
 	if mode == "endless":
@@ -355,6 +383,12 @@ static func _apply_progress(d: Dictionary, mode: String, card: Scorecard) -> voi
 			d["best"]["quick_played"] = int(d["best"]["quick_played"]) + 1
 			if card.result == "won":
 				d["best"]["quick_wins"] = int(d["best"]["quick_wins"]) + 1
+		"classic":
+			d["best"]["classic_played"] = int(d["best"]["classic_played"]) + 1
+			d["tutorial_done"] = true
+			if card.runs > int(d["best"]["classic_runs"]):
+				d["best"]["classic_runs"] = card.runs
+				d["best"]["classic_balls"] = card.legal_balls
 		"endless":
 			if card.runs > int(d["best"]["endless_runs"]):
 				d["best"]["endless_runs"] = card.runs
