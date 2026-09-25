@@ -23,3 +23,5 @@ android/build/
 Thumbs.db
 *.swp
 __pycache__/
+# Public, debug-only signing key for test APKs (never used for Play/App Store releases)
+!android/debug-only.keystore

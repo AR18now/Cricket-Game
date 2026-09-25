@@ -64,28 +64,31 @@ jobs:
           ! grep -q "scripts/dev/dev_harness" build/windows/PocketBoundary.exe
           ! grep -q "scripts/dev/dev_harness" build/linux/PocketBoundary.x86_64
 
-      - name: Configure Android export (debug keystore generated per run)
+      - name: Configure Android export (fixed debug-only key so updates install over old builds)
         run: |
-          keytool -genkeypair -v -keystore "$RUNNER_TEMP/debug.keystore" -storepass android -alias androiddebugkey \
-            -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           mkdir -p ~/.config/godot
-          cat > ~/.config/godot/editor_settings-4.7.tres <<EOT
-          [gd_resource type="EditorSettings" format=3]
-          [resource]
-          export/android/android_sdk_path = "$ANDROID_HOME"
-          export/android/java_sdk_path = "$JAVA_HOME_17_X64"
-          export/android/debug_keystore = "$RUNNER_TEMP/debug.keystore"
-          export/android/debug_keystore_user = "androiddebugkey"
-          export/android/debug_keystore_pass = "android"
-          EOT
-          sed -i 's/^          //' ~/.config/godot/editor_settings-4.7.tres
+          KS="$GITHUB_WORKSPACE/android/debug-only.keystore"
+          printf '%s\n' '[gd_resource type="EditorSettings" format=3]' '[resource]' \
+            "export/android/android_sdk_path = \"$ANDROID_HOME\"" \
+            "export/android/java_sdk_path = \"$JAVA_HOME_17_X64\"" \
+            "export/android/debug_keystore = \"$KS\"" \
+            'export/android/debug_keystore_user = "androiddebugkey"' \
+            'export/android/debug_keystore_pass = "android"' > ~/.config/godot/editor_settings-4.7.tres
+          cat ~/.config/godot/editor_settings-4.7.tres
 
       - name: Export Android debug APK
-        continue-on-error: true
         run: |
           mkdir -p build/android
           godot --headless --path . --export-debug "Android" build/android/PocketBoundary-debug.apk
           test -s build/android/PocketBoundary-debug.apk
+          rm -f build/android/*.idsig
+
+      - name: Verify Android APK
+        run: |
+          BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
+          "$BT/apksigner" verify --verbose --print-certs build/android/PocketBoundary-debug.apk
+          "$BT/aapt2" dump badging build/android/PocketBoundary-debug.apk | grep -E "^package|sdkVersion|targetSdkVersion|native-code|launchable-activity"
+          unzip -l build/android/PocketBoundary-debug.apk | grep -E "lib/.*\.so" 
 
       - uses: actions/upload-artifact@v4
         with:
