@@ -58,6 +58,11 @@ func pick(event: String, ctx: Dictionary, ball_index: int = 0) -> Dictionary:
 			eligible.append(l)
 	if eligible.is_empty():
 		return {}
+	# Most specific wins: exact-match conditions beat ranges, which beat generic lines.
+	var best := 0
+	for l in eligible:
+		best = maxi(best, Commentary.specificity(String(l[2])))
+	eligible = eligible.filter(func(l): return Commentary.specificity(String(l[2])) == best)
 	var choices: Array = eligible.filter(func(l): return l[0] != _last_id)
 	if choices.is_empty():
 		choices = eligible
@@ -65,6 +70,14 @@ func pick(event: String, ctx: Dictionary, ball_index: int = 0) -> Dictionary:
 	_last_id = line[0]
 	_last_event_ball[event] = ball_index
 	return {"id": line[0], "text": line[3] if language == "roman_urdu" else line[4], "event": event}
+
+
+static func specificity(cond: String) -> int:
+	if cond.is_empty():
+		return 0
+	if cond.contains("==") or (cond.contains("=") and not cond.contains(">=") and not cond.contains("<=")):
+		return 2
+	return 1
 
 
 static func condition_ok(cond: String, ctx: Dictionary) -> bool:

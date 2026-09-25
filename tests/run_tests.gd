@@ -3,6 +3,18 @@ extends SceneTree
 ## Optional filter: -- --filter=test_scoring
 
 
+var _elapsed := 0.0
+
+
+## Watchdog: never hang CI if a test stalls.
+func _process(delta: float) -> bool:
+	_elapsed += delta
+	if _elapsed > 240.0:
+		printerr("Test run timed out")
+		quit(2)
+	return false
+
+
 func _initialize() -> void:
 	var filter := ""
 	for a in OS.get_cmdline_user_args():
@@ -18,7 +30,11 @@ func _initialize() -> void:
 			continue
 		if filter != "" and not f.contains(filter):
 			continue
-		var script: GDScript = load("res://tests/" + f)
+		var script = load("res://tests/" + f)
+		if script == null or not script.can_instantiate():
+			all_failures.append("%s: failed to load/parse" % f)
+			print("  FAIL %s (parse/load error)" % f)
+			continue
 		var inst = script.new()
 		var methods: Array = []
 		for m in inst.get_method_list():

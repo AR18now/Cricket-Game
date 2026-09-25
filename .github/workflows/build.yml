@@ -1,0 +1,110 @@
+name: Test and build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: "4.7.2"
+  GODOT_SHA512_LINUX: "9aa00f7a605200940bce3027a567b782f49bd8e940dd06ae9e987bd65aee1b1467edd56ed84fcdcbdd44354bf613bdbb4e5d2913e925850368e150c59ed54c65"
+  GODOT_SHA512_TEMPLATES: "ca4d71c4d7b81dfc15d1a98baa07534aa95b03fdda78a0075b06672e1648d2e5f40980c9adc28d23e1b92e732ee7bf3461997aa804af74ec2fcd7a93ccb84079"
+
+jobs:
+  test-and-export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: ~/godot-cache
+          key: godot-${{ env.GODOT_VERSION }}-v1
+
+      - name: Download Godot + export templates (verified)
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot-cache && cd ~/godot-cache
+          base=https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable
+          curl -sSL -o godot.zip "$base/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          curl -sSL -o templates.tpz "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          echo "${GODOT_SHA512_LINUX}  godot.zip" | sha512sum -c -
+          echo "${GODOT_SHA512_TEMPLATES}  templates.tpz" | sha512sum -c -
+
+      - name: Install Godot
+        run: |
+          cd ~/godot-cache
+          unzip -o -q godot.zip
+          sudo ln -sf ~/godot-cache/Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          mkdir -p ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          unzip -o -q templates.tpz -d /tmp/tpl
+          cp -r /tmp/tpl/templates/* ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable/
+          godot --version
+
+      - name: Import project
+        run: godot --headless --path . --import || true
+
+      - name: Run tests
+        run: godot --headless --path . --script res://tests/run_tests.gd
+
+      - name: Balance report
+        run: godot --headless --path . --script res://tools/sim_stats.gd > balance_report.txt
+
+      - name: Export desktop builds
+        run: |
+          mkdir -p build/windows build/linux build/windows-dev
+          godot --headless --path . --export-release "Windows" build/windows/PocketBoundary.exe
+          godot --headless --path . --export-debug "Windows Dev" build/windows-dev/PocketBoundary-dev.exe
+          godot --headless --path . --export-release "Linux" build/linux/PocketBoundary.x86_64
+          test -s build/windows/PocketBoundary.exe
+          # Release builds must not contain the development harness.
+          ! grep -q "scripts/dev/dev_harness" build/windows/PocketBoundary.exe
+          ! grep -q "scripts/dev/dev_harness" build/linux/PocketBoundary.x86_64
+
+      - name: Configure Android export (debug keystore generated per run)
+        run: |
+          keytool -genkeypair -v -keystore "$RUNNER_TEMP/debug.keystore" -storepass android -alias androiddebugkey \
+            -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          mkdir -p ~/.config/godot
+          cat > ~/.config/godot/editor_settings-4.7.tres <<EOT
+          [gd_resource type="EditorSettings" format=3]
+          [resource]
+          export/android/android_sdk_path = "$ANDROID_HOME"
+          export/android/java_sdk_path = "$JAVA_HOME_17_X64"
+          export/android/debug_keystore = "$RUNNER_TEMP/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          EOT
+          sed -i 's/^          //' ~/.config/godot/editor_settings-4.7.tres
+
+      - name: Export Android debug APK
+        continue-on-error: true
+        run: |
+          mkdir -p build/android
+          godot --headless --path . --export-debug "Android" build/android/PocketBoundary-debug.apk
+          test -s build/android/PocketBoundary-debug.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PocketBoundary-windows
+          path: build/windows/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PocketBoundary-windows-dev
+          path: build/windows-dev/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PocketBoundary-linux
+          path: build/linux/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PocketBoundary-android-debug
+          path: build/android/
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        with:
+          name: balance-report
+          path: balance_report.txt
