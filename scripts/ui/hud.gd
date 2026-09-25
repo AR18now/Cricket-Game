@@ -6,6 +6,7 @@ signal pause_pressed
 signal mute_pressed
 signal stance_changed(stance: int)
 signal card_pressed
+signal replay_pressed
 
 var controller: MatchController
 var world: WorldView
@@ -31,6 +32,8 @@ var guide: GuideOverlay
 var mute_btn: IconButton
 var pause_btn: IconButton
 var debug_label: Label
+var replay_btn: Button
+var replay_tag: Label
 var show_debug := false
 var _caption_until := 0.0
 var _timing_until := 0.0
@@ -147,6 +150,15 @@ func build(c: MatchController, w: WorldView) -> void:
 	# --- Swing pad (bottom-right): visual affordance; tapping anywhere also swings.
 	swing_pad = SwingPad.new()
 	add_child(swing_pad)
+	replay_btn = UiTheme.button("Replay", 22, 150)
+	replay_btn.visible = false
+	replay_btn.pressed.connect(func(): replay_pressed.emit())
+	add_child(replay_btn)
+	replay_tag = UiTheme.label("REPLAY  -  tap to skip", 26, UiTheme.GOLD, "black")
+	replay_tag.add_theme_color_override("font_outline_color", UiTheme.INK)
+	replay_tag.add_theme_constant_override("outline_size", 6)
+	replay_tag.visible = false
+	add_child(replay_tag)
 	debug_label = UiTheme.label("", 16, Color(0.8, 1.0, 0.8), "regular")
 	debug_label.add_theme_color_override("font_outline_color", UiTheme.INK)
 	debug_label.add_theme_constant_override("outline_size", 4)
@@ -156,6 +168,7 @@ func build(c: MatchController, w: WorldView) -> void:
 	c.timing_revealed.connect(_on_timing)
 	c.delivery_started.connect(_on_delivery)
 	c.swing_feedback.connect(_on_swing_feedback)
+	c.phase_changed.connect(_on_phase)
 	resized.connect(_layout)
 	_layout()
 
@@ -198,6 +211,8 @@ func _layout() -> void:
 	hint_label.size = Vector2(s.x, 40)
 	hint_label.position = Vector2(0, s.y * 0.72)
 	debug_label.position = Vector2(m, s.y * 0.42)
+	replay_btn.position = Vector2(s.x * 0.5 - 75.0, s.y * 0.2 + banner.size.y + 12.0)
+	replay_tag.position = Vector2((s.x - replay_tag.get_combined_minimum_size().x) * 0.5, 96.0)
 
 
 func _process(_d: float) -> void:
@@ -278,6 +293,17 @@ func refresh() -> void:
 	for i in 6:
 		var sym: String = syms[i] if i < syms.size() else ""
 		over_row.add_child(OverChip.make(sym))
+
+
+func _on_phase(p: int) -> void:
+	var outcome := p == MatchController.Phase.OUTCOME
+	replay_btn.visible = outcome and controller.tutorial_level < 0 and controller.resolver != null
+	replay_tag.visible = p == MatchController.Phase.REPLAY
+	if p == MatchController.Phase.REPLAY:
+		banner.visible = false
+		timing_panel.visible = false
+	elif outcome and controller.resolver != null and banner_title.text != "":
+		banner.visible = true
 
 
 func _on_delivery(_info: Dictionary) -> void:

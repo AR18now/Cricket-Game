@@ -14,7 +14,7 @@ signal match_over(state: MatchState)
 signal tutorial_step(level: int, success: bool)
 signal commentary_line(line: Dictionary)
 
-enum Phase { IDLE, READY, RUNUP, FLIGHT, OUTCOME, OVER }
+enum Phase { IDLE, READY, RUNUP, FLIGHT, OUTCOME, OVER, REPLAY }
 
 const READY_PAUSE := 0.9
 const OUTCOME_HOLD := 1.5
@@ -47,6 +47,9 @@ var _outcome_at := 0.0
 var _recorded := false
 var _revealed := false
 var _last_usec := 0
+var replay_t := 0.0
+var _replay_end := 0.0
+var replays_shown := 0
 
 
 func setup(w: WorldView, t: GameTuning, v: VenueConfig) -> void:
@@ -144,6 +147,9 @@ func window_scale() -> float:
 func swing_input(usec: int) -> String:
 	if paused:
 		return "paused"
+	if phase == Phase.REPLAY:
+		_end_replay()
+		return "replay_end"
 	if phase == Phase.OUTCOME and _recorded and clock.time - _outcome_at > 0.35:
 		skip_outcome()
 		return "skip"
@@ -159,6 +165,25 @@ func swing_input(usec: int) -> String:
 	return res
 
 
+## Instant replay: re-renders the recorded timeline at half speed. It never re-simulates,
+## never records events and never grants rewards; it returns to the same OUTCOME phase.
+func start_replay() -> void:
+	if phase != Phase.OUTCOME or not _recorded or resolver == null:
+		return
+	var key_t := resolver.contact.t_contact if resolver.contact.is_contact() else delivery.stumps_time()
+	replay_t = maxf(-0.5, key_t - 1.1)
+	_replay_end = resolver.outcome.t_settle
+	replays_shown += 1
+	world.ball.clear_trail()
+	_set_phase(Phase.REPLAY)
+
+
+func _end_replay() -> void:
+	_outcome_at = clock.time
+	world.render(clock.time)
+	_set_phase(Phase.OUTCOME)
+
+
 func skip_outcome() -> void:
 	if phase == Phase.OUTCOME and _recorded:
 		_advance_after_outcome()
@@ -171,6 +196,13 @@ func set_paused(p: bool) -> void:
 
 func _process(delta: float) -> void:
 	if phase == Phase.IDLE or phase == Phase.OVER or paused:
+		return
+	if phase == Phase.REPLAY:
+		replay_t += delta * 0.5
+		world.render(replay_t)
+		world.update_camera(delta)
+		if replay_t >= _replay_end:
+			_end_replay()
 		return
 	var prev := clock.time
 	clock.advance(delta, Time.get_ticks_usec())

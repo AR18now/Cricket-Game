@@ -49,6 +49,7 @@ func _ready() -> void:
 	hud.pause_pressed.connect(open_pause)
 	hud.mute_pressed.connect(toggle_mute)
 	hud.card_pressed.connect(open_scorecard)
+	hud.replay_pressed.connect(func(): controller.start_replay())
 	hud.stance_changed.connect(func(s): controller.stance = s)
 	menu = MainMenu.new()
 	ui_root.add_child(menu)

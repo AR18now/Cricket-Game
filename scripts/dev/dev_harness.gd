@@ -274,3 +274,12 @@ func _smoke() -> void:
 	app._close_overlay()
 	await until_phase(MatchController.Phase.OUTCOME)
 	check(c.state.events.size() == recorded_before + 2, "resumed delivery recorded once")
+	# Instant replay must have no side effects.
+	var runs_before: int = c.state.card.runs
+	c.auto_continue = false
+	c.start_replay()
+	check(c.phase == MatchController.Phase.REPLAY, "replay started")
+	await shot("smoke_replay")
+	await until_phase(MatchController.Phase.OUTCOME)
+	check(c.state.events.size() == recorded_before + 2 and c.state.card.runs == runs_before, "replay recorded nothing")
+	c.auto_continue = true
