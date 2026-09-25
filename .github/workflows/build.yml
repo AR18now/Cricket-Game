@@ -10,6 +10,9 @@ env:
   GODOT_SHA512_LINUX: "9aa00f7a605200940bce3027a567b782f49bd8e940dd06ae9e987bd65aee1b1467edd56ed84fcdcbdd44354bf613bdbb4e5d2913e925850368e150c59ed54c65"
   GODOT_SHA512_TEMPLATES: "ca4d71c4d7b81dfc15d1a98baa07534aa95b03fdda78a0075b06672e1648d2e5f40980c9adc28d23e1b92e732ee7bf3461997aa804af74ec2fcd7a93ccb84079"
 
+permissions:
+  contents: write
+
 jobs:
   test-and-export:
     runs-on: ubuntu-24.04
@@ -87,8 +90,32 @@ jobs:
         run: |
           BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
           "$BT/apksigner" verify --verbose --print-certs build/android/PocketBoundary-debug.apk
-          "$BT/aapt2" dump badging build/android/PocketBoundary-debug.apk | grep -E "^package|sdkVersion|targetSdkVersion|native-code|launchable-activity"
+          "$BT/aapt2" dump badging build/android/PocketBoundary-debug.apk | grep -iE "^package|sdkVersion|native-code|launchable-activity"
+          "$BT/zipalign" -c -P 16 -v 4 build/android/PocketBoundary-debug.apk | tail -1
+          ls -l build/android/PocketBoundary-debug.apk
+          sha256sum build/android/PocketBoundary-debug.apk
           unzip -l build/android/PocketBoundary-debug.apk | grep -E "lib/.*\.so" 
+
+      - name: Publish test APK as a direct download (GitHub Release, no zip)
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="test-build-${GITHUB_RUN_NUMBER}"
+          APK="PocketBoundary-test-${GITHUB_RUN_NUMBER}.apk"
+          cp build/android/PocketBoundary-debug.apk "$APK"
+          SIZE=$(stat -c %s "$APK")
+          SUM=$(sha256sum "$APK" | cut -d' ' -f1)
+          cat > notes.md <<EOT
+          Test build ${GITHUB_RUN_NUMBER} (commit ${GITHUB_SHA::7}) for Android phones.
+
+          Download **$APK** below and tap it to install (no unzipping needed).
+          Size: $SIZE bytes. SHA-256: \`$SUM\`
+
+          Debug-signed test build - not for the Play Store.
+          EOT
+          gh release create "$TAG" "$APK" --target "$GITHUB_SHA" --prerelease \
+            --title "Pocket Boundary test build ${GITHUB_RUN_NUMBER}" --notes-file notes.md
 
       - uses: actions/upload-artifact@v4
         with:
