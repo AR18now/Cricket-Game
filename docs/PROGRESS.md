@@ -9,12 +9,12 @@ _Last updated: 2026-09-25 (session 1)._
 | A | Toolchain proof | Godot CLI, templates, Git, run/log/screenshot/input evidence, Windows export | ✅ done in container (see docs/TOOLCHAIN.md). Windows build produced but not executed on Windows |
 | B | Playable vertical slice | Pindi ground, bowler, batter, one-tap swing, coherent trajectory, dots/runs/boundaries/bowled, scoreboard, restart | ✅ implemented + automated evidence — **awaiting your play-test** |
 | C | Complete core game | Practice, Quick Match, Endless, catches/fielding, tutorial, menus, sound, saves, visual polish, regressions | 🟡 mostly in place (all modes, catches, tutorial, menus, synthesised sound, saves, 56 tests). Remaining: polish pass after feedback, credits screen |
-| D | Mobile proof | Android debug build early, then iOS on authorised Mac; input, performance, aspect ratios, suspend/resume | 🟡 Android debug APK wired into CI; device testing needs your phone. iOS blocked on Mac access |
+| D | Mobile proof | Android debug build early, then iOS on authorised Mac; input, performance, aspect ratios, suspend/resume | 🟡 Android debug APK now produced by CI (run #1 green); device testing needs your phone. iOS blocked on Mac access |
 | E | Release candidate | 3 venues, local rules, bowler cast, voices, scorecards, challenge set, challenge codes, share card, store materials | ⬜ staged below |
 
 ### Stage plan for E (in order)
 
-1. Instant replay of the recorded timeline (never re-simulates; no side effects).
+1. ✅ Instant replay of the recorded timeline (never re-simulates; harness verifies no side effects).
 2. Authored challenge set (~6) with medals, and shot-direction guide in Practice.
 3. Venue system pass: **Karachi Rooftop** (netting, water tanks, dead zones, *Rooftop Precision*)
    and **Lahore Night Ground** (floodlights, painted signwork, fuller crowd).
@@ -76,5 +76,5 @@ _Last updated: 2026-09-25 (session 1)._
 
 ## Next steps
 
-- Watch CI; fix anything platform-specific in the Windows/Android exports.
+- CI is green; next: stage E.2 (challenge set, practice shot guide) while awaiting feedback.
 - Stage E.1–E.2 while awaiting feedback; then venues and local rules.

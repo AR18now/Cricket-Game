@@ -54,6 +54,11 @@ Recorded results (development container, software OpenGL via Mesa llvmpipe under
 Release exports (Windows/Linux) were checked to contain no `scripts/dev/dev_harness` and no
 tests; the Linux release build launched without script errors.
 
+**CI (GitHub Actions, ubuntu-24.04):** run #1 (commit `1575d65`) passed every step: verified
+Godot download, import, tests, balance report, Windows release + dev export, Linux export,
+harness-absence check, and Android debug APK export (58 MB artifact). The APK has **not** yet
+been installed on a device.
+
 **Frame rate:** ~6 FPS in the container, which uses CPU software rendering. This says nothing
 about device performance; no device measurements exist yet.
 

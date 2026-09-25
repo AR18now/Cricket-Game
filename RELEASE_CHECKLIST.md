@@ -13,7 +13,7 @@ Status legend: ✅ done · 🟡 in progress · ⬜ not started · 👤 needs own
 
 - ✅ Godot 4.7.2 + matching templates pinned and verified
 - ✅ Windows/Linux exports; release builds exclude the dev harness and tests
-- 🟡 Android debug APK via CI (needs first CI run to confirm)
+- ✅ Android debug APK exported by CI (run #1); 👤 install on a real phone pending
 - ⬜ Android application id confirmation (`com.devtorque.pocketboundary` is a placeholder), versioning, adaptive icons
 - 👤 Android upload keystore: generate and back up **outside** the repository (password manager + offline copy); never commit
 - ⬜ Signed release AAB (after keystore)
