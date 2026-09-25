@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="BowlerProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/sim/bowler_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "hamza"
+display_name = "Hamza"
+nickname = "Tez"
+style = "pace"
+speed_min = 24.0
+speed_max = 27.5
+slower_chance = 0.22
+slower_min = 17.0
+slower_max = 19.0
+length_min = 4.2
+length_max = 8.6
+line_min = -0.15
+line_max = 0.3
+release_y = 0.45
+run_up_time = 2.1
+kit_color = Color(0.2, 0.42, 0.75, 1)
+skin_tone = Color(0.6, 0.42, 0.3, 1)
+cue_line = "Tez is quick - watch for the slower one."
+description = "Brisk pace, back of a length, with an occasional slower ball (about 1 in 5)."

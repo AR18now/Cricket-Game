@@ -1,0 +1,25 @@
+# Godot
+.godot/
+*.import.tmp
+export_credentials.cfg
+# Builds / outputs
+build/
+builds/
+captures/
+*.apk
+*.aab
+*.ipa
+*.pck
+*.exe
+*.x86_64
+# Signing material — never commit
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+android/build/
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+__pycache__/

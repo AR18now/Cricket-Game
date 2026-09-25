@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="BowlerProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/sim/bowler_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "ayaan_coach"
+display_name = "Javed"
+nickname = "Coach"
+style = "tutorial"
+speed_min = 15.0
+speed_max = 17.5
+length_min = 4.5
+length_max = 6.0
+line_min = -0.08
+line_max = 0.12
+release_y = 0.3
+run_up_time = 1.6
+kit_color = Color(0.93, 0.78, 0.3, 1)
+skin_tone = Color(0.66, 0.46, 0.33, 1)
+cue_line = "Gentle throw-downs to get your eye in."
+description = "Your coach feeds gentle, straight balls. Nothing tricky."

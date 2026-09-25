@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="BowlerProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/sim/bowler_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "saad"
+display_name = "Saad"
+nickname = "Ghoom"
+style = "spin"
+speed_min = 15.5
+speed_max = 18.0
+length_min = 3.8
+length_max = 6.0
+line_min = -0.3
+line_max = 0.25
+deviation_max = 1.3
+release_y = 0.3
+run_up_time = 1.3
+kit_color = Color(0.2, 0.42, 0.75, 1)
+skin_tone = Color(0.7, 0.5, 0.36, 1)
+cue_line = "Ghoom turns it - watch the bounce."
+description = "Slower spin that deviates sideways off the pitch (up to 1.3 m/s)."

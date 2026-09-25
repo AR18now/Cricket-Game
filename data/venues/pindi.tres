@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="VenueConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/sim/venue_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "pindi"
+display_name = "Pindi Courtyard"
+boundary_center = Vector2(-8, 0)
+boundary_rx = 42.0
+boundary_ry = 31.0
+roll_decel = 3.4
+field_layout = [["bowler", -15.0, 2.2, "bowler"], ["keeper", 3.2, 0.1, "keeper"], ["long-on", -34.8, -17.0, "fielder"], ["long-off", -33.7, 17.9, "fielder"], ["mid-wicket", -8.9, -16.8, "fielder"], ["cover", -9.5, 16.5, "fielder"], ["deep square leg", 4.2, -23.5, "fielder"], ["point", 4.4, 17.5, "fielder"], ["third man", 19.4, 17.5, "fielder"], ["fine leg", 20.8, -16.3, "fielder"]]
+sky_top = Color(0.23, 0.2, 0.38, 1)
+sky_bottom = Color(0.98, 0.64, 0.38, 1)
+ground_color = Color(0.77, 0.6, 0.41, 1)
+ground_edge_color = Color(0.64, 0.46, 0.31, 1)
+pitch_color = Color(0.87, 0.76, 0.58, 1)
+boundary_color = Color(0.97, 0.95, 0.9, 1)
+description = "Warm brick, rooftop spectators and a tea stall. Standard boundary rules."

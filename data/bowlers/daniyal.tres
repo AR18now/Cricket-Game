@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="BowlerProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/sim/bowler_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "daniyal"
+display_name = "Daniyal"
+nickname = "Chalak"
+style = "medium"
+speed_min = 19.0
+speed_max = 22.5
+slower_chance = 0.0
+length_min = 2.6
+length_max = 5.2
+line_min = -0.2
+line_max = 0.35
+release_y = 0.4
+run_up_time = 1.8
+kit_color = Color(0.2, 0.42, 0.75, 1)
+skin_tone = Color(0.78, 0.56, 0.4, 1)
+cue_line = "Chalak pitches it up - look to drive."
+description = "Fuller deliveries with controlled line variation. Pitches it up; rarely short."
