@@ -106,15 +106,19 @@ jobs:
           cp build/android/PocketBoundary-debug.apk "$APK"
           SIZE=$(stat -c %s "$APK")
           SUM=$(sha256sum "$APK" | cut -d' ' -f1)
+          WIN="PocketBoundary-windows-test-${GITHUB_RUN_NUMBER}.zip"
           cat > notes.md <<EOT
-          Test build ${GITHUB_RUN_NUMBER} (commit ${GITHUB_SHA::7}) for Android phones.
+          Test build ${GITHUB_RUN_NUMBER} (commit ${GITHUB_SHA::7}) for Android phones and Windows PCs.
 
-          Download **$APK** below and tap it to install (no unzipping needed).
-          Size: $SIZE bytes. SHA-256: \`$SUM\`
+          Android: download **$APK** below and tap it to install (no unzipping needed).
+          Windows: download **$WIN**, unzip, double-click PocketBoundary.exe.
+          APK size: $SIZE bytes. APK SHA-256: \`$SUM\`
 
           Debug-signed test build - not for the Play Store.
           EOT
-          gh release create "$TAG" "$APK" --target "$GITHUB_SHA" --prerelease \
+          WIN="PocketBoundary-windows-test-${GITHUB_RUN_NUMBER}.zip"
+          (cd build/windows && zip -q -9 "$GITHUB_WORKSPACE/$WIN" PocketBoundary.exe)
+          gh release create "$TAG" "$APK" "$WIN" --target "$GITHUB_SHA" --prerelease \
             --title "Pocket Boundary test build ${GITHUB_RUN_NUMBER}" --notes-file notes.md
 
       - uses: actions/upload-artifact@v4
