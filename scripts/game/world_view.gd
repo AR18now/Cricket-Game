@@ -148,7 +148,18 @@ func batter_view_active(t: float) -> bool:
 	if resolved == null:
 		return true
 	if resolved.contact.is_contact():
-		return t < resolved.contact.t_contact + 0.12
+		var ts := t - resolved.contact.t_contact
+		if ts < 0.12:
+			return true
+		# Keep watching from behind the bat while a hit ball flies away down the ground
+		# and is still clearly on screen; then cut to the side camera.
+		if ts < 0.85 and resolved.shot != null:
+			var bp := ball_world(t)
+			if bp != Vector3.INF and BatterView.CAM.x - bp.x > 4.0:
+				var sp := batter_view.project(bp)
+				var vs := get_viewport_rect().size
+				return sp.x > vs.x * 0.08 and sp.x < vs.x * 0.92 and sp.y > vs.y * 0.3
+		return false
 	return t < delivery.stumps_time() + 0.8
 
 
@@ -158,6 +169,8 @@ func set_atmosphere(a: Atmosphere) -> void:
 	canvas_mod.color = a.ambient
 	floodlights.set_on(a.floodlights)
 	weather.atm = a
+	if batter_view:
+		batter_view.invalidate()
 	# Keep the ball vivid regardless of ambient light.
 	ball.modulate = Color(minf(1.0 / a.ambient.r, 1.8), minf(1.0 / a.ambient.g, 1.8), minf(1.0 / a.ambient.b, 1.8))
 
@@ -245,7 +258,12 @@ func render(t: float) -> void:
 	var bv := batter_view_active(t)
 	if bv and not batter_view.visible:
 		snap_camera_to_delivery()
+	elif not bv and batter_view.visible:
+		_snap_follow = true   # cut straight to a framed side shot, no slow drift
 	batter_view.visible = bv
+	sky_layer.visible = not bv
+	if bv:
+		return   # side-view figures are hidden behind the batter's view: skip their redraw
 	for r in actors.get_children():
 		if r is CricketerRig:
 			r.queue_redraw()
@@ -613,6 +631,9 @@ func delivery_camera() -> Dictionary:
 	return {"center": Proj.ground_v(DELIVERY_CAM) + Vector2(0, -150), "zoom": 0.9}
 
 
+var _snap_follow := false
+
+
 func update_camera(delta: float) -> void:
 	var goal := delivery_camera()
 	var center: Vector2 = goal["center"]
@@ -631,8 +652,9 @@ func update_camera(delta: float) -> void:
 				zoom = clampf(0.92 - d * 0.017, 0.36, 0.9)
 				var focus := Proj.to_screen(Vector3(bp.x, bp.y, bp.z * 0.6))
 				center = Proj.ground(-2.0, 0.0).lerp(focus, 0.72) + Vector2(0, -60)
-	var rate := 3.2
-	if reduced_motion:
+	var rate := 5.0
+	if reduced_motion or _snap_follow:
+		_snap_follow = false
 		cam_center = center
 		cam_zoom = zoom
 	else:

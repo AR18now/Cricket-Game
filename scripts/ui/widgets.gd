@@ -22,7 +22,7 @@ static func make(sym: String) -> OverChip:
 		_:
 			bg = UiTheme.EMERALD
 	c.add_theme_stylebox_override("panel", UiTheme.panel_box(bg, 19, border, 2))
-	var l := UiTheme.label("-" if sym == "." else sym, 18, fg, "black")
+	var l := UiTheme.label("-" if sym == "." else sym, 15, fg, "black")
 	if sym == "":
 		l.text = " "
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

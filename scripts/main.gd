@@ -92,6 +92,10 @@ func _apply_settings() -> void:
 	var s: Dictionary = save.data["settings"]
 	world.reduced_motion = bool(s["reduced_motion"])
 	hud.truck.reduced_motion = world.reduced_motion
+	controller.reduced_motion = world.reduced_motion
+	hud.reduced_motion = world.reduced_motion
+	hud.confetti.reduced_motion = world.reduced_motion
+	menu.reduced_motion = world.reduced_motion
 	var atm := Atmosphere.make(String(s["time_of_day"]))
 	if world.atm == null or world.atm.id != atm.id:
 		world.set_atmosphere(atm)
@@ -165,6 +169,9 @@ func show_menu() -> void:
 	hud.hide_transient()
 	menu.visible = true
 	menu.refresh(save.data)
+	menu.start_pulse()
+	if screen != Screen.SPLASH:
+		_fade_in()
 	world.menu_mode = true
 	audio.start_ambience(world.atm.ambience)
 	audio.start_music()
@@ -214,8 +221,23 @@ func start_mode(mode: String) -> void:
 		hud.show_toast("Rain: the wet outfield slows the ball down")
 
 
+## Quick fade-in so screen changes feel smooth rather than abrupt.
+func _fade_in() -> void:
+	if world.reduced_motion:
+		return
+	var f := ColorRect.new()
+	f.color = Color(0.01, 0.06, 0.05, 1.0)
+	f.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	f.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ui_root.add_child(f)
+	var tw := f.create_tween()
+	tw.tween_property(f, "color:a", 0.0, 0.3)
+	tw.tween_callback(f.queue_free)
+
+
 func _begin(r: MatchRules, tutorial: bool, seed_value: int = 1) -> void:
 	_close_overlay()
+	_fade_in()
 	menu.visible = false
 	hud.visible = true
 	hud.hide_transient()

@@ -59,7 +59,7 @@ static func resolve(d: Delivery, swing_time: float, stance: int, fielders: Array
 					o.explanation = "%s (%s) fielded it - %d safe run%s" % [f2.name, f2.position_name, o.runs, "" if o.runs == 1 else "s"]
 	else:
 		var t_st := d.stumps_time()
-		o.t_settle = t_st + 0.9
+		o.t_settle = t_st + 0.6
 		if d.hits_stumps():
 			o.kind = BallOutcome.BOWLED
 			o.wicket = true

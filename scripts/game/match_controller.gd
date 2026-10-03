@@ -16,9 +16,15 @@ signal commentary_line(line: Dictionary)
 
 enum Phase { IDLE, READY, RUNUP, FLIGHT, OUTCOME, OVER, REPLAY }
 
-const READY_PAUSE := 0.9
-const OUTCOME_HOLD := 1.5
-const OUTCOME_HOLD_BIG := 2.2
+const READY_PAUSE := 0.3
+const OUTCOME_HOLD := 0.7
+const OUTCOME_HOLD_BIG := 1.5      # wickets
+const OUTCOME_HOLD_BOUNDARY := 1.8 # truck celebration
+## After contact the (already resolved) shot plays back faster so the game never drags.
+## Presentation only: outcomes are decided at the swing and are unaffected.
+const POST_CONTACT_SPEED := 2.0
+## Brief freeze on a clean hit for impact ("hit-stop"); skipped in reduced motion.
+const HIT_STOP := 0.07
 
 var world: WorldView
 var tuning: GameTuning
@@ -50,6 +56,10 @@ var _last_usec := 0
 var replay_t := 0.0
 var _replay_end := 0.0
 var replays_shown := 0
+var _hold_real := 0.0
+var _hitstop_left := 0.0
+var _mute_audio := false
+var reduced_motion := false
 
 
 func setup(w: WorldView, t: GameTuning, v: VenueConfig) -> void:
@@ -150,9 +160,16 @@ func swing_input(usec: int) -> String:
 	if phase == Phase.REPLAY:
 		_end_replay()
 		return "replay_end"
-	if phase == Phase.OUTCOME and _recorded and clock.time - _outcome_at > 0.35:
+	if phase == Phase.OUTCOME and _recorded and _hold_real > 0.2:
 		skip_outcome()
 		return "skip"
+	# Tap during an already-decided shot: jump straight to its result (no waiting).
+	if phase == Phase.FLIGHT and resolver != null and _revealed and not _recorded:
+		var key_t := resolver.contact.t_contact if resolver.contact.is_contact() else delivery.stumps_time()
+		if clock.time > key_t + 0.5:
+			clock.time = resolver.outcome.t_settle
+			_mute_audio = true
+			return "fast_forward"
 	if phase != Phase.RUNUP and phase != Phase.FLIGHT and phase != Phase.READY:
 		return "closed"
 	var t := clock.time_of_input(usec, Engine.time_scale)
@@ -180,6 +197,7 @@ func start_replay() -> void:
 
 func _end_replay() -> void:
 	_outcome_at = clock.time
+	_hold_real = 0.0
 	world.render(clock.time)
 	_set_phase(Phase.OUTCOME)
 
@@ -205,7 +223,13 @@ func _process(delta: float) -> void:
 			_end_replay()
 		return
 	var prev := clock.time
-	clock.advance(delta, Time.get_ticks_usec())
+	var speed := 1.0
+	if resolver != null and _revealed and phase == Phase.FLIGHT:
+		speed = POST_CONTACT_SPEED
+	if _hitstop_left > 0.0:
+		_hitstop_left -= delta
+		speed = 0.0
+	clock.advance(delta * speed, Time.get_ticks_usec())
 	var t := clock.time
 	if phase == Phase.READY and t >= -profile.run_up_time:
 		_set_phase(Phase.RUNUP)
@@ -218,22 +242,29 @@ func _process(delta: float) -> void:
 		world.set_resolved(resolver, -1.0)
 	world.render(t)
 	world.update_camera(delta)
-	_audio_events(prev, t)
+	if _mute_audio:
+		_mute_audio = false
+	else:
+		_audio_events(prev, t)
 	if resolver != null and not _revealed:
 		var reveal_t := resolver.contact.t_contact if resolver.contact.is_contact() else delivery.stumps_time()
 		if t >= reveal_t:
 			_revealed = true
+			if not reduced_motion and resolver.contact.category in [ContactResult.PERFECT, ContactResult.GOOD]:
+				_hitstop_left = HIT_STOP
 			timing_revealed.emit(resolver.contact)
 	if resolver != null and not _recorded and t >= resolver.outcome.t_settle:
 		_settle()
-	if phase == Phase.OUTCOME and _recorded and auto_continue:
-		var hold := 2.9 if resolver.outcome.is_boundary() else (OUTCOME_HOLD_BIG if resolver.outcome.wicket else OUTCOME_HOLD)
-		if t - _outcome_at >= hold:
+	if phase == Phase.OUTCOME and _recorded:
+		_hold_real += delta
+		var hold := OUTCOME_HOLD_BOUNDARY if resolver.outcome.is_boundary() else (OUTCOME_HOLD_BIG if resolver.outcome.wicket else OUTCOME_HOLD)
+		if auto_continue and _hold_real >= hold:
 			_advance_after_outcome()
 
 
 func _settle() -> void:
 	_recorded = true
+	_hold_real = 0.0
 	_outcome_at = clock.time
 	var o := resolver.outcome
 	if tutorial_level >= 0:

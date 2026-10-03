@@ -9,7 +9,7 @@ const MAX_PACE_BOOST := 0.12
 const TUTORIAL_SPEEDS := [13.5, 15.0, 17.5]
 
 ## Classic mode starts every bowler at this gentle pace and eases toward their real pace.
-const START_SPEED := 13.5
+const START_SPEED := 16.0
 
 
 ## `ease_in` 0..1 blends from a slow, straight, gentle ball (0) to the bowler's real

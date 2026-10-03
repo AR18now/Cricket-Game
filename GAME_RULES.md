@@ -63,7 +63,7 @@ shown on the mini-map.
 
 | Mode | Overs | Wickets | Batters | Target |
 | --- | --- | --- | --- | --- |
-| **Classic** (main PLAY) | unlimited | 2 | one at a time (next batter replaces) | none — highest score |
+| **Classic** (main PLAY) | unlimited | 1 | single batter | none — highest score |
 | Quick Match | 2 | 3 (4-player arcade squad) | 2 at the crease, strike rotation | Challenge target (16–24) |
 | Endless | unlimited | 1 | single batter | none — bat as long as possible |
 | Practice | unlimited | dismissals counted, innings never ends | single batter | none |
@@ -83,10 +83,17 @@ shown on the mini-map.
 
 ## Classic mode pacing (Doodle-style)
 
-The first balls are gentle (13.5 m/s ≈ 49 km/h, straighter, less spin, no slower balls) and ease
+The first balls are gentle (16 m/s ≈ 58 km/h, straighter, less spin, no slower balls) and ease
 up to each bowler's real pace over the first 36 balls; after that pace may rise by at most
 +12 % over the next 72 balls. Bowlers: *Mixed* (coach → Daniyal → Saad → Hamza, then the main
 three rotate every over), *Fast* (Hamza only) or *Spin* (Saad only). Timing windows never change.
+
+## Pacing (presentation only)
+
+After contact the already-decided shot plays back 2x faster, clean hits get a 0.07 s
+"hit-stop", and tapping during a decided shot jumps straight to its result. Pauses between
+balls are short (0.7 s, wickets 1.5 s, boundaries 1.8 s); a ball is final as soon as the batters finish their runs and can be skipped with a tap.
+None of this changes timing windows or outcomes.
 
 ## Time of day and weather
 

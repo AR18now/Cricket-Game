@@ -44,16 +44,16 @@ static func quick_match(target_runs: int, player_name: String = "Ayaan") -> Matc
 	return r
 
 
-## The main mode: keep batting, pace starts gentle and builds up; 2 wickets.
+## The main mode: keep batting until out (1 wicket); pace starts gentle and builds up.
 static func classic(player_name: String = "Ayaan", bowling: String = "mixed") -> MatchRules:
 	var r := MatchRules.new()
 	r.mode = CLASSIC
 	r.title = "Classic"
 	r.overs = 0
-	r.max_wickets = 2
+	r.max_wickets = 1
 	r.target = 0
 	r.two_batters = false
-	r.batters = [player_name, "Bilal"]
+	r.batters = [player_name]
 	r.progressive = true
 	match bowling:
 		"pace":

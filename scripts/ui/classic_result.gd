@@ -5,6 +5,10 @@ extends OverlayPanel
 signal play_again
 signal to_menu
 
+var _count_target := -1
+var _count_label: Label
+var _confetti := false
+
 
 func build(state: MatchState, prev_best: int, venue: VenueConfig) -> void:
 	var card := state.card
@@ -12,9 +16,22 @@ func build(state: MatchState, prev_best: int, venue: VenueConfig) -> void:
 	var t := title("NEW BEST!" if new_best else "INNINGS OVER", 40)
 	if not new_best:
 		t.add_theme_color_override("font_color", UiTheme.SAND)
-	var big := UiTheme.label(str(card.runs), 96, UiTheme.GOLD, "black")
+	var big := UiTheme.label("0", 96, UiTheme.GOLD, "black")
 	big.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	body.add_child(big)
+	# Count the score up for a satisfying finish (instant in reduced motion).
+	var rm := false
+	var tree := Engine.get_main_loop() as SceneTree
+	var save: Node = tree.root.get_node_or_null("Save") if tree else null
+	if save:
+		rm = bool(save.get("data")["settings"]["reduced_motion"])
+	if rm or card.runs == 0:
+		big.text = str(card.runs)
+	else:
+		_count_target = card.runs
+		_count_label = big
+	if new_best and not rm:
+		_confetti = true
 	var line := UiTheme.label("runs from %d balls   -   %d x 4   %d x 6   -   Best %d" % [card.legal_balls, card.fours, card.sixes, maxi(prev_best, card.runs)], 22, UiTheme.OFF_WHITE, "regular")
 	line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	body.add_child(line)
@@ -48,3 +65,13 @@ func build(state: MatchState, prev_best: int, venue: VenueConfig) -> void:
 	menu.pressed.connect(func(): to_menu.emit())
 	row.add_child(menu)
 	again.call_deferred("grab_focus")
+
+
+func _ready() -> void:
+	if _count_label and _count_target > 0:
+		var tw := create_tween()
+		tw.tween_method(func(v: float): _count_label.text = str(int(round(v))), 0.0, float(_count_target), clampf(_count_target * 0.03, 0.4, 1.2)).set_ease(Tween.EASE_OUT)
+	if _confetti:
+		var c := Confetti.new()
+		add_child(c)
+		c.call_deferred("burst", Vector2(get_viewport_rect().size.x * 0.5, get_viewport_rect().size.y * 0.35), 120, 1.2)

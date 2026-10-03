@@ -17,10 +17,20 @@ var _ca := cos(deg_to_rad(PITCH_DEG))
 var _sa := sin(deg_to_rad(PITCH_DEG))
 var _tufts: Array = []
 var _buildings: Array = []
+## Static backdrop (sky, stands, ground, pitch) is cached on its own canvas item and only
+## redrawn when the screen size or atmosphere changes; actors/ball redraw every frame.
+var static_layer: Node2D
+var _ci: CanvasItem
+var _static_key := ""
+var _trail: Array = []
 
 
 func setup(world: WorldView) -> void:
 	w = world
+	static_layer = Node2D.new()
+	static_layer.show_behind_parent = true
+	add_child(static_layer)
+	static_layer.draw.connect(_draw_static)
 	var r := DetRng.new(4242)
 	for i in 260:
 		var a := r.range_f(0.0, TAU)
@@ -75,15 +85,27 @@ func _process(_d: float) -> void:
 
 
 # ------------------------------------------------------------------ drawing
+func invalidate() -> void:
+	_static_key = ""
+
+
+func _draw_static() -> void:
+	_ci = static_layer
+	_sky()
+	_stands()
+	_ground()
+	_pitch()
+
+
 func _draw() -> void:
 	var vs := get_viewport_rect().size
 	W = vs.x
 	H = vs.y
 	F = H * 1.25
-	_sky()
-	_stands()
-	_ground()
-	_pitch()
+	var key := "%d:%d:%s" % [int(W), int(H), w.atm.id]
+	if key != _static_key:
+		_static_key = key
+		static_layer.queue_redraw()
 	_actors()
 	_ball()
 
@@ -94,18 +116,18 @@ func _sky() -> void:
 	var horizon := H * 0.5 - F * tan(deg_to_rad(PITCH_DEG))
 	for i in bands:
 		var t0 := float(i) / bands
-		draw_rect(Rect2(0, horizon * t0, W, horizon / bands + 1.0), atm.sky_top.lerp(atm.sky_bottom, t0))
+		_ci.draw_rect(Rect2(0, horizon * t0, W, horizon / bands + 1.0), atm.sky_top.lerp(atm.sky_bottom, t0))
 	if atm.stars:
 		var r := DetRng.new(9)
 		for i in 60:
-			draw_circle(Vector2(r.next_float() * W, r.next_float() * horizon * 0.8), 1.2, Color(1, 1, 1, 0.6))
+			_ci.draw_circle(Vector2(r.next_float() * W, r.next_float() * horizon * 0.8), 1.2, Color(1, 1, 1, 0.6))
 	if atm.sun:
 		var sp := Vector2(W * 0.8, horizon * (0.35 if atm.id == "day" else 0.85))
 		for k in range(5, 0, -1):
-			draw_circle(sp, 34.0 * k, Color(atm.sun_color.r, atm.sun_color.g, atm.sun_color.b, 0.04))
-		draw_circle(sp, 28.0, atm.sun_color)
+			_ci.draw_circle(sp, 34.0 * k, Color(atm.sun_color.r, atm.sun_color.g, atm.sun_color.b, 0.04))
+		_ci.draw_circle(sp, 28.0, atm.sun_color)
 	elif atm.moon:
-		draw_circle(Vector2(W * 0.8, horizon * 0.3), 20.0, Color(0.93, 0.93, 0.86))
+		_ci.draw_circle(Vector2(W * 0.8, horizon * 0.3), 20.0, Color(0.93, 0.93, 0.86))
 
 
 func _stands() -> void:
@@ -120,8 +142,8 @@ func _stands() -> void:
 		var h: float = bld["h"]
 		var col: Color = _lit(bld["col"])
 		var quad := PackedVector2Array([project(Vector3(a.x, a.y, 0)), project(Vector3(b.x, b.y, 0)), project(Vector3(b.x, b.y, h)), project(Vector3(a.x, a.y, h))])
-		draw_colored_polygon(quad, col)
-		draw_polyline(PackedVector2Array([quad[3], quad[2]]), _lit(col.darkened(0.3)), 3.0)
+		_ci.draw_colored_polygon(quad, col)
+		_ci.draw_polyline(PackedVector2Array([quad[3], quad[2]]), _lit(col.darkened(0.3)), 3.0)
 		# Windows (glow at night/evening)
 		var r := DetRng.new(int(bld["seed"]))
 		var floors := int(h / 3.2)
@@ -136,7 +158,7 @@ func _stands() -> void:
 				var win := PackedVector2Array([project(Vector3(p0.x, p0.y, z0)), project(Vector3(p1.x, p1.y, z0)), project(Vector3(p1.x, p1.y, z0 + 1.5)), project(Vector3(p0.x, p0.y, z0 + 1.5))])
 				var lit := r.chance(0.45)
 				var wc := Color(1.0, 0.84, 0.5) if (lit and w.atm.window_glow) else _lit(Color(0.25, 0.22, 0.26))
-				draw_colored_polygon(win, wc)
+				_ci.draw_colored_polygon(win, wc)
 		# Rooftop spectators
 		var n := r.range_i(2, 6)
 		for s in n:
@@ -145,8 +167,8 @@ func _stands() -> void:
 			var base := project(Vector3(p.x, p.y, h))
 			var k := scale_at(Vector3(p.x, p.y, h))
 			var shirt: Color = [GroundView.EMERALD, Color(0.95, 0.93, 0.88), GroundView.TERRACOTTA, Color(0.3, 0.45, 0.7), GroundView.GOLD.darkened(0.2)][r.range_i(0, 4)]
-			draw_rect(Rect2(base + Vector2(-0.22 * k, -0.9 * k), Vector2(0.44 * k, 0.9 * k)), _lit(shirt))
-			draw_circle(base + Vector2(0, -1.05 * k), 0.16 * k, _lit(Color(0.6, 0.42, 0.3)))
+			_ci.draw_rect(Rect2(base + Vector2(-0.22 * k, -0.9 * k), Vector2(0.44 * k, 0.9 * k)), _lit(shirt))
+			_ci.draw_circle(base + Vector2(0, -1.05 * k), 0.16 * k, _lit(Color(0.6, 0.42, 0.3)))
 	# Brick boundary walls on three sides
 	for seg in [[Vector2(-58, -37), Vector2(4, -37)], [Vector2(-58, 37), Vector2(4, 37)], [Vector2(-58, -37), Vector2(-58, 37)]]:
 		var a2: Vector2 = seg[0]
@@ -158,27 +180,27 @@ func _stands() -> void:
 			if CAM.x - maxf(p0.x, p1.x) < 1.2:
 				continue
 			var q := PackedVector2Array([project(Vector3(p0.x, p0.y, 0)), project(Vector3(p1.x, p1.y, 0)), project(Vector3(p1.x, p1.y, 3.0)), project(Vector3(p0.x, p0.y, 3.0))])
-			draw_colored_polygon(q, _lit(GroundView.BRICK))
-			draw_line(q[3], q[2], _lit(GroundView.PLASTER), 3.0)
+			_ci.draw_colored_polygon(q, _lit(GroundView.BRICK))
+			_ci.draw_line(q[3], q[2], _lit(GroundView.PLASTER), 3.0)
 	# Bunting across the far end
 	var prev := Vector2.ZERO
 	for i in 41:
 		var u := i / 40.0
 		var p := project(Vector3(-56.0, lerpf(-36.0, 36.0, u), 9.0 - sin(u * PI * 3.0) * 0.8))
 		if i > 0:
-			draw_line(prev, p, _lit(Color(0.2, 0.18, 0.16)), 1.5)
+			_ci.draw_line(prev, p, _lit(Color(0.2, 0.18, 0.16)), 1.5)
 			var tri := PackedVector2Array([p + Vector2(-5, 0), p + Vector2(5, 0), p + Vector2(0, 11)])
-			draw_colored_polygon(tri, _lit([GroundView.EMERALD, GroundView.GOLD, Color(0.97, 0.95, 0.9), GroundView.TERRACOTTA][i % 4]))
+			_ci.draw_colored_polygon(tri, _lit([GroundView.EMERALD, GroundView.GOLD, Color(0.97, 0.95, 0.9), GroundView.TERRACOTTA][i % 4]))
 		prev = p
 	if w.atm.floodlights:
 		for t in [Vector2(-44.0, -34.0), Vector2(-50.0, 34.0)]:
 			var b3 := project(Vector3(t.x, t.y, 0))
 			var top := project(Vector3(t.x, t.y, 22))
-			draw_line(b3, top, _lit(Color(0.3, 0.3, 0.34)), 6.0)
-			draw_rect(Rect2(top + Vector2(-34, -26), Vector2(68, 30)), Color(0.2, 0.2, 0.24))
+			_ci.draw_line(b3, top, _lit(Color(0.3, 0.3, 0.34)), 6.0)
+			_ci.draw_rect(Rect2(top + Vector2(-34, -26), Vector2(68, 30)), Color(0.2, 0.2, 0.24))
 			for k2 in range(5, 0, -1):
-				draw_circle(top + Vector2(0, -10), 26.0 * k2, Color(1.0, 0.97, 0.8, 0.06))
-			draw_rect(Rect2(top + Vector2(-30, -22), Vector2(60, 22)), Color(1.0, 0.98, 0.9))
+				_ci.draw_circle(top + Vector2(0, -10), 26.0 * k2, Color(1.0, 0.97, 0.8, 0.06))
+			_ci.draw_rect(Rect2(top + Vector2(-30, -22), Vector2(60, 22)), Color(1.0, 0.98, 0.9))
 
 
 func _ellipse_pts(scale: float, n: int = 72) -> PackedVector2Array:
@@ -192,14 +214,14 @@ func _ellipse_pts(scale: float, n: int = 72) -> PackedVector2Array:
 
 func _ground() -> void:
 	var horizon := H * 0.5 - F * tan(deg_to_rad(PITCH_DEG))
-	draw_rect(Rect2(0, horizon - 2.0, W, H - horizon + 2.0), _lit(Color(0.72, 0.45, 0.32)))
+	_ci.draw_rect(Rect2(0, horizon - 2.0, W, H - horizon + 2.0), _lit(Color(0.72, 0.45, 0.32)))
 	var v := w.venue
-	draw_colored_polygon(_ellipse_pts(1.03), _lit(v.ground_edge_color))
-	draw_colored_polygon(_ellipse_pts(1.0), _lit(v.ground_color.darkened(0.04)))
-	draw_colored_polygon(_ellipse_pts(0.72), _lit(v.ground_color))
-	draw_colored_polygon(_ellipse_pts(0.4), _lit(v.ground_color.lightened(0.04)))
+	_ci.draw_colored_polygon(_ellipse_pts(1.03), _lit(v.ground_edge_color))
+	_ci.draw_colored_polygon(_ellipse_pts(1.0), _lit(v.ground_color.darkened(0.04)))
+	_ci.draw_colored_polygon(_ellipse_pts(0.72), _lit(v.ground_color))
+	_ci.draw_colored_polygon(_ellipse_pts(0.4), _lit(v.ground_color.lightened(0.04)))
 	if w.atm.floodlights:
-		draw_colored_polygon(_ellipse_pts(0.55), Color(1.0, 1.0, 0.9, 0.06))
+		_ci.draw_colored_polygon(_ellipse_pts(0.55), Color(1.0, 1.0, 0.9, 0.06))
 	var rope := _ellipse_pts(1.0, 120)
 	# Only draw the rope segments in front of the camera.
 	for i in rope.size():
@@ -209,35 +231,35 @@ func _ground() -> void:
 			var j := (i + 1) % rope.size()
 			var a2 := TAU * j / 120.0
 			if CAM.x - (v.boundary_center.x + cos(a2) * v.boundary_rx) > 1.5:
-				draw_line(rope[i], rope[j], _lit(v.boundary_color), 3.0, true)
+				_ci.draw_line(rope[i], rope[j], _lit(v.boundary_color), 3.0, true)
 	for p in _tufts:
 		if CAM.x - p.x < 2.0:
 			continue
 		var s := project(Vector3(p.x, p.y, 0))
 		var k := scale_at(Vector3(p.x, p.y, 0))
 		var gc := _lit(Color(0.42, 0.5, 0.22, 0.6))
-		draw_line(s, s + Vector2(-0.06 * k, -0.12 * k), gc, maxf(1.0, 0.02 * k))
-		draw_line(s, s + Vector2(0.05 * k, -0.14 * k), gc, maxf(1.0, 0.02 * k))
+		_ci.draw_line(s, s + Vector2(-0.06 * k, -0.12 * k), gc, maxf(1.0, 0.02 * k))
+		_ci.draw_line(s, s + Vector2(0.05 * k, -0.14 * k), gc, maxf(1.0, 0.02 * k))
 
 
 func _pitch() -> void:
 	var hw := 1.52
 	var q := PackedVector2Array([project(Vector3(-22.0, -hw, 0)), project(Vector3(-22.0, hw, 0)), project(Vector3(1.8, hw, 0)), project(Vector3(1.8, -hw, 0))])
-	draw_colored_polygon(q, _lit(w.venue.pitch_color))
+	_ci.draw_colored_polygon(q, _lit(w.venue.pitch_color))
 	for c in [Vector2(-1.3, 0.0), Vector2(-5.5, 0.1), Vector2(-18.9, 0.3)]:
 		var pts := PackedVector2Array()
 		for i in 20:
 			var a := TAU * i / 20.0
 			pts.append(project(Vector3(c.x + cos(a) * 1.3, c.y + sin(a) * 0.8, 0)))
-		draw_colored_polygon(pts, _lit(w.venue.pitch_color.darkened(0.1)))
+		_ci.draw_colored_polygon(pts, _lit(w.venue.pitch_color.darkened(0.1)))
 	var white := _lit(Color(0.98, 0.97, 0.94))
 	for end_x in [0.0, Delivery.BOWLING_STUMPS_X]:
 		var sgn := 1.0 if end_x == 0.0 else -1.0
 		var pop: float = end_x - 1.22 * sgn
-		draw_line(project(Vector3(pop, -1.83, 0)), project(Vector3(pop, 1.83, 0)), white, maxf(1.5, 0.05 * scale_at(Vector3(pop, 0, 0))), true)
-		draw_line(project(Vector3(end_x, -1.32, 0)), project(Vector3(end_x, 1.32, 0)), white, maxf(1.0, 0.035 * scale_at(Vector3(end_x, 0, 0))), true)
+		_ci.draw_line(project(Vector3(pop, -1.83, 0)), project(Vector3(pop, 1.83, 0)), white, maxf(1.5, 0.05 * scale_at(Vector3(pop, 0, 0))), true)
+		_ci.draw_line(project(Vector3(end_x, -1.32, 0)), project(Vector3(end_x, 1.32, 0)), white, maxf(1.0, 0.035 * scale_at(Vector3(end_x, 0, 0))), true)
 		for yy in [-1.32, 1.32]:
-			draw_line(project(Vector3(end_x + 0.3 * sgn, yy, 0)), project(Vector3(pop - 1.0 * sgn, yy, 0)), white, 1.5, true)
+			_ci.draw_line(project(Vector3(end_x + 0.3 * sgn, yy, 0)), project(Vector3(pop - 1.0 * sgn, yy, 0)), white, 1.5, true)
 
 
 # ------------------------------------------------------------------ actors
@@ -438,6 +460,17 @@ func _batter(t: float) -> void:
 			fore = lerpf(0.45, 1.0, q2)
 	var dir := Vector2(sin(ang), -cos(ang))
 	var tip := hands + dir * 0.86 * k * fore
+	if u > 0.05 and u < 0.75 and not w.reduced_motion:
+		_trail.append([hands + dir * 0.55 * k * fore, tip])
+		if _trail.size() > 7:
+			_trail.pop_front()
+		for i in range(1, _trail.size()):
+			var a0: Array = _trail[i - 1]
+			var a1: Array = _trail[i]
+			var al := float(i) / _trail.size() * 0.45
+			draw_colored_polygon(PackedVector2Array([a0[0], a0[1], a1[1], a1[0]]), Color(1.0, 0.97, 0.85, al))
+	elif u < 0.0 or u >= 0.75:
+		_trail.clear()
 	var sh_bat := hands + dir * 0.27 * k * fore
 	draw_line(sh, hands, ink, lw * 0.8 + 3.0, true)
 	draw_line(sh, hands, shirt, lw * 0.8, true)
@@ -502,6 +535,12 @@ func _ball() -> void:
 	draw_circle(s + Vector2(-r * 0.35, -r * 0.4), r * 0.28, Color(1, 1, 1, 0.8), true, -1.0, true)
 	if w.resolved != null and w.resolved.contact.is_contact():
 		var age2 := w.clock - w.resolved.contact.t_contact
+		if age2 >= 0.0 and age2 < 0.22:
+			var cp := project(w.resolved.contact.contact_pos)
+			var kk := age2 / 0.22
+			var perfect := w.resolved.contact.category == ContactResult.PERFECT
+			draw_circle(cp, (18.0 + 60.0 * kk) * (1.3 if perfect else 1.0), Color(1.0, 0.95, 0.7, 0.45 * (1.0 - kk)))
+			draw_arc(cp, (24.0 + 90.0 * kk) * (1.3 if perfect else 1.0), 0, TAU, 32, Color(1.0, 0.85, 0.35, 1.0 - kk), 4.0, true)
 		if age2 >= 0.0 and age2 < 0.15:
 			for i in 8:
 				var a2 := TAU * i / 8.0

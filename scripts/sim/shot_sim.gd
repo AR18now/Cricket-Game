@@ -98,7 +98,7 @@ static func _resolve_fielding(res: ShotResult, fielders: Array, venue: VenueConf
 			break
 	if best_i < 0 and crossed:
 		res.runs = 4 if res.outcome == ShotResult.FOUR else 6
-		res.t_settle = res.boundary_t + 0.9
+		res.t_settle = res.boundary_t + 0.45
 		res.distance = Vector2(res.samples[n - 1].x, res.samples[n - 1].y).length()
 		_chase_plans(res, fielders, res.samples[n - 1], -1, res.boundary_t)
 		return
@@ -125,7 +125,7 @@ static func _resolve_fielding(res: ShotResult, fielders: Array, venue: VenueConf
 	if best_catch:
 		res.outcome = ShotResult.CAUGHT
 		res.runs = 0
-		res.t_settle = t_collect + 1.1
+		res.t_settle = t_collect + 0.7
 		_chase_plans(res, fielders, collect_p, best_f, t_collect)
 		return
 	res.outcome = ShotResult.RUNS
@@ -141,7 +141,9 @@ static func _resolve_fielding(res: ShotResult, fielders: Array, venue: VenueConf
 			runs = k
 			res.run_times.append(done)
 	res.runs = runs
-	res.t_settle = maxf(res.t_back, res.run_times[runs - 1] if runs > 0 else 0.0) + 0.4
+	# The result is final once the ball is gathered and the batters finish their runs
+	# (the throw-in is still shown but nobody waits for it).
+	res.t_settle = maxf(t_collect + 0.5, res.run_times[runs - 1] if runs > 0 else 0.0) + 0.15
 	_chase_plans(res, fielders, collect_p, best_f, t_collect)
 
 

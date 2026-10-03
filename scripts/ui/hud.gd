@@ -49,6 +49,10 @@ var _timing_until := 0.0
 var _hint_until := 0.0
 var _toast_until := 0.0
 var _last_bowler := ""
+var confetti: Confetti
+var reduced_motion := false
+var _best_announced := false
+var _last_milestone := 0
 
 
 func build(c: MatchController, w: WorldView) -> void:
@@ -69,7 +73,7 @@ func build(c: MatchController, w: WorldView) -> void:
 	sv.add_theme_constant_override("separation", 2)
 	sv.alignment = BoxContainer.ALIGNMENT_CENTER
 	score_panel.add_child(sv)
-	score_label = UiTheme.label("0", 46, UiTheme.OFF_WHITE, "black")
+	score_label = UiTheme.label("0", 40, UiTheme.OFF_WHITE, "black")
 	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sv.add_child(score_label)
 	sub_label = UiTheme.label("", 18, UiTheme.SAND)
@@ -147,6 +151,8 @@ func build(c: MatchController, w: WorldView) -> void:
 	add_child(truck)
 	move_child(truck, 1)
 	truck.stop()
+	confetti = Confetti.new()
+	add_child(confetti)
 	# --- Caption (banter)
 	caption_panel = PanelContainer.new()
 	caption_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -291,8 +297,7 @@ func refresh() -> void:
 		sub_label.text = "Practice ball %d of %d" % [controller.tutorial_level + 1, DeliveryGenerator.TUTORIAL_SPEEDS.size()]
 	elif classic:
 		score_label.text = "%d" % card.runs if card.wickets == 0 else "%d / %d" % [card.runs, card.wickets]
-		var left := r.max_wickets - card.wickets
-		sub_label.text = "%d balls  -  %d wicket%s left  -  Best %d" % [card.legal_balls, left, "" if left == 1 else "s", maxi(best_runs, card.runs)]
+		sub_label.text = "%d ball%s   -   Best %d" % [card.legal_balls, "" if card.legal_balls == 1 else "s", maxi(best_runs, card.runs)]
 	else:
 		score_label.text = "%s  %d/%d" % [r.batting_short, card.runs, card.wickets]
 		var overs := "Overs %s" % card.overs_text()
@@ -313,7 +318,9 @@ func refresh() -> void:
 		ch.queue_free()
 	var syms: Array = card.this_over if card.legal_balls % 6 != 0 or controller.phase == MatchController.Phase.OUTCOME else []
 	for i in 6:
-		over_row.add_child(OverChip.make(syms[i] if i < syms.size() else ""))
+		var chip := OverChip.make(syms[i] if i < syms.size() else "")
+		chip.custom_minimum_size = Vector2(30, 30)
+		over_row.add_child(chip)
 
 
 func _on_phase(p: int) -> void:
@@ -376,10 +383,15 @@ func _on_timing(c: ContactResult) -> void:
 	timing_label.add_theme_color_override("font_color", col)
 	timing_meter.set_value(c)
 	timing_panel.visible = c.category != ContactResult.NONE
-	_timing_until = Time.get_ticks_msec() / 1000.0 + 1.6
+	_timing_until = Time.get_ticks_msec() / 1000.0 + 1.3
+	if timing_panel.visible:
+		_pop(timing_panel, 1.25 if c.category == ContactResult.PERFECT else 1.12)
 
 
 func _on_settled(o: BallOutcome, _card: Scorecard) -> void:
+	if controller.state != null and controller.state.events.size() <= 1:
+		_best_announced = false
+		_last_milestone = 0
 	refresh()
 	var title := ""
 	match o.kind:
@@ -394,9 +406,63 @@ func _on_settled(o: BallOutcome, _card: Scorecard) -> void:
 	banner_sub.text = o.explanation
 	# Boundaries get the truck instead of a big banner (less clutter, more fun).
 	banner.visible = not o.is_boundary()
+	if banner.visible:
+		_pop(banner, 0.85, true)
 	if o.is_boundary():
 		truck.play("six" if o.kind == BallOutcome.SIX else "four")
+		confetti.burst(Vector2(size.x * 0.5, size.y * 0.55), 110 if o.kind == BallOutcome.SIX else 60, 1.2 if o.kind == BallOutcome.SIX else 0.9)
+	if o.runs > 0:
+		_float_text("+%d" % o.runs, world.screen_of(Vector3(-1.0, -0.4, 2.2)), UiTheme.GOLD if o.runs >= 4 else UiTheme.OFF_WHITE, 64 if o.runs >= 4 else 44)
+		_pop(score_panel, 1.15)
+	_check_milestones(_card)
 	minimap.shot_path = o.shot_points if o.shot_points.size() > 1 else []
+
+
+## Quick scale "pop" (or slide-in from smaller) for feedback panels.
+func _pop(c: Control, from_scale: float, fade: bool = false) -> void:
+	if reduced_motion:
+		return
+	c.pivot_offset = c.get_combined_minimum_size() * 0.5
+	c.scale = Vector2(from_scale, from_scale)
+	if fade:
+		c.modulate.a = 0.0
+	var tw := create_tween().set_parallel(true)
+	tw.tween_property(c, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	if fade:
+		tw.tween_property(c, "modulate:a", 1.0, 0.15)
+
+
+func _float_text(text: String, at: Vector2, col: Color, fs: int) -> void:
+	var l := UiTheme.label(text, fs, col, "black")
+	l.add_theme_color_override("font_outline_color", UiTheme.INK)
+	l.add_theme_constant_override("outline_size", 10)
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(l)
+	var sz := l.get_combined_minimum_size()
+	l.position = Vector2(clampf(at.x - sz.x * 0.5, 10.0, size.x - sz.x - 10.0), clampf(at.y - sz.y, 120.0, size.y - sz.y - 10.0))
+	l.pivot_offset = sz * 0.5
+	var tw := create_tween()
+	if not reduced_motion:
+		l.scale = Vector2(0.4, 0.4)
+		tw.tween_property(l, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tw.parallel().tween_property(l, "position:y", l.position.y - 90.0, 1.0).set_ease(Tween.EASE_OUT)
+	tw.tween_property(l, "modulate:a", 0.0, 0.35)
+	tw.tween_callback(l.queue_free)
+
+
+func _check_milestones(card: Scorecard) -> void:
+	if not _is_classic():
+		return
+	var m := (card.runs / 50) * 50
+	if m >= 50 and m > _last_milestone:
+		_last_milestone = m
+		show_toast("%d up! Shabash!" % m)
+		confetti.burst(Vector2(size.x * 0.5, 120.0), 80, 1.0)
+	if not _best_announced and best_runs > 0 and card.runs > best_runs:
+		_best_announced = true
+		show_toast("NEW BEST SCORE!")
+		_pop(toast, 1.3)
+		confetti.burst(Vector2(size.x * 0.5, 120.0), 90, 1.1)
 
 
 func show_caption(text: String, speaker: String) -> void:
@@ -423,3 +489,4 @@ func hide_transient() -> void:
 	toast.visible = false
 	hint_label.text = ""
 	truck.stop()
+	confetti.clear()

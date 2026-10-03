@@ -192,22 +192,19 @@ func test_classic_mode_rules() -> void:
 	_play(st, [1, 1, 1, 1, 1, 1])
 	eq(st.card.striker, 0, "single batter keeps strike")
 	eq(st.current_bowler_id(), "daniyal")
-	_play(st, [_o(BallOutcome.BOWLED, 0, true)])
-	check(not st.is_complete(), "two wickets in classic")
-	eq(st.card.batters[st.card.striker]["name"], "Bilal", "next batter comes in")
 	for i in 40:
 		_play(st, [0])
 	near(st.ease_in(), 1.0, 1e-6, "full pace after the intro")
 	# Bowler rotation cycles the main attack, never the gentle intro bowler again.
-	var seen := {}
 	var probe := MatchState.new(MatchRules.classic(), 1)
 	for i in 120:
-		seen[probe.current_bowler_id()] = true
 		probe.record(i, _runs(0), probe.current_bowler_id())
-	eq(probe.current_bowler_id() != "ayaan_coach", true)
-	_play(st, [_o(BallOutcome.CAUGHT, 0, true, "Imran")])
-	check(st.is_complete(), "second wicket ends classic")
+	check(probe.current_bowler_id() != "ayaan_coach", "intro bowler not repeated")
+	check(not st.is_complete(), "still batting")
+	_play(st, [_o(BallOutcome.BOWLED, 0, true)])
+	check(st.is_complete(), "one wicket ends classic")
 	eq(st.card.result, "ended")
+	check(not st.record(999, _runs(6), "hamza"), "nothing recorded after the wicket")
 
 
 func test_classic_pace_ramps_up_and_stays_bounded() -> void:

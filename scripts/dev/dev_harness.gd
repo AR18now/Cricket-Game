@@ -41,6 +41,8 @@ func _go() -> void:
 			await _quick_tour()
 		"visual":
 			await _visual_tour()
+		"feel":
+			await _feel_tour()
 		_:
 			await _capture_tour()
 	_finish()
@@ -233,6 +235,48 @@ func _capture_tour() -> void:
 	await wait(2.5)
 	await shot("13_result")
 	check(app.screen == app.Screen.RESULT, "endless ends on a wicket and shows the result")
+
+
+## Game-time seconds (real time scaled by the harness slow-down).
+func game_now() -> float:
+	return Time.get_ticks_msec() / 1000.0 * Engine.time_scale
+
+
+func _feel_tour() -> void:
+	await wait(1.6)
+	app.start_mode("classic")
+	var c = app.controller
+	var starts: Array = []
+	c.delivery_started.connect(func(_i): starts.append(game_now()))
+	c.phase_changed.connect(func(ph): _log("  phase %s at %.2f (clock %.2f)" % [MatchController.Phase.keys()[ph], game_now(), c.clock.time]))
+	c.timing_revealed.connect(func(_x): _log("  reveal at %.2f (clock %.2f) settle_t=%.2f" % [game_now(), c.clock.time, c.resolver.outcome.t_settle]))
+	await until_phase(MatchController.Phase.FLIGHT)
+	await swing_at(ideal_swing())
+	await until_clock(ideal_swing() + c.tuning.swing_to_contact + 0.03)
+	await shot("f01_impact")
+	await until_clock(ideal_swing() + c.tuning.swing_to_contact + 0.45)
+	await shot("f02_ball_flying_batter_view")
+	await until_phase(MatchController.Phase.OUTCOME)
+	await wait(0.35)
+	await shot("f03_celebration")
+	_log("ball 1: %s" % c.resolver.outcome.kind)
+	await until_phase(MatchController.Phase.FLIGHT)
+	await swing_at(ideal_swing() + 45.0 / 1000.0 * 1000.0 / 1000.0)
+	await until_phase(MatchController.Phase.OUTCOME)
+	await wait(0.15)
+	await shot("f04_banner")
+	_log("ball 2: %s %d" % [c.resolver.outcome.kind, c.resolver.outcome.runs])
+	# Pace: three more balls auto-played (swing late-ish), measure start-to-start time.
+	for i in 2:
+		await until_phase(MatchController.Phase.FLIGHT)
+		await swing_at(ideal_swing() + 0.02)
+		await until_phase(MatchController.Phase.OUTCOME)
+	await until_phase(MatchController.Phase.READY)
+	var gaps: Array = []
+	for i in range(1, starts.size()):
+		gaps.append(snappedf(starts[i] - starts[i - 1], 0.01))
+	_log("seconds between deliveries (game time, auto-continue, no taps to skip): %s" % str(gaps))
+	check(c.state.card.wickets <= 1, "classic has at most one wicket")
 
 
 func _visual_tour() -> void:

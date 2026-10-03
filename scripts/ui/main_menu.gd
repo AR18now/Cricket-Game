@@ -17,6 +17,8 @@ var play_btn: Button
 var best_label: Label
 var mute_btn: IconButton
 var chips := {}
+var reduced_motion := false
+var _pulse: Tween
 var _values := {"bowling": "mixed", "time_of_day": "evening", "view": "batter"}
 
 
@@ -74,6 +76,20 @@ func build() -> void:
 	foot.name = "Foot"
 	add_child(foot)
 	_update_chips()
+	start_pulse()
+
+
+## Gentle "breathing" on the PLAY button so the main action is obvious.
+func start_pulse() -> void:
+	if _pulse:
+		_pulse.kill()
+	play_btn.scale = Vector2.ONE
+	if reduced_motion:
+		return
+	play_btn.pivot_offset = play_btn.custom_minimum_size * 0.5
+	_pulse = create_tween().set_loops()
+	_pulse.tween_property(play_btn, "scale", Vector2(1.04, 1.04), 0.8).set_trans(Tween.TRANS_SINE)
+	_pulse.tween_property(play_btn, "scale", Vector2.ONE, 0.8).set_trans(Tween.TRANS_SINE)
 
 
 func _cycle(key: String) -> void:
@@ -82,6 +98,11 @@ func _cycle(key: String) -> void:
 	var i := list.find(_values[key])
 	_values[key] = list[(i + 1) % list.size()]
 	_update_chips()
+	var b: Button = chips[key]
+	if not reduced_motion:
+		b.pivot_offset = b.size * 0.5
+		b.scale = Vector2(0.9, 0.9)
+		create_tween().tween_property(b, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	option_changed.emit(key, _values[key])
 
 

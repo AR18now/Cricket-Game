@@ -6,7 +6,7 @@ extends Control
 
 signal horn
 
-const DUR := 2.8
+const DUR := 1.8
 const RED := Color(0.86, 0.15, 0.2)
 const YELLOW := Color(0.99, 0.8, 0.15)
 const GREEN := Color(0.04, 0.55, 0.32)
@@ -43,7 +43,7 @@ func _process(delta: float) -> void:
 	if t < 0.0:
 		return
 	t += delta
-	if not _horned and t > 0.7:
+	if not _horned and t > 0.45:
 		_horned = true
 		horn.emit()
 	if t > DUR:
@@ -56,12 +56,12 @@ func _x_pos(w: float, L: float) -> float:
 	var cx := (w - L) * 0.5
 	if reduced_motion:
 		return cx
-	if t < 0.9:
-		var u := t / 0.9
+	if t < 0.6:
+		var u := t / 0.6
 		return lerpf(w + 40.0, cx, 1.0 - pow(1.0 - u, 3.0))
-	if t < 1.7:
+	if t < 1.05:
 		return cx
-	var u2 := (t - 1.7) / (DUR - 1.7)
+	var u2 := (t - 1.05) / (DUR - 1.05)
 	return lerpf(cx, -L - 80.0, u2 * u2)
 
 
@@ -75,7 +75,7 @@ func _draw() -> void:
 	var alpha := 1.0
 	if reduced_motion:
 		alpha = clampf((DUR - t) / 0.6, 0.0, 1.0)
-	var moving := not reduced_motion and (t < 0.9 or t > 1.7)
+	var moving := not reduced_motion and (t < 0.6 or t > 1.05)
 	var bob := 0.0 if not moving else sin(t * 30.0) * 1.5
 	draw_set_transform(Vector2(x0, ground_y + bob), 0.0, Vector2(sc, sc))
 	var m := Color(1, 1, 1, alpha)
