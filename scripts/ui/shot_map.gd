@@ -17,7 +17,7 @@ func _draw() -> void:
 	for i in 49:
 		var a := TAU * i / 48.0
 		pts.append(m.call(venue.boundary_center + Vector2(cos(a) * venue.boundary_rx, sin(a) * venue.boundary_ry)))
-	draw_colored_polygon(pts, Color(0.62, 0.5, 0.34, 0.6))
+	draw_colored_polygon(pts, Color(0.3, 0.52, 0.22, 0.8))
 	draw_polyline(pts, UiTheme.OFF_WHITE, 1.5, true)
 	for e in events:
 		var shot: Array = e.get("shot", [])

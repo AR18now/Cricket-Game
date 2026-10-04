@@ -219,39 +219,74 @@ func _ellipse_points(scale: float, n: int = 96) -> PackedVector2Array:
 	return pts
 
 
+## World-space ellipse (metres) for grass clipping.
+func _ellipse_world(scale: float, n: int = 96) -> PackedVector2Array:
+	var pts := PackedVector2Array()
+	for k in n:
+		var a := TAU * k / n
+		pts.append(Vector2(venue.boundary_center.x + cos(a) * venue.boundary_rx * scale, venue.boundary_center.y + sin(a) * venue.boundary_ry * scale))
+	return pts
+
+
+## Mown grass stripes (alternating shades) clipped to the field; shared with BatterView.
+static func grass_stripes(v: VenueConfig, scale: float = 1.0) -> Array:
+	var out: Array = []
+	var ell := PackedVector2Array()
+	for k in 96:
+		var a := TAU * k / 96.0
+		ell.append(Vector2(v.boundary_center.x + cos(a) * v.boundary_rx * scale, v.boundary_center.y + sin(a) * v.boundary_ry * scale))
+	var w := 4.0
+	var y := v.boundary_center.y - v.boundary_ry - w
+	var idx := 0
+	while y < v.boundary_center.y + v.boundary_ry + w:
+		var rect := PackedVector2Array([Vector2(-200, y), Vector2(200, y), Vector2(200, y + w), Vector2(-200, y + w)])
+		for poly in Geometry2D.intersect_polygons(ell, rect):
+			out.append({"poly": poly, "light": idx % 2 == 0})
+		y += w
+		idx += 1
+	return out
+
+
 func _draw_field(rng: DetRng) -> void:
-	# Outer apron then the playing field (packed earth), with soft concentric wear.
-	draw_colored_polygon(_ellipse_points(1.05), venue.ground_edge_color)
-	draw_colored_polygon(_ellipse_points(1.0), venue.ground_color.darkened(0.05))
-	draw_colored_polygon(_ellipse_points(0.82), venue.ground_color)
-	draw_colored_polygon(_ellipse_points(0.45), venue.ground_color.lightened(0.04))
-	# Texture: grass tufts and pebbles, deterministic.
-	for i in 900:
+	# Outfield grass: darker apron near the rope, mown stripes, lighter square.
+	draw_colored_polygon(_ellipse_points(1.05), venue.ground_edge_color.darkened(0.1))
+	draw_colored_polygon(_ellipse_points(1.0), venue.ground_edge_color)
+	for st in grass_stripes(venue, 0.97):
+		var pp := PackedVector2Array()
+		for q in st["poly"]:
+			pp.append(g(q.x, q.y))
+		draw_colored_polygon(pp, venue.ground_color.lightened(0.06) if st["light"] else venue.ground_color.darkened(0.04))
+	# Inner fielding circle (dashed white) around the pitch.
+	var ring := PackedVector2Array()
+	for k in 180:
+		var a := TAU * k / 180.0
+		ring.append(g(-10.0 + cos(a) * 24.0, sin(a) * 19.0))
+	for k in range(0, 180, 3):
+		draw_line(ring[k], ring[(k + 1) % 180], Color(1, 1, 1, 0.28), 1.5, true)
+	# Texture: short grass blades in two greens + a few darker patches.
+	for i in 1100:
 		var a := rng.range_f(0.0, TAU)
-		var r := sqrt(rng.next_float()) * 0.98
+		var r := sqrt(rng.next_float()) * 0.97
 		var wx := venue.boundary_center.x + cos(a) * venue.boundary_rx * r
 		var wy := venue.boundary_center.y + sin(a) * venue.boundary_ry * r
 		if absf(wy) < 2.2 and wx > -22.0 and wx < 2.5:
 			continue
 		var p := g(wx, wy)
-		if rng.chance(0.6):
-			var gc := Color(0.42, 0.5, 0.22, rng.range_f(0.35, 0.7))
-			draw_line(p, p + Vector2(-3, -7), gc, 2.0)
-			draw_line(p, p + Vector2(2, -8), gc, 2.0)
-			draw_line(p, p + Vector2(5, -5), gc, 2.0)
-		else:
-			draw_circle(p, rng.range_f(1.5, 3.0), Color(0.55, 0.4, 0.28, 0.5))
-	# Boundary: chalk line (slightly rough) with small markers.
-	var chalk := _ellipse_points(1.0, 160)
-	chalk.append(chalk[0])
-	draw_polyline(chalk, Color(0.3, 0.2, 0.15, 0.35), 9.0, true)
-	draw_polyline(chalk, venue.boundary_color, 5.0, true)
-	for i in 24:
-		var a := TAU * i / 24.0
-		var p := g(venue.boundary_center.x + cos(a) * venue.boundary_rx, venue.boundary_center.y + sin(a) * venue.boundary_ry)
-		var cone := PackedVector2Array([p + Vector2(-7, 2), p + Vector2(7, 2), p + Vector2(0, -16)])
-		draw_colored_polygon(cone, TERRACOTTA)
-		draw_line(p + Vector2(-4, -6), p + Vector2(4, -6), Color(1, 1, 1), 2.0)
+		var gc := venue.ground_color.darkened(rng.range_f(0.1, 0.25)) if rng.chance(0.6) else venue.ground_color.lightened(rng.range_f(0.08, 0.18))
+		gc.a = rng.range_f(0.4, 0.8)
+		draw_line(p, p + Vector2(-1.5, -4), gc, 1.5)
+		draw_line(p + Vector2(2, 0), p + Vector2(3, -5), gc, 1.5)
+	# Boundary rope with a soft shadow, and small marker flags.
+	var rope := _ellipse_points(1.0, 160)
+	rope.append(rope[0])
+	draw_polyline(rope, Color(0, 0, 0, 0.25), 10.0, true)
+	draw_polyline(rope, venue.boundary_color, 6.0, true)
+	draw_polyline(rope, Color(0.8, 0.15, 0.15, 0.9), 2.0, true)
+	for i in 16:
+		var a := TAU * i / 16.0
+		var p := g(venue.boundary_center.x + cos(a) * venue.boundary_rx * 1.03, venue.boundary_center.y + sin(a) * venue.boundary_ry * 1.03)
+		draw_line(p, p + Vector2(0, -26), Color(0.35, 0.3, 0.25), 2.0)
+		draw_colored_polygon(PackedVector2Array([p + Vector2(0, -26), p + Vector2(14, -21), p + Vector2(0, -16)]), [EMERALD, GOLD, Color(0.97, 0.95, 0.9)][i % 3])
 
 
 func _draw_pitch() -> void:
@@ -259,7 +294,7 @@ func _draw_pitch() -> void:
 	var x0 := -22.0
 	var x1 := 2.0
 	var poly := PackedVector2Array([g(x0, -hw), g(x1, -hw), g(x1, hw), g(x0, hw)])
-	draw_colored_polygon(poly, Color(0.55, 0.42, 0.3, 0.5))
+	draw_colored_polygon(poly, venue.ground_color.darkened(0.15))
 	var inner := PackedVector2Array([g(x0 + 0.1, -hw + 0.1), g(x1 - 0.1, -hw + 0.1), g(x1 - 0.1, hw - 0.1), g(x0 + 0.1, hw - 0.1)])
 	draw_colored_polygon(inner, venue.pitch_color)
 	# Worn patches at the batting/bowling ends and on a good length.

@@ -49,6 +49,8 @@ func _go() -> void:
 			await _restart_check()
 		"hints":
 			await _hints_check()
+		"look":
+			await _look_tour()
 		_:
 			await _capture_tour()
 	_finish()
@@ -360,6 +362,36 @@ func _quick_tour() -> void:
 	await frames(3)
 	await shot("q06_pause")
 	_log("fps=%d (software rendering under Xvfb; not representative of devices)" % Engine.get_frames_per_second())
+
+
+func _look_tour() -> void:
+	var save = get_node("/root/Save")
+	await wait(1.6)
+	await shot("l01_menu")
+	app.start_mode("classic")
+	var c = app.controller
+	await until_phase(MatchController.Phase.RUNUP)
+	await until_clock(-0.2)
+	await shot("l02_batter_view_runup")
+	await until_phase(MatchController.Phase.FLIGHT)
+	await swing_at(c.ideal_tap_time() + 0.035)
+	await until_clock(c.ideal_tap_time() + 1.4)
+	await shot("l03_side_view")
+	await until_phase(MatchController.Phase.OUTCOME)
+	await wait(0.3)
+	await shot("l04_outcome")
+	save.set_setting("view", "side")
+	press_space()
+	await until_phase(MatchController.Phase.FLIGHT)
+	await until_clock(c.ideal_tap_time() - 0.1)
+	await shot("l05_side_delivery")
+	save.set_setting("view", "batter")
+	save.set_setting("time_of_day", "night")
+	app.start_mode("classic")
+	await until_phase(MatchController.Phase.RUNUP)
+	await until_clock(-0.15)
+	await shot("l06_night")
+	save.set_setting("time_of_day", "evening")
 
 
 func _hints_check() -> void:

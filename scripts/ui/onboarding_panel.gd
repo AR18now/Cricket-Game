@@ -4,7 +4,7 @@ extends OverlayPanel
 
 signal done(name: String, kit: int)
 
-const KITS := [Color(0.03, 0.42, 0.32), Color(0.8, 0.4, 0.25), Color(0.2, 0.36, 0.7), Color(0.55, 0.2, 0.38), Color(0.12, 0.12, 0.14)]
+const KITS := [Color(0.02, 0.4, 0.25), Color(0.8, 0.4, 0.25), Color(0.2, 0.36, 0.7), Color(0.55, 0.2, 0.38), Color(0.12, 0.12, 0.14)]
 const KIT_NAMES := ["Emerald", "Terracotta", "Indigo", "Plum", "Charcoal"]
 
 var name_edit: LineEdit

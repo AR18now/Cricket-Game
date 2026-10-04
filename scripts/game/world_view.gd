@@ -47,8 +47,9 @@ var cam_zoom := 0.9
 var show_tags := true
 var striker_label := ""
 var non_striker_label := ""
-var batting_kit := Color(0.05, 0.42, 0.32)
-var fielding_kit := Color(0.2, 0.42, 0.75)
+var batting_kit := Color(0.02, 0.4, 0.25)
+var skin_tone_batter := Color(0.7, 0.5, 0.37)
+var fielding_kit := Color(0.13, 0.23, 0.48)
 var two_batters := true
 var umpire_signal := ""
 var atm: Atmosphere = Atmosphere.make("evening")
@@ -101,6 +102,9 @@ func build(v: VenueConfig, t: GameTuning) -> void:
 	keeper.keeper_gloves = true
 	keeper.has_pads = true
 	umpire = _rig(Color(0.95, 0.93, 0.88), "hat", false)
+	umpire.beard = true
+	keeper.beard = false
+	bowler.beard = true
 	umpire.trousers = Color(0.2, 0.2, 0.25)
 	umpire.facing = 1.0
 	near_wall = NearWall.new()
@@ -214,10 +218,14 @@ func setup_fielders(fielder_specs: Array) -> void:
 		if fielder_rigs[i] is CricketerRig and not (fielder_rigs[i] in [bowler, keeper]):
 			fielder_rigs[i].queue_free()
 	fielder_rigs = [bowler, keeper]
-	var skins := [Color(0.72, 0.5, 0.36), Color(0.6, 0.42, 0.3), Color(0.8, 0.6, 0.45), Color(0.66, 0.46, 0.33)]
+	var skins := [Color(0.71, 0.5, 0.37), Color(0.58, 0.4, 0.29), Color(0.79, 0.6, 0.46), Color(0.65, 0.45, 0.33), Color(0.52, 0.36, 0.26)]
+	var hairs := [Color(0.08, 0.06, 0.05), Color(0.14, 0.1, 0.08), Color(0.05, 0.04, 0.04)]
 	for i in range(2, specs.size()):
 		var r := _rig(fielding_kit, ["cap", "hair", "cap", "hair"][i % 4], false)
 		r.skin = skins[i % skins.size()]
+		r.hair = hairs[i % hairs.size()]
+		r.beard = i % 3 == 1
+		r.trousers = Color(0.94, 0.94, 0.92)
 		fielder_rigs.append(r)
 
 

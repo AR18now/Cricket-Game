@@ -35,7 +35,7 @@ func _draw() -> void:
 	for i in 48:
 		var a := TAU * i / 48.0
 		pts.append(_map(v.boundary_center + Vector2(cos(a) * v.boundary_rx, sin(a) * v.boundary_ry)))
-	draw_colored_polygon(pts, Color(0.62, 0.5, 0.34, 0.9))
+	draw_colored_polygon(pts, Color(0.3, 0.52, 0.22, 0.95))
 	pts.append(pts[0])
 	draw_polyline(pts, UiTheme.OFF_WHITE, 2.0, true)
 	draw_line(_map(Vector2(-20.12, 0)), _map(Vector2(0, 0)), Color(0.93, 0.85, 0.66), 4.0)

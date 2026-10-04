@@ -51,6 +51,14 @@ _Last updated: 2026-09-25 (session 1)._
 | After getting out and restarting, the bowler never came; only "Wait..." | Result screen paused the sim clock; "Play again" cleared the controller flag but not the clock's own pause flag. `start_match` now unpauses both. Harness regression: get out -> Play again -> delivery clock runs and the ball is bowled |
 | Ball arriving at the bat not smooth | Removed the contact hit-stop (read as a stutter); post-contact playback eases to 2x instead of jumping; analytic motion trail on the ball in the batter's view; ball eases out of the bowler's drawn hand at release; batter's view cross-fades to the side camera |
 
+## Owner feedback round 4 (implemented)
+
+| Request | Done |
+| --- | --- |
+| Optional hint at the moment to hit | Menu chip Hints On/Off: HIT NOW cue, button flash, ring guide, and slow-motion (45%) around the ideal tap; input scaled so timing stays exact (harness: tap on cue = perfect, 2.4 ms). Hint scores kept as a separate best |
+| More realistic human bodies | Tapered limbs (thigh/calf/forearm), shaped torso, soft shading instead of cartoon outlines, sleeves, collar, ribbed pads, gloves, shoes, faces with nose/ear/brows, beards, helmet peak/grille/neck guard - side view and batter's view |
+| Better colours / realistic scene | Mown grass outfield with stripes, inner circle, tan pitch, red-white rope with flags, navy fielding kit, deep green batting kit, varied skin tones |
+
 ## What exists now (evidence)
 
 - Deterministic simulation: analytic delivery path (bounce, deviation), timing → contact at the
