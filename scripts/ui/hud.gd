@@ -53,6 +53,8 @@ var confetti: Confetti
 var reduced_motion := false
 var _best_announced := false
 var _last_milestone := 0
+var hit_now: Label
+var _hit_shown_for := -1
 
 
 func build(c: MatchController, w: WorldView) -> void:
@@ -176,6 +178,13 @@ func build(c: MatchController, w: WorldView) -> void:
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(hint_label)
+	# --- Hints: "HIT NOW!" cue at the ideal tap moment
+	hit_now = UiTheme.label("HIT NOW!", 64, UiTheme.GOLD, "black")
+	hit_now.add_theme_color_override("font_outline_color", UiTheme.INK)
+	hit_now.add_theme_constant_override("outline_size", 14)
+	hit_now.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hit_now.visible = false
+	add_child(hit_now)
 	# --- Swing button (bottom right, thumb reach)
 	swing_btn = SwingButton.new()
 	swing_btn.swing_pressed.connect(func(): swing_pressed.emit())
@@ -271,6 +280,7 @@ func _process(_d: float) -> void:
 	var t := controller.clock.time
 	var open := g.armed and g.swing_time < 0.0 and t >= g.open_time and t <= g.close_time and not controller.paused
 	swing_btn.ready_glow = move_toward(swing_btn.ready_glow, 1.0 if open else 0.0, _d * 6.0)
+	_update_hit_now(open)
 	if show_debug and controller.delivery != null:
 		debug_label.visible = true
 		var info := controller.debug_info()
@@ -323,6 +333,27 @@ func refresh() -> void:
 		over_row.add_child(chip)
 
 
+## Hints mode cue: shown from just before to just after the ideal tap moment.
+func _update_hit_now(open: bool) -> void:
+	var show := false
+	if controller.hints and open and controller.resolver == null:
+		var d := controller.clock.time - controller.ideal_tap_time()
+		show = d > -0.07 and d < 0.1
+	if show and not hit_now.visible:
+		hit_now.visible = true
+		var sz := hit_now.get_combined_minimum_size()
+		hit_now.size = sz
+		hit_now.pivot_offset = sz * 0.5
+		var anchor := world.screen_of(Vector3(-1.0, -0.4, 2.4))
+		hit_now.position = Vector2(clampf(anchor.x - sz.x * 0.5, 16.0, size.x - sz.x - 16.0), clampf(anchor.y - sz.y - 30.0, 150.0, size.y - sz.y - 16.0))
+		if not reduced_motion:
+			hit_now.scale = Vector2(0.5, 0.5)
+			create_tween().tween_property(hit_now, "scale", Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		swing_btn.accepted()   # flash the button too
+	elif not show and hit_now.visible:
+		hit_now.visible = false
+
+
 func _on_phase(p: int) -> void:
 	var outcome := p == MatchController.Phase.OUTCOME
 	replay_btn.visible = outcome and controller.tutorial_level < 0 and controller.resolver != null
@@ -350,6 +381,8 @@ func _on_delivery(info: Dictionary) -> void:
 			"Same again - tap as the ring closes.", "A little quicker now. No ring this time!"]
 		hint(msgs[clampi(controller.tutorial_level, 0, 2)], 4.0)
 		guide.enabled = controller.tutorial_level < 2
+	elif controller.hints:
+		guide.enabled = true
 	elif _is_classic() and first_time and n < 3:
 		guide.enabled = true
 		if n == 0:

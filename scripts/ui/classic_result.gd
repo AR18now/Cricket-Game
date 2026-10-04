@@ -10,7 +10,7 @@ var _count_label: Label
 var _confetti := false
 
 
-func build(state: MatchState, prev_best: int, venue: VenueConfig) -> void:
+func build(state: MatchState, prev_best: int, venue: VenueConfig, hints: bool = false) -> void:
 	var card := state.card
 	var new_best := card.runs > prev_best and card.runs > 0
 	var t := title("NEW BEST!" if new_best else "INNINGS OVER", 40)
@@ -32,7 +32,7 @@ func build(state: MatchState, prev_best: int, venue: VenueConfig) -> void:
 		_count_label = big
 	if new_best and not rm:
 		_confetti = true
-	var line := UiTheme.label("runs from %d balls   -   %d x 4   %d x 6   -   Best %d" % [card.legal_balls, card.fours, card.sixes, maxi(prev_best, card.runs)], 22, UiTheme.OFF_WHITE, "regular")
+	var line := UiTheme.label("runs from %d balls   -   %d x 4   %d x 6   -   %sBest %d" % [card.legal_balls, card.fours, card.sixes, "Hints " if hints else "", maxi(prev_best, card.runs)], 22, UiTheme.OFF_WHITE, "regular")
 	line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	body.add_child(line)
 	var how := ""

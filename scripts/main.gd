@@ -250,7 +250,8 @@ func _begin(r: MatchRules, tutorial: bool, seed_value: int = 1) -> void:
 	var v: VenueConfig = venue.duplicate()
 	v.roll_decel = venue.roll_decel * world.atm.roll_decel_mult
 	controller.venue = v
-	hud.best_runs = int(save.data["best"]["classic_runs"])
+	controller.hints = bool(save.data["settings"]["hints"])
+	hud.best_runs = int(save.data["best"]["classic_hint_runs" if controller.hints else "classic_runs"])
 	controller.start_match(r, seed_value, tutorial)
 
 
@@ -376,7 +377,7 @@ func _on_match_over(state: MatchState) -> void:
 	if mode == "classic":
 		var prev_best: int = int(hud.best_runs)
 		var cr := ClassicResult.new()
-		cr.build(state, prev_best, venue)
+		cr.build(state, prev_best, venue, controller.hints)
 		cr.play_again.connect(func(): start_mode("classic"))
 		cr.to_menu.connect(show_menu)
 		_open_overlay(cr)
@@ -408,7 +409,10 @@ static func _apply_progress(d: Dictionary, mode: String, card: Scorecard) -> voi
 		"classic":
 			d["best"]["classic_played"] = int(d["best"]["classic_played"]) + 1
 			d["tutorial_done"] = true
-			if card.runs > int(d["best"]["classic_runs"]):
+			if bool(d["settings"]["hints"]):
+				# Hint-assisted scores are kept separately from unassisted bests.
+				d["best"]["classic_hint_runs"] = maxi(int(d["best"]["classic_hint_runs"]), card.runs)
+			elif card.runs > int(d["best"]["classic_runs"]):
 				d["best"]["classic_runs"] = card.runs
 				d["best"]["classic_balls"] = card.legal_balls
 		"endless":

@@ -19,7 +19,7 @@ var mute_btn: IconButton
 var chips := {}
 var reduced_motion := false
 var _pulse: Tween
-var _values := {"bowling": "mixed", "time_of_day": "evening", "view": "batter"}
+var _values := {"bowling": "mixed", "time_of_day": "evening", "view": "batter", "hints": "off"}
 
 
 func _init() -> void:
@@ -53,9 +53,9 @@ func build() -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	col.add_child(row)
-	for key in ["bowling", "time_of_day", "view"]:
-		var b := UiTheme.button("", 20, 132)
-		b.custom_minimum_size = Vector2(132, 64)
+	for key in ["bowling", "time_of_day", "view", "hints"]:
+		var b := UiTheme.button("", 19, 118)
+		b.custom_minimum_size = Vector2(118, 64)
 		var k: String = key
 		b.pressed.connect(func(): _cycle(k))
 		row.add_child(b)
@@ -94,7 +94,7 @@ func start_pulse() -> void:
 
 func _cycle(key: String) -> void:
 	_tap()
-	var list: Array = BOWLING if key == "bowling" else (Atmosphere.IDS if key == "time_of_day" else VIEWS)
+	var list: Array = BOWLING if key == "bowling" else (Atmosphere.IDS if key == "time_of_day" else (VIEWS if key == "view" else ["off", "on"]))
 	var i := list.find(_values[key])
 	_values[key] = list[(i + 1) % list.size()]
 	_update_chips()
@@ -103,7 +103,7 @@ func _cycle(key: String) -> void:
 		b.pivot_offset = b.size * 0.5
 		b.scale = Vector2(0.9, 0.9)
 		create_tween().tween_property(b, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	option_changed.emit(key, _values[key])
+	option_changed.emit(key, _values[key] if key != "hints" else (_values[key] == "on"))
 
 
 func _update_chips() -> void:
@@ -112,6 +112,7 @@ func _update_chips() -> void:
 	chips["bowling"].text = "Bowlers\n" + BOWLING_LABEL[_values["bowling"]]
 	chips["time_of_day"].text = "Time\n" + Atmosphere.LABELS[_values["time_of_day"]]
 	chips["view"].text = "View\n" + VIEW_LABEL[_values["view"]]
+	chips["hints"].text = "Hints\n" + ("On" if _values["hints"] == "on" else "Off")
 
 
 func _tap() -> void:
@@ -124,7 +125,10 @@ func refresh(save_data: Dictionary) -> void:
 	var b: Dictionary = save_data["best"]
 	var s: Dictionary = save_data["settings"]
 	for k in _values.keys():
-		_values[k] = String(s.get(k, _values[k]))
+		if k == "hints":
+			_values[k] = "on" if bool(s.get("hints", false)) else "off"
+		else:
+			_values[k] = String(s.get(k, _values[k]))
 	_update_chips()
 	best_label.text = "Best score: %d  (%d balls)" % [int(b["classic_runs"]), int(b["classic_balls"])] if int(b["classic_played"]) > 0 else "Tap PLAY - the first balls are gentle."
 	mute_btn.set_kind("sound_off" if s["muted"] else "sound_on")

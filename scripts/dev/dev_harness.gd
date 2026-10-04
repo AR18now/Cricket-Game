@@ -47,6 +47,8 @@ func _go() -> void:
 			await _approach_shots()
 		"restart":
 			await _restart_check()
+		"hints":
+			await _hints_check()
 		_:
 			await _capture_tour()
 	_finish()
@@ -125,8 +127,9 @@ func until_clock(t: float, timeout: float = 8.0) -> void:
 func swing_at(t: float) -> void:
 	var c = app.controller
 	await until_clock(t - 0.06)
-	var now_t: float = c.clock.time_of_input(Time.get_ticks_usec(), Engine.time_scale)
-	var need_us := (t - now_t) / Engine.time_scale * 1000000.0
+	var sc: float = Engine.time_scale * c._clock_speed
+	var now_t: float = c.clock.time_of_input(Time.get_ticks_usec(), sc)
+	var need_us := (t - now_t) / sc * 1000000.0
 	if need_us > 0.0:
 		OS.delay_usec(int(need_us))
 	press_space()
@@ -357,6 +360,25 @@ func _quick_tour() -> void:
 	await frames(3)
 	await shot("q06_pause")
 	_log("fps=%d (software rendering under Xvfb; not representative of devices)" % Engine.get_frames_per_second())
+
+
+func _hints_check() -> void:
+	var save = get_node("/root/Save")
+	save.set_setting("hints", true)
+	await wait(1.6)
+	app.start_mode("classic")
+	var c = app.controller
+	check(c.hints, "hints enabled from the menu setting")
+	await until_phase(MatchController.Phase.FLIGHT)
+	await until_clock(c.ideal_tap_time() - 0.03)
+	_log("clock speed near ideal tap: %.2f" % c._clock_speed)
+	check(c._clock_speed < 0.7, "ball slows down near the hit moment")
+	await shot("h01_hit_now")
+	await swing_at(c.ideal_tap_time())
+	await until_phase(MatchController.Phase.OUTCOME)
+	_log("hinted swing: %s dt=%.1f ms" % [c.resolver.contact.category, c.resolver.contact.dt_ms])
+	check(absf(c.resolver.contact.dt_ms) < 15.0, "tap on the cue is timed precisely under slow-motion")
+	save.set_setting("hints", false)
 
 
 func _restart_check() -> void:

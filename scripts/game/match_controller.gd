@@ -59,6 +59,11 @@ var _hold_real := 0.0
 var _hitstop_left := 0.0
 var _mute_audio := false
 var reduced_motion := false
+## Hints mode: a "HIT NOW!" cue and a gentle slow-motion around the ideal moment.
+## Outcomes still come from the same timing windows; only the clock runs slower.
+var hints := false
+const HINT_SLOWMO := 0.45
+var _clock_speed := 1.0
 
 
 func setup(w: WorldView, t: GameTuning, v: VenueConfig) -> void:
@@ -173,7 +178,7 @@ func swing_input(usec: int) -> String:
 			return "fast_forward"
 	if phase != Phase.RUNUP and phase != Phase.FLIGHT and phase != Phase.READY:
 		return "closed"
-	var t := clock.time_of_input(usec, Engine.time_scale)
+	var t := clock.time_of_input(usec, Engine.time_scale * _clock_speed)
 	var res := gate.try_swing(t)
 	if res == "accepted":
 		resolver = BallResolver.resolve(delivery, t, stance, fielders, venue, tuning, window_scale())
@@ -230,6 +235,9 @@ func _process(delta: float) -> void:
 		var key_t := resolver.contact.t_contact if resolver.contact.is_contact() else delivery.stumps_time()
 		var ramp := clampf((clock.time - key_t) / 0.5, 0.0, 1.0)
 		speed = lerpf(1.0, POST_CONTACT_SPEED, ramp * ramp * (3.0 - 2.0 * ramp))
+	elif hints and resolver == null and delivery != null and phase == Phase.FLIGHT:
+		speed = hint_speed(clock.time)
+	_clock_speed = speed
 	clock.advance(delta * speed, Time.get_ticks_usec())
 	var t := clock.time
 	if phase == Phase.READY and t >= -profile.run_up_time:
@@ -365,6 +373,25 @@ func _audio_events(prev: float, t: float) -> void:
 		var tk := delivery.time_at_x(2.7)
 		if o.kind != BallOutcome.BOWLED and _crossed(prev, t, tk) and _once("keeper"):
 			_play("catch", "Impacts", -8.0)
+
+
+## Ideal tap moment for the current delivery (sim seconds).
+func ideal_tap_time() -> float:
+	if delivery == null:
+		return INF
+	return delivery.time_at_x(tuning.contact_x_ideal) - tuning.swing_to_contact
+
+
+## Slow-motion factor while hints are on: eases down to HINT_SLOWMO around the ideal tap.
+func hint_speed(t: float) -> float:
+	var d := t - ideal_tap_time()
+	var w := 0.0
+	if d < 0.0:
+		w = clampf(1.0 + d / 0.35, 0.0, 1.0)
+	else:
+		w = clampf(1.0 - d / 0.15, 0.0, 1.0)
+	w = w * w * (3.0 - 2.0 * w)
+	return lerpf(1.0, HINT_SLOWMO, w)
 
 
 ## Debug/test introspection.
