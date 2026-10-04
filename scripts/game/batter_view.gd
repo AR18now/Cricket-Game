@@ -23,6 +23,7 @@ var static_layer: Node2D
 var _ci: CanvasItem
 var _static_key := ""
 var _trail: Array = []
+var _hand_screen := Vector2.INF
 
 
 func setup(world: WorldView) -> void:
@@ -349,6 +350,8 @@ func _figure(p: Vector3, kit: Color, o: Dictionary) -> void:
 		draw_circle(hand2, lw * 0.5, skin)
 		if o.get("ball_in_hand", false):
 			draw_circle(hand2, maxf(3.0, 0.07 * k), Color(1.0, 0.95, 0.5))
+		if o.get("track_hand", false):
+			_hand_screen = hand2
 	if o.get("bat", false):
 		var hb := shc + Vector2(0.15 * k, 0.45 * k)
 		draw_line(hb, hb + Vector2(0.05 * k, 0.8 * k), ink, 0.12 * k + 2.0, true)
@@ -387,6 +390,7 @@ func _bowler(p: Vector3, t: float) -> void:
 		o["arm_l"] = lerpf(PI * 0.85, 0.3, u * u)
 		o["windmill"] = lerpf(0.3, PI + 0.25, u * u)
 		o["ball_in_hand"] = true
+		o["track_hand"] = true
 	elif t < 0.7:
 		var u2 := t / 0.7
 		o["windmill"] = lerpf(PI + 0.25, TAU - 0.3, 1.0 - (1.0 - u2) * (1.0 - u2))
@@ -510,6 +514,15 @@ func _stumps(p: Vector3, broken_t: float) -> void:
 		draw_line(bp + Vector2(-0.05 * k, 0), bp + Vector2(0.05 * k, 0), wood, maxf(1.5, 0.03 * k), true)
 
 
+## Screen position of the ball; right after release it eases out of the bowler's hand.
+func _ball_screen(t: float, p: Vector3) -> Vector2:
+	var sp := project(p)
+	if t >= 0.0 and t < 0.1 and _hand_screen != Vector2.INF:
+		var u := t / 0.1
+		return _hand_screen.lerp(sp, u * u * (3.0 - 2.0 * u))
+	return sp
+
+
 func _ball() -> void:
 	var bp := w.ball_world(w.clock)
 	if bp == Vector3.INF or CAM.x - bp.x < 0.8:
@@ -520,7 +533,17 @@ func _ball() -> void:
 	draw_set_transform(g, 0.0, Vector2(1.0, 0.35))
 	draw_circle(Vector2.ZERO, r * 1.1, Color(0, 0, 0, 0.35))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	var s := project(bp)
+	var s := _ball_screen(w.clock, bp)
+	# Motion trail from the exact path a few milliseconds back (smooth at any frame rate).
+	if not w.reduced_motion:
+		var steps := 6
+		for i in range(steps, 0, -1):
+			var tp := w.clock - i * 0.012
+			var pp := w.ball_world(tp)
+			if pp == Vector3.INF or CAM.x - pp.x < 0.8:
+				continue
+			var a := 0.32 * (1.0 - float(i) / (steps + 1))
+			draw_circle(_ball_screen(tp, pp), r * (1.0 - i * 0.08), Color(1.0, 0.95, 0.6, a), true, -1.0, true)
 	# Bounce dust
 	if w.delivery != null:
 		var age := w.clock - w.delivery.t_bounce

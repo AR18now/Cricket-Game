@@ -90,8 +90,7 @@ three rotate every over), *Fast* (Hamza only) or *Spin* (Saad only). Timing wind
 
 ## Pacing (presentation only)
 
-After contact the already-decided shot plays back 2x faster, clean hits get a 0.07 s
-"hit-stop", and tapping during a decided shot jumps straight to its result. Pauses between
+After contact the already-decided shot eases up to 2x playback speed over 0.5 s, and tapping during a decided shot jumps straight to its result. Pauses between
 balls are short (0.7 s, wickets 1.5 s, boundaries 1.8 s); a ball is final as soon as the batters finish their runs and can be skipped with a tap.
 None of this changes timing windows or outcomes.
 

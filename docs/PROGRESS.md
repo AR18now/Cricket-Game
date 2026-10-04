@@ -44,6 +44,13 @@ _Last updated: 2026-09-25 (session 1)._
 | Hitting feels slow, make it smooth | Shorter run-ups/pauses, 2x post-contact playback, results final once runs are complete, hit-stop, tap to fast-forward/skip, stay in batter's view while the ball flies away, snapped side-camera cut, cached static backdrop and skipped hidden redraws for frame rate |
 | More attractive UI/UX, effects, animations | Bat trail + impact flash, floating +runs, score pop, banner/timing pop-ins, confetti on boundaries/milestones/new best, faster truck, PLAY pulse, screen fade, result count-up |
 
+## Owner feedback round 3 (implemented)
+
+| Report | Cause / fix |
+| --- | --- |
+| After getting out and restarting, the bowler never came; only "Wait..." | Result screen paused the sim clock; "Play again" cleared the controller flag but not the clock's own pause flag. `start_match` now unpauses both. Harness regression: get out -> Play again -> delivery clock runs and the ball is bowled |
+| Ball arriving at the bat not smooth | Removed the contact hit-stop (read as a stutter); post-contact playback eases to 2x instead of jumping; analytic motion trail on the ball in the batter's view; ball eases out of the bowler's drawn hand at release; batter's view cross-fades to the side camera |
+
 ## What exists now (evidence)
 
 - Deterministic simulation: analytic delivery path (bounce, deviation), timing → contact at the

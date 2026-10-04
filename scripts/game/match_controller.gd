@@ -23,8 +23,7 @@ const OUTCOME_HOLD_BOUNDARY := 1.8 # truck celebration
 ## After contact the (already resolved) shot plays back faster so the game never drags.
 ## Presentation only: outcomes are decided at the swing and are unaffected.
 const POST_CONTACT_SPEED := 2.0
-## Brief freeze on a clean hit for impact ("hit-stop"); skipped in reduced motion.
-const HIT_STOP := 0.07
+
 
 var world: WorldView
 var tuning: GameTuning
@@ -86,7 +85,9 @@ func start_match(r: MatchRules, seed_value: int, tutorial: bool = false) -> void
 	tutorial_level = 0 if tutorial else -1
 	tutorial_attempts = 0
 	world.two_batters = r.two_batters
-	paused = false
+	# Clear BOTH pause flags: the result screen pauses the clock, and a new match must
+	# always start running (bug: "Play again" left the clock frozen on "Wait for it...").
+	set_paused(false)
 	_next_delivery()
 
 
@@ -225,10 +226,10 @@ func _process(delta: float) -> void:
 	var prev := clock.time
 	var speed := 1.0
 	if resolver != null and _revealed and phase == Phase.FLIGHT:
-		speed = POST_CONTACT_SPEED
-	if _hitstop_left > 0.0:
-		_hitstop_left -= delta
-		speed = 0.0
+		# Ease into faster playback over ~0.5 s so the ball never visibly jumps.
+		var key_t := resolver.contact.t_contact if resolver.contact.is_contact() else delivery.stumps_time()
+		var ramp := clampf((clock.time - key_t) / 0.5, 0.0, 1.0)
+		speed = lerpf(1.0, POST_CONTACT_SPEED, ramp * ramp * (3.0 - 2.0 * ramp))
 	clock.advance(delta * speed, Time.get_ticks_usec())
 	var t := clock.time
 	if phase == Phase.READY and t >= -profile.run_up_time:
@@ -250,8 +251,6 @@ func _process(delta: float) -> void:
 		var reveal_t := resolver.contact.t_contact if resolver.contact.is_contact() else delivery.stumps_time()
 		if t >= reveal_t:
 			_revealed = true
-			if not reduced_motion and resolver.contact.category in [ContactResult.PERFECT, ContactResult.GOOD]:
-				_hitstop_left = HIT_STOP
 			timing_revealed.emit(resolver.contact)
 	if resolver != null and not _recorded and t >= resolver.outcome.t_settle:
 		_settle()

@@ -256,14 +256,19 @@ func render(t: float) -> void:
 	_render_stumps(t)
 	effects.render(self, t)
 	var bv := batter_view_active(t)
-	if bv and not batter_view.visible:
+	if bv and not _bv_on:
 		snap_camera_to_delivery()
-	elif not bv and batter_view.visible:
-		_snap_follow = true   # cut straight to a framed side shot, no slow drift
-	batter_view.visible = bv
-	sky_layer.visible = not bv
+		_bv_fade = 1.0
+	elif not bv and _bv_on:
+		_snap_follow = true   # side camera pre-framed on the ball, then a quick cross-fade
+		_bv_fade = 1.0
+	_bv_on = bv
 	if bv:
+		batter_view.visible = true
+		batter_view.modulate.a = 1.0
+		sky_layer.visible = false
 		return   # side-view figures are hidden behind the batter's view: skip their redraw
+	sky_layer.visible = true
 	for r in actors.get_children():
 		if r is CricketerRig:
 			r.queue_redraw()
@@ -273,6 +278,8 @@ func render_menu(delta: float) -> void:
 	idle_t += delta
 	menu_mode = true
 	batter_view.visible = false
+	_bv_on = false
+	sky_layer.visible = true
 	striker.position = Proj.ground_v(STRIKER_BASE)
 	striker.facing = -1.0
 	striker.set_pose(Poses.bat_stance(idle_t))
@@ -632,6 +639,17 @@ func delivery_camera() -> Dictionary:
 
 
 var _snap_follow := false
+var _bv_on := false
+var _bv_fade := 0.0
+
+
+func _process(delta: float) -> void:
+	# Cross-fade the batter's view out after the cut (instant in reduced motion).
+	if not _bv_on and batter_view.visible:
+		_bv_fade = 0.0 if reduced_motion else _bv_fade - delta / 0.22
+		batter_view.modulate.a = clampf(_bv_fade, 0.0, 1.0)
+		if _bv_fade <= 0.0:
+			batter_view.visible = false
 
 
 func update_camera(delta: float) -> void:
@@ -684,6 +702,6 @@ func snap_camera_to_delivery() -> void:
 
 ## Canvas (screen) position of a world point, for HUD overlays.
 func screen_of(p: Vector3) -> Vector2:
-	if batter_view.visible:
+	if _bv_on:
 		return batter_view.project(p)
 	return get_viewport().get_canvas_transform() * Proj.to_screen(p)

@@ -43,6 +43,8 @@ func _go() -> void:
 			await _visual_tour()
 		"feel":
 			await _feel_tour()
+		"approach":
+			await _approach_shots()
 		_:
 			await _capture_tour()
 	_finish()
@@ -355,6 +357,17 @@ func _quick_tour() -> void:
 	_log("fps=%d (software rendering under Xvfb; not representative of devices)" % Engine.get_frames_per_second())
 
 
+func _approach_shots() -> void:
+	app.start_mode("classic")
+	await until_phase(MatchController.Phase.FLIGHT)
+	var c = app.controller
+	var ideal: float = ideal_swing() + c.tuning.swing_to_contact
+	await until_clock(ideal - 0.3)
+	await shot("a01_ball_approach")
+	await until_clock(ideal - 0.12)
+	await shot("a02_ball_near_bat")
+
+
 func _smoke() -> void:
 	await wait(1.6)
 	_log("sizes ui_root=%s hud=%s menu=%s vp=%s" % [str(app.ui_root.size), str(app.hud.size), str(app.menu.size), str(get_viewport().get_visible_rect().size)])
@@ -384,3 +397,25 @@ func _smoke() -> void:
 	await until_phase(MatchController.Phase.OUTCOME)
 	check(c.state.events.size() == recorded_before + 2 and c.state.card.runs == runs_before, "replay recorded nothing")
 	c.auto_continue = true
+	# Regression: get out in Classic, then "Play again" must start a running delivery.
+	app.start_mode("classic")
+	await wait(0.2)
+	for i in 30:
+		if app.screen != app.Screen.MATCH:
+			break
+		await until_phase(MatchController.Phase.FLIGHT)
+		await swing_at(ideal_swing() - 0.40)   # far too early: miss, so we are out soon
+		await until_phase(MatchController.Phase.OUTCOME)
+		press_space()
+		await frames(2)
+	await wait(2.0)
+	check(app.screen == app.Screen.RESULT, "out in classic shows the result screen")
+	var ov = app.overlay
+	if ov != null and ov.has_signal("play_again"):
+		ov.play_again.emit()
+	await wait(0.3)
+	var t_before: float = c.clock.time
+	await wait(1.5)
+	check(c.clock.time > t_before + 0.5, "after Play again the delivery clock runs (bowler comes in)")
+	await until_phase(MatchController.Phase.FLIGHT)
+	check(c.phase == MatchController.Phase.FLIGHT, "after Play again the ball is bowled")
