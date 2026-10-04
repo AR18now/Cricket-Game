@@ -45,6 +45,8 @@ func _go() -> void:
 			await _feel_tour()
 		"approach":
 			await _approach_shots()
+		"restart":
+			await _restart_check()
 		_:
 			await _capture_tour()
 	_finish()
@@ -357,7 +359,38 @@ func _quick_tour() -> void:
 	_log("fps=%d (software rendering under Xvfb; not representative of devices)" % Engine.get_frames_per_second())
 
 
+func _restart_check() -> void:
+	await wait(1.6)
+	var c = app.controller
+	c.phase_changed.connect(func(ph): _log("phase %s clock %.2f screen %s" % [MatchController.Phase.keys()[ph], c.clock.time, str(app.screen)]))
+	app.start_mode("classic")
+	for i in 30:
+		if app.screen != app.Screen.MATCH:
+			break
+		await until_phase(MatchController.Phase.FLIGHT)
+		await swing_at(ideal_swing() - 0.40)
+		await until_phase(MatchController.Phase.OUTCOME)
+		var fo = get_viewport().gui_get_focus_owner()
+		_log("outcome %s screen %s overlay %s focus %s %s" % [c.resolver.outcome.kind, str(app.screen), str(app.overlay), str(fo), (fo.text if fo is Button else "")])
+		if c.state.is_complete():
+			break
+		press_space()
+		await frames(3)
+	await wait(2.5)
+	check(app.screen == app.Screen.RESULT, "out in classic shows the result screen")
+	var ov = app.overlay
+	if ov != null and ov.has_signal("play_again"):
+		ov.play_again.emit()
+	await wait(0.3)
+	var t_before: float = c.clock.time
+	await wait(1.5)
+	check(c.clock.time > t_before + 0.5, "after Play again the delivery clock runs (bowler comes in)")
+	await until_phase(MatchController.Phase.FLIGHT)
+	check(c.phase == MatchController.Phase.FLIGHT, "after Play again the ball is bowled")
+
+
 func _approach_shots() -> void:
+	await wait(1.6)
 	app.start_mode("classic")
 	await until_phase(MatchController.Phase.FLIGHT)
 	var c = app.controller
@@ -406,9 +439,11 @@ func _smoke() -> void:
 		await until_phase(MatchController.Phase.FLIGHT)
 		await swing_at(ideal_swing() - 0.40)   # far too early: miss, so we are out soon
 		await until_phase(MatchController.Phase.OUTCOME)
+		if c.state.is_complete():
+			break
 		press_space()
 		await frames(2)
-	await wait(2.0)
+	await wait(2.5)
 	check(app.screen == app.Screen.RESULT, "out in classic shows the result screen")
 	var ov = app.overlay
 	if ov != null and ov.has_signal("play_again"):
