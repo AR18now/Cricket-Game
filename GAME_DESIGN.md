@@ -4,7 +4,7 @@
 
 *From the neighbourhood pitch to the floodlights.* A fictional local crew — the Pindi Falcons —
 plays compact, readable cricket challenges in Pakistan-inspired grounds. Warm, competitive and
-welcoming, with short Roman Urdu banter (English option). Anyone who has never been to
+welcoming, with short English commentary. Anyone who has never been to
 Pakistan should understand it within seconds.
 
 All people, teams and places are fictional. No real players, broadcasts, anthems, logos,
@@ -40,7 +40,7 @@ Menu = one big **PLAY** plus three optional, remembered chips: **Bowlers** (Mixe
 **Time** (Day / Evening / Night / Rain) and **View** (Batter's eye / Side-on). PLAY starts
 *Classic*: bat until you lose two wickets; the pace starts slow and builds up. The first three
 balls of a new player show a timing ring. Boundaries are celebrated by a decorated truck-art
-lorry that drives across the screen ("CHAUKA!" / "CHHAKKA!") with horn and bell chains.
+lorry that drives across the screen ("FOUR!" / "SIX!") with horn and bell chains.
 
 ### Camera views
 
@@ -101,5 +101,5 @@ loses the ball (reduced-motion mode switches to a static overview). See
   difficulty, seed) that reproduce the same deliveries.
 - **Named squads and full scorecards** (implemented for Quick Match).
 - **Audio & voices:** event-driven audio director (implemented) and a reviewed Roman
-  Urdu/English voice bank: placeholder eSpeak NG clips for every line (Urdu / English / Mix);
-  reviewed recordings pending owner decision.
+  English voice bank: placeholder eSpeak NG clips for every line; reviewed recordings
+  pending owner decision.

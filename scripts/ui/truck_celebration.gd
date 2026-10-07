@@ -130,7 +130,7 @@ func _body(m: Color) -> void:
 	_rect(board.grow(6), RED, m)
 	_rect(board, WHITE, m)
 	var f := UiTheme.font("black")
-	var big := "CHHAKKA!" if kind == "six" else "CHAUKA!"
+	var big := "SIX!" if kind == "six" else "FOUR!"
 	var small := "SIX" if kind == "six" else "FOUR"
 	var fs := 52
 	var tw := f.get_string_size(big, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x

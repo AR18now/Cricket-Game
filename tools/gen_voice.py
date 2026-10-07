@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
-"""Generates PLACEHOLDER spoken commentary (English + Urdu) with eSpeak NG.
+"""Generates PLACEHOLDER spoken English commentary with eSpeak NG.
 
 These are synthetic, robotic stand-ins so the voice pipeline can be heard end to end.
-They are NOT the final voice experience: real recordings, reviewed by a native speaker,
+They are NOT the final voice experience: real recordings, reviewed by a person,
 should replace them (drop a file with the same name into assets/audio/).
 
-For each line in scripts/sim/commentary.gd this writes
-    assets/audio/vo_<id>_en.wav   (English text, en-gb voice)
-    assets/audio/vo_<id>_ur.wav   (Urdu-script text below, eSpeak NG 'ur' voice)
-and regenerates VOICE_SCRIPT.csv with clip paths and durations.
+For each line in scripts/sim/commentary.gd this writes assets/audio/vo_<id>.wav
+(en-gb voice) and regenerates VOICE_SCRIPT.csv with clip paths and durations.
 
     sudo apt-get install espeak-ng
     python3 tools/gen_voice.py
@@ -19,50 +17,18 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 OUT = os.path.join(ROOT, "assets", "audio")
 SR = 22050
 
-# Urdu-script versions of the Roman Urdu captions (what the 'ur' voice actually reads).
-# Drafted by the developer - needs native-speaker review.
-URDU = {
-    "intro_1": "تیار؟ بال پہ نظر!",
-    "six_1": "کیا شاٹ ہے! سیدھا چھکا!",
-    "six_2": "سیدھا باؤنڈری کے پار!",
-    "six_3": "چھت پہ گئی بال!",
-    "four_1": "چوکا! زبردست ٹائمنگ!",
-    "four_2": "بال رسّی تک دوڑ گئی!",
-    "four_3": "کوئی نہیں روک سکتا اسے!",
-    "perfect_runs": "کیا ٹائمنگ ہے!",
-    "runs_1": "بھاگو، بھاگو! دو رن!",
-    "runs_2": "ایک رن، سٹرائیک گھماؤ۔",
-    "runs_3": "تین رن! کیا دوڑ ہے!",
-    "dot_early": "اس دفعہ تھوڑا جلدی۔",
-    "dot_late": "تھوڑی دیر ہو گئی۔",
-    "dot_none": "بال کو جانے دیا۔",
-    "dot_field": "اچھی فیلڈنگ، کوئی رن نہیں۔",
-    "bowled_1": "ارے! سٹمپس اڑ گئے!",
-    "bowled_2": "بولڈ! اگلی بال پہ دھیان۔",
-    "caught_1": "پکڑ لیا! کیا کیچ ہے۔",
-    "caught_2": "ہوا میں تھی، پکڑی گئی۔",
-    "edge_1": "بیٹ کا کنارہ لگا!",
-    "last_ball_4": "آخری بال، چار رن چاہئیں!",
-    "last_ball_6": "آخری بال، چھکا چاہیے!",
-    "last_ball_1": "آخری بال، بس ایک رن!",
-    "last_ball_n": "آخری بال! سب کچھ اس پہ ہے۔",
-    "win_1": "جیت گئے! محلے کا ہیرو!",
-    "lost_1": "کوئی بات نہیں، ایک اور میچ!",
-    "tied_1": "برابر! کیا مقابلہ تھا!",
-}
-
-VOICES = {"en": ["-v", "en-gb+m3", "-s", "165", "-p", "42"],
-          "ur": ["-v", "ur+m3", "-s", "150", "-p", "40"]}
+VOICE = ["-v", "en-gb+m3", "-s", "165", "-p", "42"]
 
 
 def parse_lines():
     src = open(os.path.join(ROOT, "scripts", "sim", "commentary.gd"), encoding="utf-8").read()
-    pat = re.compile(r'\[\s*"([^"]+)",\s*"([^"]*)",\s*"([^"]*)",\s*"([^"]*)",\s*"([^"]*)"\s*\]')
-    return [m.groups() for m in pat.finditer(src)]
+    pat = re.compile(r'\[\s*"([^"]+)",\s*"([^"]*)",\s*"([^"]*)",\s*"([^"]*)"\s*\]')
+    block = src[src.index("const LINES"):src.index("\n]\n", src.index("const LINES"))]
+    return [m.groups() for m in pat.finditer(block)]
 
 
-def synth(text, lang):
-    raw = subprocess.run(["espeak-ng", *VOICES[lang], "--stdout", text],
+def synth(text):
+    raw = subprocess.run(["espeak-ng", *VOICE, "--stdout", text],
                          check=True, capture_output=True).stdout
     with wave.open(io.BytesIO(raw)) as w:
         assert w.getnchannels() == 1 and w.getsampwidth() == 2
@@ -104,24 +70,17 @@ def write(name, y):
 
 
 def main():
-    lines = parse_lines()
-    missing = [l[0] for l in lines if l[0] not in URDU]
-    if missing:
-        raise SystemExit("Missing Urdu text for: " + ", ".join(missing))
     rows = []
     prov = "eSpeak NG 1.51 synthetic placeholder (tools/gen_voice.py)"
-    status = "PLACEHOLDER robotic TTS - replace with reviewed recording; text needs native-speaker review"
-    for lid, event, cond, roman, english in lines:
-        for lang, caption_lang, caption, spoken in (("ur", "roman_urdu", roman, URDU[lid]),
-                                                    ("en", "english", english, english)):
-            name = "vo_%s_%s" % (lid, lang)
-            dur = write(name, process(synth(spoken, lang)))
-            rows.append([lid, event, cond, caption_lang, caption, spoken,
-                         "assets/audio/%s.wav" % name, "%.2f" % dur, prov, status])
+    status = "PLACEHOLDER robotic TTS - replace with a reviewed recording"
+    for lid, event, cond, text in parse_lines():
+        name = "vo_" + lid
+        dur = write(name, process(synth(text)))
+        rows.append([lid, event, cond, text, "assets/audio/%s.wav" % name, "%.2f" % dur, prov, status])
     with open(os.path.join(ROOT, "VOICE_SCRIPT.csv"), "w", newline="", encoding="utf-8") as f:
-        w = csv.writer(f)
-        w.writerow(["id", "event", "condition", "language", "text", "spoken_text",
-                    "clip_path", "duration_s", "licence_provider", "review_status"])
+        w = csv.writer(f, lineterminator="\n")
+        w.writerow(["id", "event", "condition", "text", "clip_path", "duration_s",
+                    "licence_provider", "review_status"])
         w.writerows(rows)
     print("wrote %d clips" % len(rows))
 

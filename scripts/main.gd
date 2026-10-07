@@ -103,7 +103,6 @@ func _apply_settings() -> void:
 			audio.start_ambience(atm.ambience)
 	world.set_view_mode(String(s["view"]))
 	world.effects.reduced_motion = world.reduced_motion
-	controller.commentary.language = String(s["language"])
 	hud.set_muted(bool(s["muted"]))
 	hud.set_stance_available(bool(save.data["stance_unlocked"]))
 	var kit_idx := int(save.data["profile"]["kit"])
@@ -356,7 +355,7 @@ func _on_ball_settled(o: BallOutcome, _card: Scorecard) -> void:
 
 func _on_tutorial_step(level: int, success: bool) -> void:
 	if success:
-		hud.hint(["Shabash! That's contact.", "Great - you're getting it.", "Well played!"][clampi(level, 0, 2)], 1.6)
+		hud.hint(["Well done! That's contact.", "Great - you're getting it.", "Well played!"][clampi(level, 0, 2)], 1.6)
 	else:
 		hud.hint("Missed - watch the ring and tap as it closes. Try again!", 2.2)
 

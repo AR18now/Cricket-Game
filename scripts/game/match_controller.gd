@@ -86,7 +86,6 @@ func start_match(r: MatchRules, seed_value: int, tutorial: bool = false) -> void
 		state.bowler_names[id] = bowlers[id].display_name
 	state.card = Scorecard.build(r, [], state.bowler_names)
 	commentary = Commentary.new(seed_value)
-	commentary.language = String(_setting("language", "roman_urdu"))
 	tutorial_level = 0 if tutorial else -1
 	tutorial_attempts = 0
 	world.two_batters = r.two_batters

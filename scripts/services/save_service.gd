@@ -29,7 +29,7 @@ static func defaults() -> Dictionary:
 	return {
 		"version": SCHEMA_VERSION,
 		"settings": {"master": 1.0, "music": 0.6, "sfx": 1.0, "voice": 1.0, "muted": false,
-			"captions": true, "reduced_motion": false, "haptics": true, "language": "roman_urdu",
+			"captions": true, "reduced_motion": false, "haptics": true,
 			"timing_guide": true, "bowling": "mixed", "time_of_day": "evening", "view": "batter", "hints": false},
 		"profile": {"display_name": "Ayaan", "kit": 0, "onboarded": false},
 		"tutorial_done": false,

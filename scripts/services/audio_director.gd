@@ -80,13 +80,10 @@ func _load_streams() -> void:
 			_streams[key] = s
 
 
-## Spoken clip for a commentary line: language-specific first, then a shared clip.
+## Spoken clip for a commentary line ("" when none is available).
 func voice_clip_for(line: Dictionary) -> String:
-	var base := "vo_" + String(line.get("id", ""))
-	var lang := String(line.get("lang", ""))
-	if not lang.is_empty() and _streams.has(base + "_" + lang):
-		return base + "_" + lang
-	return base if _streams.has(base) else ""
+	var key := "vo_" + String(line.get("id", ""))
+	return key if _streams.has(key) else ""
 
 
 func has_sound(key: String) -> bool:

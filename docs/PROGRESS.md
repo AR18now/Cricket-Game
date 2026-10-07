@@ -63,7 +63,8 @@ _Last updated: 2026-09-25 (session 1)._
 
 | Request | Done |
 | --- | --- |
-| Commentary in English and Urdu | Every commentary line is now spoken: `vo_<id>_en` / `vo_<id>_ur` clips (54), language chip on the menu (Urdu / English / Mix) and in Settings; captions follow the spoken language; music ducks for the clip's length; a newer line replaces an older one. **Voices are robotic eSpeak NG placeholders** (`tools/gen_voice.py`), Urdu script text needs native-speaker review. Real recordings drop in with the same file names. Voice experience is **not** complete until reviewed recordings replace them |
+| Commentary (spoken) | Every commentary line is spoken in English (`vo_<id>` clips, 27) with a matching caption; music ducks for the clip's length; a newer line replaces an older one. **Voices are robotic eSpeak NG placeholders** (`tools/gen_voice.py`); real recordings drop in with the same file names. Voice experience is **not** complete until reviewed recordings replace them |
+| Remove Urdu completely | Urdu clips, the language option (menu chip + Settings), Roman Urdu commentary text and Urdu UI words removed; the truck now shows "FOUR!" / "SIX!" and toasts say "Well played!" |
 
 ## What exists now (evidence)
 
@@ -83,7 +84,7 @@ _Last updated: 2026-09-25 (session 1)._
   concrete explanation, captions, pause, settings (volumes, mute, captions, reduced motion,
   vibration, timing guide, banter language, replay tutorial), scorecard/result, onboarding.
 - Audio: original synthesised palette, buses, variant selection without immediate repeats,
-  event cues tied to the simulation timeline; commentary captions (Roman Urdu / English).
+  event cues tied to the simulation timeline; commentary captions (English).
 - Saves: versioned, atomic (tmp → bak → main), validated, migrated; rewards applied once.
 
 ## Decisions taken (and why)
@@ -106,7 +107,7 @@ _Last updated: 2026-09-25 (session 1)._
 2. Android phone for install/touch/latency tests (after first CI APK).
 3. Mac access for iOS (later).
 4. Final title/publisher/support contact (before store prep only).
-5. Voice clips: placeholder TTS is in; final voice needs approval of approach (record with a friend / licensed generation) and native-speaker review of the Urdu text.
+5. Voice clips: placeholder TTS is in; final voice needs approval of approach (record with a friend / licensed generation) .
 
 ### Play-test questions (Milestone B)
 

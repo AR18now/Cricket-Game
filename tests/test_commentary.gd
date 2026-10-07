@@ -23,7 +23,6 @@ func test_last_ball_line_matches_requirement() -> void:
 	eq(l["id"], "last_ball_4")
 	l = c.pick("last_ball", {"needed": 1}, 1)
 	eq(l["id"], "last_ball_1")
-	c.language = "english"
 	l = c.pick("last_ball", {"needed": 6}, 2)
 	eq(l["text"], "Six needed off the last ball!")
 	l = c.pick("last_ball", {"needed": 3}, 3)
@@ -56,24 +55,8 @@ func test_voice_script_covers_lines() -> void:
 		check(text.contains(String(l[0])), "voice script lists %s" % l[0])
 
 
-func test_mixed_language_alternates_and_matches_clip_lang() -> void:
-	var c := Commentary.new(3)
-	c.language = "mixed"
-	var langs := []
-	for i in 6:
-		var l := c.pick("six", {}, i)
-		langs.append(l["lang"])
-		var row: Array = Commentary.LINES.filter(func(r): return r[0] == l["id"])[0]
-		check(l["text"] == (row[3] if l["lang"] == "ur" else row[4]), "caption matches spoken language")
-	check(langs == ["ur", "en", "ur", "en", "ur", "en"], "mixed alternates Urdu/English")
-	c.language = "english"
-	check(c.pick("four", {}, 10)["lang"] == "en", "english speaks English")
-	c.language = "roman_urdu"
-	check(c.pick("four", {}, 11)["lang"] == "ur", "urdu speaks Urdu")
-
-
-func test_every_line_has_both_voice_clips() -> void:
+func test_every_line_has_a_voice_clip() -> void:
 	for l in Commentary.LINES:
-		for lang in ["ur", "en"]:
-			var path := "res://assets/audio/vo_%s_%s.wav" % [l[0], lang]
-			check(ResourceLoader.exists(path), "clip exists: " + path)
+		var path := "res://assets/audio/vo_%s.wav" % l[0]
+		check(ResourceLoader.exists(path), "clip exists: " + path)
+		check(l.size() == 4, "one (English) text per line: " + String(l[0]))

@@ -92,4 +92,4 @@ docs/               Progress, style guide, toolchain notes
 - [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) — store preparation and owner actions
 - [docs/STYLE_GUIDE.md](docs/STYLE_GUIDE.md) — visual/audio style guide
 - [docs/TOOLCHAIN.md](docs/TOOLCHAIN.md) — environment findings and tool decisions
-- [VOICE_SCRIPT.csv](VOICE_SCRIPT.csv) — commentary manifest (English + Urdu placeholder TTS clips; final recordings pending)
+- [VOICE_SCRIPT.csv](VOICE_SCRIPT.csv) — commentary manifest (English placeholder TTS clips; final recordings pending)

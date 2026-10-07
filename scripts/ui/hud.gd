@@ -489,7 +489,7 @@ func _check_milestones(card: Scorecard) -> void:
 	var m := (card.runs / 50) * 50
 	if m >= 50 and m > _last_milestone:
 		_last_milestone = m
-		show_toast("%d up! Shabash!" % m)
+		show_toast("%d up! Well played!" % m)
 		confetti.burst(Vector2(size.x * 0.5, 120.0), 80, 1.0)
 	if not _best_announced and best_runs > 0 and card.runs > best_runs:
 		_best_announced = true

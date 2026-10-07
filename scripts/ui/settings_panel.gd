@@ -32,16 +32,6 @@ func build() -> void:
 		var key2: String = s[1]
 		cb.toggled.connect(func(v): save.set_setting(key2, v))
 		grid.add_child(cb)
-	grid.add_child(UiTheme.label("Commentary", 22))
-	var lang := Button.new()
-	lang.text = _lang_text(save.data["settings"]["language"])
-	lang.pressed.connect(func():
-		var order := ["roman_urdu", "english", "mixed"]
-		var cur := order.find(String(save.data["settings"]["language"]))
-		var next: String = order[(cur + 1) % order.size()]
-		save.set_setting("language", next)
-		lang.text = _lang_text(next))
-	grid.add_child(lang)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 12)
@@ -54,9 +44,3 @@ func build() -> void:
 	row.add_child(done)
 	done.call_deferred("grab_focus")
 
-
-func _lang_text(v: String) -> String:
-	match v:
-		"english": return "English"
-		"mixed": return "Urdu + English mix"
-	return "Urdu"

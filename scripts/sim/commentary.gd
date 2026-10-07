@@ -6,42 +6,40 @@ extends RefCounted
 ## Mirrors VOICE_SCRIPT.csv (clip paths are attached there once recorded/reviewed).
 
 const LINES := [
-	# id, event, condition, roman_urdu, english
-	["intro_1", "first_ball", "", "Tayyar? Ball pe nazar!", "Ready? Eyes on the ball!"],
-	["six_1", "six", "", "Kya shot hai! Seedha chhakka!", "What a shot! That's six!"],
-	["six_2", "six", "", "Seedha boundary ke paar!", "That clears the rope!"],
-	["six_3", "six", "", "Chhat pe gayi ball!", "That's gone onto the rooftops!"],
-	["four_1", "four", "", "Chauka! Zabardast timing!", "Four! Beautifully timed!"],
-	["four_2", "four", "", "Ball rassi tak daud gayi!", "Races away to the rope!"],
-	["four_3", "four", "", "Koi nahi rok sakta isse!", "Nobody's stopping that one!"],
-	["perfect_runs", "runs", "timing=perfect", "Kya timing hai!", "Sweetly struck!"],
-	["runs_1", "runs", "runs>=2", "Bhaago, bhaago! Do run!", "Run hard, they'll get two!"],
-	["runs_2", "runs", "runs==1", "Ek run, strike ghumao.", "Push for one, keep it moving."],
-	["runs_3", "runs", "runs==3", "Teen run! Kya daud hai!", "Three! Great running!"],
-	["dot_early", "dot", "timing=miss_early", "Is dafa thora jaldi.", "A little early that time."],
-	["dot_late", "dot", "timing=miss_late", "Thora der ho gayi.", "Just a touch late."],
-	["dot_none", "dot", "timing=none", "Ball ko jaane diya.", "Left that one alone."],
-	["dot_field", "dot", "", "Achhi fielding, koi run nahi.", "Well fielded, no run."],
-	["bowled_1", "bowled", "", "Arre! Stumps ur gaye!", "Oh no, the stumps are down!"],
-	["bowled_2", "bowled", "", "Bowled! Agli ball pe dhyan.", "Bowled! Focus on the next one."],
-	["caught_1", "caught", "", "Pakar liya! Kya catch hai.", "Taken! What a catch."],
-	["caught_2", "caught", "", "Hawa mein thi, pakri gayi.", "Up in the air and held."],
-	["edge_1", "edge", "", "Bat ka kinara laga!", "That's taken the edge!"],
-	["last_ball_4", "last_ball", "needed==4", "Aakhri ball, chaar runs chahiye!", "Four needed off the last ball!"],
-	["last_ball_6", "last_ball", "needed==6", "Aakhri ball, chhakka chahiye!", "Six needed off the last ball!"],
-	["last_ball_1", "last_ball", "needed==1", "Aakhri ball, bas ek run!", "Just one needed off the last ball!"],
-	["last_ball_n", "last_ball", "needed>=2", "Aakhri ball! Sab kuch is pe hai.", "Last ball - everything on it!"],
-	["win_1", "won", "", "Jeet gaye! Mohallay ka hero!", "Victory! Hero of the neighbourhood!"],
-	["lost_1", "lost", "", "Koi baat nahi, ek aur match!", "Never mind - one more match!"],
-	["tied_1", "tied", "", "Barabar! Kya muqabla tha!", "All square! What a contest!"],
+	# id, event, condition, text
+	["intro_1", "first_ball", "", "Ready? Eyes on the ball!"],
+	["six_1", "six", "", "What a shot! That's six!"],
+	["six_2", "six", "", "That clears the rope!"],
+	["six_3", "six", "", "That's gone onto the rooftops!"],
+	["four_1", "four", "", "Four! Beautifully timed!"],
+	["four_2", "four", "", "Races away to the rope!"],
+	["four_3", "four", "", "Nobody's stopping that one!"],
+	["perfect_runs", "runs", "timing=perfect", "Sweetly struck!"],
+	["runs_1", "runs", "runs>=2", "Run hard, they'll get two!"],
+	["runs_2", "runs", "runs==1", "Push for one, keep it moving."],
+	["runs_3", "runs", "runs==3", "Three! Great running!"],
+	["dot_early", "dot", "timing=miss_early", "A little early that time."],
+	["dot_late", "dot", "timing=miss_late", "Just a touch late."],
+	["dot_none", "dot", "timing=none", "Left that one alone."],
+	["dot_field", "dot", "", "Well fielded, no run."],
+	["bowled_1", "bowled", "", "Oh no, the stumps are down!"],
+	["bowled_2", "bowled", "", "Bowled! Focus on the next one."],
+	["caught_1", "caught", "", "Taken! What a catch."],
+	["caught_2", "caught", "", "Up in the air and held."],
+	["edge_1", "edge", "", "That's taken the edge!"],
+	["last_ball_4", "last_ball", "needed==4", "Four needed off the last ball!"],
+	["last_ball_6", "last_ball", "needed==6", "Six needed off the last ball!"],
+	["last_ball_1", "last_ball", "needed==1", "Just one needed off the last ball!"],
+	["last_ball_n", "last_ball", "needed>=2", "Last ball - everything on it!"],
+	["win_1", "won", "", "Victory! Hero of the neighbourhood!"],
+	["lost_1", "lost", "", "Never mind - one more match!"],
+	["tied_1", "tied", "", "All square! What a contest!"],
 ]
 
-var language := "roman_urdu"  # roman_urdu | english | mixed (alternates line by line)
 var cooldown_balls := 1
 var _last_id := ""
 var _last_event_ball := {}
 var _rng: DetRng
-var _mixed_toggle := false
 
 
 func _init(seed_value: int = 7) -> void:
@@ -70,13 +68,8 @@ func pick(event: String, ctx: Dictionary, ball_index: int = 0) -> Dictionary:
 	var line: Array = choices[_rng.range_i(0, choices.size() - 1)]
 	_last_id = line[0]
 	_last_event_ball[event] = ball_index
-	var urdu := language == "roman_urdu"
-	if language == "mixed":
-		_mixed_toggle = not _mixed_toggle
-		urdu = _mixed_toggle
-	# "lang" selects the spoken clip: vo_<id>_ur / vo_<id>_en.
-	return {"id": line[0], "text": line[3] if urdu else line[4], "lang": "ur" if urdu else "en",
-		"event": event}
+	# The spoken clip is vo_<id>; the text doubles as its caption.
+	return {"id": line[0], "text": line[3], "event": event}
 
 
 static func specificity(cond: String) -> int:
