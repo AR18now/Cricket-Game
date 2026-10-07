@@ -32,11 +32,13 @@ func build() -> void:
 		var key2: String = s[1]
 		cb.toggled.connect(func(v): save.set_setting(key2, v))
 		grid.add_child(cb)
-	grid.add_child(UiTheme.label("Banter language", 22))
+	grid.add_child(UiTheme.label("Commentary", 22))
 	var lang := Button.new()
 	lang.text = _lang_text(save.data["settings"]["language"])
 	lang.pressed.connect(func():
-		var next := "english" if save.data["settings"]["language"] == "roman_urdu" else "roman_urdu"
+		var order := ["roman_urdu", "english", "mixed"]
+		var cur := order.find(String(save.data["settings"]["language"]))
+		var next: String = order[(cur + 1) % order.size()]
 		save.set_setting("language", next)
 		lang.text = _lang_text(next))
 	grid.add_child(lang)
@@ -54,4 +56,7 @@ func build() -> void:
 
 
 func _lang_text(v: String) -> String:
-	return "Roman Urdu + English" if v == "roman_urdu" else "English"
+	match v:
+		"english": return "English"
+		"mixed": return "Urdu + English mix"
+	return "Urdu"

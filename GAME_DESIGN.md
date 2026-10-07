@@ -101,4 +101,5 @@ loses the ball (reduced-motion mode switches to a static overview). See
   difficulty, seed) that reproduce the same deliveries.
 - **Named squads and full scorecards** (implemented for Quick Match).
 - **Audio & voices:** event-driven audio director (implemented) and a reviewed Roman
-  Urdu/English voice bank (text drafted; recordings pending owner decision).
+  Urdu/English voice bank: placeholder eSpeak NG clips for every line (Urdu / English / Mix);
+  reviewed recordings pending owner decision.

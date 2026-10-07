@@ -36,11 +36,12 @@ const LINES := [
 	["tied_1", "tied", "", "Barabar! Kya muqabla tha!", "All square! What a contest!"],
 ]
 
-var language := "roman_urdu"  # roman_urdu | english
+var language := "roman_urdu"  # roman_urdu | english | mixed (alternates line by line)
 var cooldown_balls := 1
 var _last_id := ""
 var _last_event_ball := {}
 var _rng: DetRng
+var _mixed_toggle := false
 
 
 func _init(seed_value: int = 7) -> void:
@@ -69,7 +70,13 @@ func pick(event: String, ctx: Dictionary, ball_index: int = 0) -> Dictionary:
 	var line: Array = choices[_rng.range_i(0, choices.size() - 1)]
 	_last_id = line[0]
 	_last_event_ball[event] = ball_index
-	return {"id": line[0], "text": line[3] if language == "roman_urdu" else line[4], "event": event}
+	var urdu := language == "roman_urdu"
+	if language == "mixed":
+		_mixed_toggle = not _mixed_toggle
+		urdu = _mixed_toggle
+	# "lang" selects the spoken clip: vo_<id>_ur / vo_<id>_en.
+	return {"id": line[0], "text": line[3] if urdu else line[4], "lang": "ur" if urdu else "en",
+		"event": event}
 
 
 static func specificity(cond: String) -> int:

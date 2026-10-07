@@ -15,6 +15,7 @@ var _pool: Array = []
 var _music: AudioStreamPlayer
 var _ambience: AudioStreamPlayer
 var _crowd: AudioStreamPlayer
+var _voice: AudioStreamPlayer  # dedicated so lines never overlap or get stolen
 var _last_variant := {}
 var _rng := RandomNumberGenerator.new()
 var captions_enabled := true
@@ -31,6 +32,7 @@ func _ready() -> void:
 	_music = _loop_player("Music")
 	_ambience = _loop_player("Ambience")
 	_crowd = _loop_player("Crowd")
+	_voice = _loop_player("Voice")
 	_load_streams()
 	apply_settings()
 	if Engine.has_singleton("Save") or get_node_or_null("/root/Save"):
@@ -76,6 +78,15 @@ func _load_streams() -> void:
 		var s = load("res://assets/audio/" + name)
 		if s != null:
 			_streams[key] = s
+
+
+## Spoken clip for a commentary line: language-specific first, then a shared clip.
+func voice_clip_for(line: Dictionary) -> String:
+	var base := "vo_" + String(line.get("id", ""))
+	var lang := String(line.get("lang", ""))
+	if not lang.is_empty() and _streams.has(base + "_" + lang):
+		return base + "_" + lang
+	return base if _streams.has(base) else ""
 
 
 func has_sound(key: String) -> bool:
@@ -180,10 +191,13 @@ func set_crowd_intensity(k: float) -> void:
 func say(line: Dictionary, speaker: String = "Bilal") -> void:
 	if line.is_empty():
 		return
-	var clip_key := "vo_" + String(line.get("id", ""))
-	if _streams.has(clip_key):
-		play(clip_key, "Voice", 0.0, 0.0)
-		_duck(1.6)
+	var clip_key := voice_clip_for(line)
+	if not clip_key.is_empty():
+		var s: AudioStream = _streams[clip_key]
+		_voice.stop()  # a newer line replaces an older one still speaking
+		_voice.stream = s
+		_voice.play()
+		_duck(clampf(s.get_length() + 0.3, 1.0, 3.5))
 	if captions_enabled:
 		caption.emit(String(line.get("text", "")), speaker)
 
@@ -191,6 +205,7 @@ func say(line: Dictionary, speaker: String = "Bilal") -> void:
 func _duck(seconds: float) -> void:
 	var idx := AudioServer.get_bus_index("Music")
 	var t := create_tween()
+	t.set_ignore_time_scale(true)  # hint slow-mo must not stretch the duck
 	var save := get_node_or_null("/root/Save")
 	var base := linear_to_db(maxf(float(save.data["settings"]["music"]) if save else 1.0, 0.0001))
 	t.tween_method(func(v): AudioServer.set_bus_volume_db(idx, v), base, base - 8.0, 0.1)
@@ -199,6 +214,7 @@ func _duck(seconds: float) -> void:
 
 
 func stop_all_voice() -> void:
+	_voice.stop()
 	for p in _pool:
 		if p.bus == "Voice":
 			p.stop()

@@ -306,8 +306,8 @@ func _head(j: Dictionary) -> void:
 		"helmet":
 			var dome := PackedVector2Array()
 			for i in 15:
-				var a := PI * 0.95 + PI * 1.15 * i / 14.0
-				dome.append(h + Vector2(cos(a) * (r + 3.5), sin(a) * (r + 3.5) - 1.0))
+				var a := PI * 0.95 + PI * 1.05 * i / 14.0  # ends level so the visor never crosses the dome
+				dome.append(h + Vector2(f * cos(a) * (r + 3.5), sin(a) * (r + 3.5) - 1.0))  # mirrored with facing
 			dome.append(h + Vector2(f * (r + 9.0), -r * 0.05))
 			dome.append(h + Vector2(-f * (r * 0.2), r * 0.1))
 			draw_colored_polygon(dome, cap_color)

@@ -59,6 +59,12 @@ _Last updated: 2026-09-25 (session 1)._
 | More realistic human bodies | Tapered limbs (thigh/calf/forearm), shaped torso, soft shading instead of cartoon outlines, sleeves, collar, ribbed pads, gloves, shoes, faces with nose/ear/brows, beards, helmet peak/grille/neck guard - side view and batter's view |
 | Better colours / realistic scene | Mown grass outfield with stripes, inner circle, tan pitch, red-white rope with flags, navy fielding kit, deep green batting kit, varied skin tones |
 
+## Owner feedback round 5 (implemented, placeholder voices)
+
+| Request | Done |
+| --- | --- |
+| Commentary in English and Urdu | Every commentary line is now spoken: `vo_<id>_en` / `vo_<id>_ur` clips (54), language chip on the menu (Urdu / English / Mix) and in Settings; captions follow the spoken language; music ducks for the clip's length; a newer line replaces an older one. **Voices are robotic eSpeak NG placeholders** (`tools/gen_voice.py`), Urdu script text needs native-speaker review. Real recordings drop in with the same file names. Voice experience is **not** complete until reviewed recordings replace them |
+
 ## What exists now (evidence)
 
 - Deterministic simulation: analytic delivery path (bounce, deviation), timing → contact at the
@@ -100,7 +106,7 @@ _Last updated: 2026-09-25 (session 1)._
 2. Android phone for install/touch/latency tests (after first CI APK).
 3. Mac access for iOS (later).
 4. Final title/publisher/support contact (before store prep only).
-5. Voice clips: approval of approach (record with a friend / licensed generation) — later.
+5. Voice clips: placeholder TTS is in; final voice needs approval of approach (record with a friend / licensed generation) and native-speaker review of the Urdu text.
 
 ### Play-test questions (Milestone B)
 

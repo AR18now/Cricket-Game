@@ -1,6 +1,6 @@
 class_name MainMenu
 extends Control
-## One big PLAY over the living ground, plus three optional choices that remember
+## One big PLAY over the living ground, plus a few optional choices that remember
 ## themselves: bowlers (mixed / pace / spin), time & weather, and camera view.
 
 signal play_pressed
@@ -12,6 +12,8 @@ const BOWLING := ["mixed", "pace", "spin"]
 const BOWLING_LABEL := {"mixed": "Mixed", "pace": "Fast", "spin": "Spin"}
 const VIEWS := ["batter", "side"]
 const VIEW_LABEL := {"batter": "Batter's eye", "side": "Side-on"}
+const LANGS := ["roman_urdu", "english", "mixed"]
+const LANG_LABEL := {"roman_urdu": "Urdu", "english": "English", "mixed": "Mix"}
 
 var play_btn: Button
 var best_label: Label
@@ -19,7 +21,8 @@ var mute_btn: IconButton
 var chips := {}
 var reduced_motion := false
 var _pulse: Tween
-var _values := {"bowling": "mixed", "time_of_day": "evening", "view": "batter", "hints": "off"}
+var _values := {"bowling": "mixed", "time_of_day": "evening", "view": "batter", "hints": "off",
+	"language": "roman_urdu"}
 
 
 func _init() -> void:
@@ -53,7 +56,7 @@ func build() -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	col.add_child(row)
-	for key in ["bowling", "time_of_day", "view", "hints"]:
+	for key in ["bowling", "time_of_day", "view", "hints", "language"]:
 		var b := UiTheme.button("", 19, 118)
 		b.custom_minimum_size = Vector2(118, 64)
 		var k: String = key
@@ -94,7 +97,12 @@ func start_pulse() -> void:
 
 func _cycle(key: String) -> void:
 	_tap()
-	var list: Array = BOWLING if key == "bowling" else (Atmosphere.IDS if key == "time_of_day" else (VIEWS if key == "view" else ["off", "on"]))
+	var list: Array = ["off", "on"]
+	match key:
+		"bowling": list = BOWLING
+		"time_of_day": list = Atmosphere.IDS
+		"view": list = VIEWS
+		"language": list = LANGS
 	var i := list.find(_values[key])
 	_values[key] = list[(i + 1) % list.size()]
 	_update_chips()
@@ -113,6 +121,7 @@ func _update_chips() -> void:
 	chips["time_of_day"].text = "Time\n" + Atmosphere.LABELS[_values["time_of_day"]]
 	chips["view"].text = "View\n" + VIEW_LABEL[_values["view"]]
 	chips["hints"].text = "Hints\n" + ("On" if _values["hints"] == "on" else "Off")
+	chips["language"].text = "Commentary\n" + LANG_LABEL.get(_values["language"], "Urdu")
 
 
 func _tap() -> void:

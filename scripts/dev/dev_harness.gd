@@ -508,3 +508,20 @@ func _smoke() -> void:
 	check(c.clock.time > t_before + 0.5, "after Play again the delivery clock runs (bowler comes in)")
 	await until_phase(MatchController.Phase.FLIGHT)
 	check(c.phase == MatchController.Phase.FLIGHT, "after Play again the ball is bowled")
+	await _voice_check()
+
+
+## Commentary is spoken: each line resolves to a real clip in the chosen language.
+func _voice_check() -> void:
+	var c = app.controller
+	app.start_mode("quick")
+	await wait(0.2)
+	app._close_overlay()
+	var spoken := []
+	c.commentary_line.connect(func(line): spoken.append(app.audio.voice_clip_for(line)))
+	for lang in ["english", "roman_urdu", "mixed"]:
+		c.commentary.language = lang
+		await play_ball(0.0)
+	_log("spoken clips: " + str(spoken))
+	check(not spoken.is_empty() and spoken.all(func(k): return String(k).begins_with("vo_")), "every commentary line has a voice clip")
+	check(spoken.any(func(k): return String(k).ends_with("_en")) and spoken.any(func(k): return String(k).ends_with("_ur")), "both English and Urdu clips play")
