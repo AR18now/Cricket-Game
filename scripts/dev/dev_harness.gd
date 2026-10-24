@@ -51,6 +51,8 @@ func _go() -> void:
 			await _hints_check()
 		"look":
 			await _look_tour()
+		"batter":
+			await _batter_sheet()
 		_:
 			await _capture_tour()
 	_finish()
@@ -523,3 +525,41 @@ func _voice_check() -> void:
 		await play_ball(0.0)
 	_log("spoken clips: " + str(spoken))
 	check(not spoken.is_empty() and spoken.all(func(k): return String(k).begins_with("vo_")), "every commentary line has a voice clip")
+
+
+## Freezes a delivery and renders the striker at key moments (stance, taps, trigger,
+## backlift, downswing, contact, follow-through, left ball) for visual review.
+func _batter_sheet() -> void:
+	await wait(1.6)
+	var save = get_node("/root/Save")
+	save.set_setting("view", "batter")
+	app.start_mode("classic")
+	var c = app.controller
+	await until_phase(MatchController.Phase.RUNUP)
+	await frames(2)
+	c.set_process(false)
+	var wv = app.world
+	var ideal: float = wv.delivery.time_at_x(wv.tuning.contact_x_ideal)
+	var sw: float = ideal - wv.tuning.swing_to_contact
+	var shots := [["b01_stance", -2.0, -1.0], ["b02_tap", -1.45, -1.0], ["b03_trigger", -0.35, -1.0],
+		["b04_backlift", 0.2, -1.0], ["b05_downswing", sw + 0.05, sw], ["b06_contact", sw + 0.1, sw],
+		["b07_follow_mid", sw + 0.2, sw], ["b08_follow", sw + 0.4, sw], ["b09_hold", sw + 0.9, sw],
+		["b10_left_alone", wv.delivery.stumps_time() + 0.7, -1.0]]
+	for s in shots:
+		wv.swing_time = s[2]
+		wv.resolved = null
+		wv.render(s[1])
+		wv.batter_view.visible = true
+		wv.batter_view.modulate.a = 1.0
+		await frames(3)
+		await shot(s[0])
+	wv.set_view_mode("side")
+	for s in [["s01_stance", -2.0, -1.0], ["s02_tap", -1.45, -1.0], ["s03_backlift", 0.2, -1.0], ["s04_contact", sw + 0.1, sw], ["s05_follow", sw + 0.4, sw]]:
+		wv.swing_time = s[2]
+		wv.render(s[1])
+		for i in 20:
+			wv.update_camera(0.05)
+		await frames(3)
+		await shot(s[0])
+	wv.set_view_mode("batter")
+	c.set_process(true)

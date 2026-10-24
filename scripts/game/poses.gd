@@ -30,15 +30,28 @@ static func ease_io(t: float) -> float:
 
 # --- Batting -----------------------------------------------------------------
 
-static func bat_stance(t: float) -> Dictionary:
-	return {"lean": 0.34, "thigh_f": 0.24, "shin_f": -0.08, "thigh_b": -0.18, "shin_b": -0.34,
-		"hands": Vector2(0.2, -0.5 + 0.01 * sin(t * 2.0)), "bat": -0.32 + 0.06 * maxf(0.0, sin(t * 3.1)),
-		"head": 0.12, "bob": 0.008 * sin(t * 2.0)}
+## Batting stance with life in it: breathing, a slow weight shift and, for the striker
+## (taps = true), two deliberate bat taps while the bowler runs in, then a settle.
+static func bat_stance(t: float, taps: bool = false) -> Dictionary:
+	var breath := sin(t * 1.7)
+	var tap := 0.0
+	if taps and t > -2.2 and t < -0.75:
+		tap = pow(maxf(0.0, sin((t + 2.2) * TAU * 0.9)), 6.0)
+	var settle := 0.0
+	if taps:
+		settle = ease_io((t + 0.62) / 0.36)   # trigger: knees settle as the bowler gathers
+	return {"lean": 0.34 + 0.012 * breath + 0.03 * settle, "thigh_f": 0.24 + 0.04 * settle, "shin_f": -0.08,
+		"thigh_b": -0.18 - 0.03 * settle, "shin_b": -0.34 - 0.04 * settle,
+		"hands": Vector2(0.2, -0.5 + 0.008 * breath + 0.05 * tap), "bat": -0.32 + 0.3 * tap,
+		"head": 0.12 + 0.02 * sin(t * 0.6), "bob": 0.006 * breath - 0.02 * settle}
 
 
-static func bat_backlift() -> Dictionary:
-	return {"lean": 0.3, "thigh_f": 0.22, "shin_f": -0.1, "thigh_b": -0.2, "shin_b": -0.36,
-		"hands": Vector2(-0.02, -0.2), "bat": -2.35, "head": 0.14}
+static func bat_backlift(t: float = 0.0) -> Dictionary:
+	# Loaded and waiting: a small knee pulse and the bat cocking, never frozen.
+	var pulse := sin(t * 9.0) * 0.5 + 0.5
+	return {"lean": 0.32, "thigh_f": 0.26, "shin_f": -0.1, "thigh_b": -0.23, "shin_b": -0.4,
+		"hands": Vector2(-0.02, -0.2 + 0.01 * pulse), "bat": -2.35 - 0.05 * pulse, "head": 0.16,
+		"bob": -0.02 - 0.008 * pulse}
 
 
 static func bat_contact(bat_angle: float, hand_rise: float) -> Dictionary:

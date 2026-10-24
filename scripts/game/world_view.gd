@@ -205,11 +205,17 @@ func set_fielding_side(names: Array, kit: Color) -> void:
 		r.cap_color = kit.darkened(0.15)
 
 
+## Coloured-clothing trousers: the kit colour, a shade deeper so legs read against the shirt.
+static func trouser_colour(kit: Color) -> Color:
+	return kit.darkened(0.22).lerp(Color(0.2, 0.2, 0.22), 0.15)
+
+
 func set_batting_kit(kit: Color) -> void:
 	batting_kit = kit
 	for r in [striker, non_striker]:
 		r.shirt = kit
 		r.cap_color = kit.darkened(0.25)
+		r.trousers = trouser_colour(kit)
 
 
 func setup_fielders(fielder_specs: Array) -> void:
@@ -375,7 +381,7 @@ func _render_batters(t: float) -> void:
 	striker.visible = true
 	striker.facing = -1.0
 	var base := STRIKER_BASE
-	var pose := Poses.bat_stance(t)
+	var pose := Poses.bat_stance(t, true)
 	var root_shift := 0.0
 	striker.name_tag = striker_label if show_tags and t < -profile.run_up_time + 0.8 else ""
 	striker.tag_strong = true
@@ -383,7 +389,7 @@ func _render_batters(t: float) -> void:
 	non_striker.name_tag = non_striker_label if show_tags and two_batters and t < -profile.run_up_time + 0.8 else ""
 	non_striker.tag_strong = false
 	if t > -0.5:
-		pose = Poses.blend(Poses.bat_stance(t), Poses.bat_backlift(), Poses.ease_io((t + 0.5) / 0.4))
+		pose = Poses.blend(Poses.bat_stance(t, true), Poses.bat_backlift(t), Poses.ease_io((t + 0.5) / 0.4))
 	var contact := resolved.contact if resolved != null else null
 	var shot := resolved.shot if resolved != null else null
 	var outcome := resolved.outcome if resolved != null else null

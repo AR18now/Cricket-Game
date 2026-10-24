@@ -283,7 +283,7 @@ func _actors() -> void:
 	items.append([depth_of(Vector3(WorldView.UMPIRE_POS.x, WorldView.UMPIRE_POS.y, 0)), _figure.bind(Vector3(WorldView.UMPIRE_POS.x, WorldView.UMPIRE_POS.y, 0), Color(0.95, 0.93, 0.88), {"front": true, "t": t, "hat": true, "trousers": Color(0.2, 0.2, 0.25)})])
 	if w.two_batters:
 		var ns := Vector3(WorldView.NON_STRIKER_BASE.x + 1.2 * Poses.ease_io((t + 0.6) / 1.0), WorldView.NON_STRIKER_BASE.y, 0)
-		items.append([depth_of(ns), _figure.bind(ns, w.batting_kit, {"front": true, "t": t, "helmet": true, "bat": true, "pads": true})])
+		items.append([depth_of(ns), _figure.bind(ns, w.batting_kit, {"front": true, "t": t, "helmet": true, "bat": true, "pads": true, "trousers": WorldView.trouser_colour(w.batting_kit)})])
 	items.append([depth_of(Vector3(Delivery.BOWLING_STUMPS_X, 0, 0)), _stumps.bind(Vector3(Delivery.BOWLING_STUMPS_X, 0, 0), -1.0)])
 	if w.delivery != null and w.profile != null:
 		var root := w._run_up_root(t)
@@ -453,114 +453,379 @@ func _bowler(p: Vector3, t: float) -> void:
 	_figure(p, w.fielding_kit, o)
 
 
-## The striker seen from behind: big, near the camera, left of the stumps.
+## The striker: a 3D skeleton (BatterSkeleton) seen through this camera - side-on, as a
+## real right-hander looks from behind the stumps - drawn as shaded, rounded body parts.
 func _batter(t: float) -> void:
-	var p := Vector3(WorldView.STRIKER_BASE.x, WorldView.STRIKER_BASE.y, 0)
-	var k := scale_at(p)
-	var base := project(p)
-	var ink := Color(0.1, 0.08, 0.07)
-	var shirt := _lit(w.batting_kit)
-	var trousers := _lit(Color(0.95, 0.94, 0.9))
-	var pad := _lit(Color(0.97, 0.96, 0.92))
-	var lw := 0.16 * k
-	# Swing progress (same timing as the side view).
-	var u := -1.0
-	if w.swing_time >= 0.0 and t >= w.swing_time:
-		u = clampf((t - w.swing_time) / WorldView.SWING_DUR, 0.0, 1.0)
-	var lift := 0.0
-	if t > -0.5:
-		lift = Poses.ease_io((t + 0.5) / 0.4)
-	var step := 0.0
-	if u >= 0.0:
-		step = Poses.ease_io(clampf(u / Poses.CONTACT_U, 0.0, 1.0)) * 0.25
-	draw_set_transform(base, 0.0, Vector2(1.0, 0.3))
-	draw_circle(Vector2.ZERO, 0.45 * k, Color(0, 0, 0, 0.28))
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	var hip := base + Vector2(0, -0.88 * k)
-	var sh := base + Vector2(-step * 0.2 * k, -1.4 * k)
-	for side in [-1.0, 1.0]:
-		var foot := base + Vector2(side * 0.2 * k + (step * 0.3 * k if side < 0.0 else 0.0), -(step * 0.6 * k if side < 0.0 else 0.0))
-		var h2 := hip + Vector2(side * 0.1 * k, 0)
-		var knee := h2.lerp(foot, 0.48)
-		_tq(h2, knee, 0.19 * k, 0.13 * k, trousers)
-		_tq(knee, foot, 0.13 * k, 0.09 * k, trousers)
-		# Pad from above the knee to the boot, with ribs
-		var pt := knee.lerp(h2, 0.18)
-		_tq(pt, foot + Vector2(0, -0.05 * k), 0.19 * k, 0.15 * k, pad)
-		var dd := (foot - pt).normalized()
-		var nn := Vector2(-dd.y, dd.x)
-		for r in [-0.05, 0.0, 0.05]:
-			draw_line(pt + nn * r * k, foot + nn * r * k * 0.8 + Vector2(0, -0.07 * k), pad.darkened(0.18), maxf(1.0, 0.012 * k), true)
-		draw_colored_polygon(PackedVector2Array([foot + Vector2(-0.08 * k, 0.01 * k), foot + Vector2(0.08 * k, 0.01 * k), foot + Vector2(0.07 * k, -0.07 * k), foot + Vector2(-0.07 * k, -0.07 * k)]), _lit(Color(0.92, 0.92, 0.93)))
-	_torso_shape(hip + Vector2(0, 0.03 * k), sh, 0.36 * k, 0.5 * k, shirt)
-	# Shoulder-blade shading + seam
-	draw_line(hip.lerp(sh, 0.15), sh + Vector2(0, 0.04 * k), shirt.darkened(0.15), maxf(1.0, 0.012 * k), true)
-	draw_line(hip + Vector2(-0.17 * k, 0.02 * k), hip + Vector2(0.17 * k, 0.02 * k), trousers.darkened(0.25), maxf(1.5, 0.03 * k), true)
-	# Name + number on the back of the shirt.
-	var name := w.striker_label.get_slice(" ", 0).to_upper()
-	var f := UiTheme.font("black")
-	var fs := int(0.1 * k)
-	if fs >= 8:
-		var tw := f.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-		draw_string(f, hip.lerp(sh, 0.58) + Vector2(-tw * 0.5, 0), name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, _lit(UiTheme.GOLD))
-		var nw := f.get_string_size("7", HORIZONTAL_ALIGNMENT_LEFT, -1, fs * 2).x
-		draw_string(f, hip.lerp(sh, 0.24) + Vector2(-nw * 0.5, 0), "7", HORIZONTAL_ALIGNMENT_LEFT, -1, fs * 2, _lit(UiTheme.GOLD))
-	# Bat & hands: stance (down-right) -> backlift (up-right) -> contact (down, away) -> follow (up-left)
-	var a_stance := deg_to_rad(165.0)
-	var a_back := deg_to_rad(35.0)
-	var a_contact := deg_to_rad(190.0)
-	var a_follow := deg_to_rad(-50.0)
-	var ang := lerp_angle(a_stance, a_back, lift)
-	var hands := sh + Vector2(0.18 * k, 0.5 * k).lerp(Vector2(0.28 * k, 0.05 * k), lift)
-	var fore := 1.0
-	if u >= 0.0:
-		if u <= Poses.CONTACT_U:
-			var q := u / Poses.CONTACT_U
-			ang = lerpf(a_back, a_contact, q * q)
-			hands = sh + Vector2(0.28 * k, 0.05 * k).lerp(Vector2(0.05 * k, 0.55 * k), q)
-			fore = lerpf(1.0, 0.45, q)
+	var j := BatterSkeleton.solve(t, _skeleton_opts(t))
+	_batter_shadow(j)
+	var shirt := w.batting_kit
+	var trousers := WorldView.trouser_colour(w.batting_kit)
+	var skin := w.skin_tone_batter
+	var white := Color(0.96, 0.95, 0.92)
+	var parts: Array = []   # [depth, callable]
+	for s in ["l", "r"]:
+		var hip: Vector3 = j["hip_" + s]
+		var knee: Vector3 = j["knee_" + s]
+		var ankle: Vector3 = j["ankle_" + s]
+		parts.append([depth_of(hip.lerp(knee, 0.5)), _cap3.bind(hip, knee, 0.088, 0.062, trousers)])
+		parts.append([depth_of(knee.lerp(ankle, 0.5)) + 0.01, _cap3.bind(knee, ankle, 0.058, 0.045, trousers)])
+		parts.append([depth_of(knee.lerp(ankle, 0.5)) - 0.03, _pad.bind(j, s, white)])
+		parts.append([depth_of(j["toe_" + s]) - 0.02, _shoe.bind(j, s, white)])
+		var sh: Vector3 = j["sh_" + s]
+		var el: Vector3 = j["el_" + s]
+		var wr: Vector3 = j["wr_" + s]
+		parts.append([depth_of(sh.lerp(el, 0.5)) - 0.02, _arm_upper.bind(sh, el, skin, shirt)])
+		parts.append([depth_of(el.lerp(wr, 0.5)) - 0.03, _cap3.bind(el, wr, 0.046, 0.038, skin)])
+	parts.append([depth_of(j["chest"]), _torso3.bind(j, shirt, trousers)])
+	parts.append([depth_of(j["head"]), _head3.bind(j, skin)])
+	parts.append([depth_of(j["bat_sweet"]), _bat3.bind(j)])
+	for h in ["hand_top", "hand_bot"]:
+		parts.append([depth_of(j[h]) - 0.08, _glove.bind(j[h], j["bat_dir"], white, shirt)])
+	parts.sort_custom(func(a, b): return a[0] > b[0])
+	for p in parts:
+		p[1].call()
+	_bat_trail(j)
+
+
+func _skeleton_opts(t: float) -> Dictionary:
+	var o := {"swing_time": w.swing_time, "swing_dur": WorldView.SWING_DUR, "contact_u": Poses.CONTACT_U,
+		"base": WorldView.STRIKER_BASE, "runup_t": w.profile.run_up_time if w.profile else 2.0}
+	var look := Vector3(-18.0, 0.0, 1.9)
+	if w.delivery != null:
+		o["stumps_t"] = w.delivery.stumps_time()
+		o["ideal_t"] = w.delivery.time_at_x(w.tuning.contact_x_ideal)
+		if t < 0.0:
+			var r := w._run_up_root(t)
+			look = Vector3(r.x, r.y, 2.0)
 		else:
-			var q2 := (u - Poses.CONTACT_U) / (1.0 - Poses.CONTACT_U)
-			ang = lerp_angle(a_contact, a_follow, 1.0 - (1.0 - q2) * (1.0 - q2))
-			hands = sh + Vector2(0.05 * k, 0.55 * k).lerp(Vector2(-0.3 * k, -0.05 * k), q2)
-			fore = lerpf(0.45, 1.0, q2)
-	var dir := Vector2(sin(ang), -cos(ang))
-	var tip := hands + dir * 0.86 * k * fore
+			var bp := w.ball_world(t)
+			if bp != Vector3.INF:
+				look = bp
+	o["look"] = look
+	if w.resolved != null:
+		if w.resolved.contact.is_contact():
+			o["target"] = w.resolved.contact.contact_pos
+		o["bowled"] = w.resolved.outcome.kind == BallOutcome.BOWLED
+	if not o.has("target") and w.delivery != null and w.swing_time >= 0.0:
+		var p := w.delivery.pos_at(w.swing_time + w.tuning.swing_to_contact)
+		o["target"] = Vector3(p.x, p.y, clampf(p.z, 0.1, 1.2))
+	return o
+
+
+const LIGHT2 := Vector2(-0.55, -0.83)
+
+
+static func _shade(c: Color, k: float) -> Color:
+	return c.lightened(0.2 * k) if k > 0.0 else c.darkened(0.42 * -k)
+
+
+## Filled convex outline with per-vertex lighting from its centre (rounded, lit look).
+func _lit_poly(pts: PackedVector2Array, c: Color, edge := true) -> void:
+	if pts.size() < 3:
+		return
+	var cen := Vector2.ZERO
+	for v in pts:
+		cen += v
+	cen /= pts.size()
+	if edge:
+		var e := PackedVector2Array()
+		for v in pts:
+			e.append(v + (v - cen).normalized() * 1.3)
+		draw_colored_polygon(e, c.darkened(0.55))
+	var cols := PackedColorArray()
+	for v in pts:
+		cols.append(_shade(c, (v - cen).normalized().dot(LIGHT2)))
+	draw_polygon(pts, cols)
+
+
+func _hull(pts: PackedVector2Array) -> PackedVector2Array:
+	var h := Geometry2D.convex_hull(pts)
+	if h.size() > 1 and h[0] == h[h.size() - 1]:
+		h.remove_at(h.size() - 1)
+	return h
+
+
+## Shaded capsule between two 3D points (radii in metres, perspective-scaled).
+func _cap3(a: Vector3, b: Vector3, ra: float, rb: float, col: Color) -> void:
+	var c := _lit(col)
+	var pa := project(a)
+	var pb := project(b)
+	var r0 := ra * scale_at(a)
+	var r1 := rb * scale_at(b)
+	var d := pb - pa
+	var ang := d.angle() if d.length() > 0.01 else 0.0
+	var pts := PackedVector2Array()
+	for i in 9:
+		var q := ang + PI * 0.5 + PI * i / 8.0
+		pts.append(pa + Vector2(cos(q), sin(q)) * r0)
+	for i in 9:
+		var q := ang - PI * 0.5 + PI * i / 8.0
+		pts.append(pb + Vector2(cos(q), sin(q)) * r1)
+	var e := PackedVector2Array()
+	var cols := PackedColorArray()
+	for i in pts.size():
+		var cen := pa if i < 9 else pb
+		var nrm := (pts[i] - cen).normalized()
+		e.append(pts[i] + nrm * 1.2)
+		cols.append(_shade(c, nrm.dot(LIGHT2)))
+	draw_colored_polygon(e, c.darkened(0.55))
+	draw_polygon(pts, cols)
+
+
+func _arm_upper(sh: Vector3, el: Vector3, skin: Color, shirt: Color) -> void:
+	_cap3(sh, el, 0.052, 0.044, skin)
+	# Shoulder (deltoid) under the sleeve, then the sleeve itself.
+	_cap3(sh + Vector3(0, 0, 0.01), sh.lerp(el, 0.3), 0.075, 0.066, shirt)
+	_cap3(sh, sh.lerp(el, 0.58), 0.066, 0.058, shirt)
+
+
+## Ground shadow: one soft shape (no double-darkening) plus contact shadows under the shoes.
+func _batter_shadow(j: Dictionary) -> void:
+	var off := Vector2(0.32, 0.28)   # metres of shadow travel per metre of height
+	var pts := PackedVector2Array()
+	for k in ["toe_l", "heel_l", "toe_r", "heel_r", "knee_l", "knee_r", "pelvis", "sh_l", "sh_r", "head", "hand_top", "el_l", "el_r"]:
+		var p: Vector3 = j[k]
+		pts.append(project(Vector3(p.x + p.z * off.x, p.y + p.z * off.y, 0.0)))
+	var h := _hull(pts)
+	if h.size() >= 3:
+		draw_colored_polygon(h, Color(0, 0, 0, 0.16 * w.atm.ambient.v))
+	for s in ["l", "r"]:
+		var c := project(j["toe_" + s].lerp(j["heel_" + s], 0.5) * Vector3(1, 1, 0))
+		var k := scale_at(j["ankle_" + s])
+		draw_set_transform(c, 0.0, Vector2(1.0, 0.32))
+		draw_circle(Vector2.ZERO, 0.13 * k, Color(0, 0, 0, 0.22), true, -1.0, true)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+func _pad(j: Dictionary, s: String, white: Color) -> void:
+	var knee: Vector3 = j["knee_" + s]
+	var ankle: Vector3 = j["ankle_" + s]
+	var fwd: Vector3 = j["toe_dir_" + s]
+	var top := knee + Vector3(0, 0, 0.08) + fwd * 0.035
+	var bot := ankle + fwd * 0.045 + Vector3(0, 0, -0.02)
+	_cap3(top, bot, 0.078, 0.068, white)
+	var c := _lit(white)
+	var pt := project(top)
+	var pb := project(bot)
+	var d := (pb - pt).normalized()
+	var n := Vector2(-d.y, d.x)
+	var k := scale_at(knee)
+	# Vertical ridges (canes) down the pad face.
+	for r in [-0.035, 0.0, 0.035]:
+		draw_line(pt + n * r * k + d * 0.06 * k, pb + n * r * k * 0.85, c.darkened(0.16), maxf(1.0, 0.008 * k), true)
+	# Knee roll and the straps around the back of the calf.
+	draw_set_transform(project(knee + Vector3(0, 0, 0.03) + fwd * 0.04), d.angle() + PI * 0.5, Vector2(1.0, 0.6))
+	draw_circle(Vector2.ZERO, 0.07 * k, c.darkened(0.08), true, -1.0, true)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	for f in [0.3, 0.62, 0.9]:
+		var q := pt.lerp(pb, f)
+		draw_line(q - n * 0.075 * k, q + n * 0.075 * k, _lit(Color(0.25, 0.25, 0.28)), maxf(1.2, 0.014 * k), true)
+
+
+func _shoe(j: Dictionary, s: String, white: Color) -> void:
+	var toe: Vector3 = j["toe_" + s]
+	var heel: Vector3 = j["heel_" + s]
+	var fwd: Vector3 = (toe - heel).normalized()
+	var side := fwd.cross(Vector3(0, 0, 1)).normalized()
+	var pts := PackedVector2Array()
+	for p in [heel, toe]:
+		for sd in [-0.045, 0.045]:
+			for h in [0.0, 0.085 if p == heel else 0.05]:
+				pts.append(project(p + side * sd + Vector3(0, 0, h)))
+	_lit_poly(_hull(pts), _lit(white))
+	# Sole
+	var sole := PackedVector2Array([project(heel + side * 0.045), project(toe + side * 0.045), project(toe - side * 0.045), project(heel - side * 0.045)])
+	draw_polyline(sole, _lit(Color(0.3, 0.3, 0.32)), maxf(1.2, 0.012 * scale_at(toe)), true)
+
+
+func _torso3(j: Dictionary, shirt: Color, trousers: Color) -> void:
+	var pel: Vector3 = j["pelvis"]
+	var spine: Vector3 = j["spine"]
+	var side: Vector3 = j["side"]
+	var fwd: Vector3 = j["fwd"]
+	var pside: Vector3 = j["pel_side"]
+	var pfwd := Vector3(0, 0, 1).cross(pside).normalized() * -1.0
+	if pfwd.dot(fwd) < 0.0:
+		pfwd = -pfwd
+	# Hips / seat in trousers.
+	var hip_pts := PackedVector2Array()
+	for ring in [[pel - spine * 0.06, 0.17, 0.13], [pel + spine * 0.1, 0.16, 0.12]]:
+		for i in 14:
+			var a := TAU * i / 14.0
+			hip_pts.append(project(ring[0] + pside * cos(a) * ring[1] + pfwd * sin(a) * ring[2]))
+	_lit_poly(_hull(hip_pts), _lit(trousers))
+	# Shirt: waist -> chest -> shoulders, a rounded volume.
+	var pts := PackedVector2Array()
+	for ring in [[0.1, 0.16, 0.12], [0.24, 0.175, 0.14], [0.36, 0.205, 0.15], [0.45, 0.215, 0.12]]:
+		var c: Vector3 = pel + spine * float(ring[0])
+		for i in 16:
+			var a := TAU * i / 16.0
+			pts.append(project(c + side * cos(a) * float(ring[1]) + fwd * sin(a) * float(ring[2])))
+	var hull := _hull(pts)
+	_lit_poly(hull, _lit(shirt))
+	# Fabric folds on the shaded side and the collar.
+	var k := scale_at(j["chest"])
+	var a0 := project(pel + spine * 0.14 - side * 0.12)
+	var a1 := project(pel + spine * 0.4 - side * 0.15)
+	draw_line(a0, a1, _lit(shirt).darkened(0.25), maxf(1.0, 0.01 * k), true)
+	draw_line(project(pel + spine * 0.16 + fwd * 0.08), project(pel + spine * 0.3 + fwd * 0.11), _lit(shirt).darkened(0.18), maxf(1.0, 0.008 * k), true)
+	var nb: Vector3 = j["neck_base"]
+	var collar := PackedVector2Array()
+	for i in 13:
+		var a := TAU * i / 12.0
+		collar.append(project(nb + side * cos(a) * 0.075 + fwd * sin(a) * 0.065))
+	draw_polyline(collar, _lit(shirt).lightened(0.3), maxf(1.2, 0.016 * k), true)
+	# Belt line
+	draw_line(project(pel + spine * 0.1 + pside * 0.16), project(pel + spine * 0.1 - pside * 0.16), _lit(trousers).darkened(0.35), maxf(1.0, 0.012 * k), true)
+
+
+func _head3(j: Dictionary, skin: Color) -> void:
+	var hc: Vector3 = j["head"]
+	var look: Vector3 = j["look"]
+	var k := scale_at(hc)
+	var sk := _lit(skin)
+	var helmet := _lit(w.batting_kit.darkened(0.55))
+	var up := Vector3(0, 0, 1)
+	var fwd_h := Vector3(look.x, look.y, 0.0).normalized()
+	var side := fwd_h.cross(up).normalized()
+	# Neck and nape.
+	_cap3(j["neck_base"], j["neck_top"], 0.055, 0.05, skin)
+	# Grille bars sit in front of the face (far side from this camera) - draw first.
+	var steel := _lit(Color(0.72, 0.74, 0.78))
+	for i in 5:
+		var a := -0.75 + 1.5 * i / 4.0
+		var dirv := (fwd_h * cos(a) + side * sin(a)).normalized()
+		var top := hc + dirv * 0.135 + up * 0.0
+		var bot := hc + dirv * 0.13 - up * 0.13 + fwd_h * 0.02
+		draw_line(project(top), project(bot), steel, maxf(1.0, 0.009 * k), true)
+	draw_line(project(hc + (fwd_h - side * 0.6).normalized() * 0.14 - up * 0.07), project(hc + (fwd_h + side * 0.6).normalized() * 0.14 - up * 0.07), steel, maxf(1.0, 0.009 * k), true)
+	# Head (skin: ear, cheek, jaw).
+	var head_pts := PackedVector2Array()
+	for i in 20:
+		var a := TAU * i / 20.0
+		head_pts.append(project(hc + side * cos(a) * 0.095 + up * sin(a) * 0.12 + fwd_h * 0.02))
+	_lit_poly(_hull(head_pts), sk)
+	draw_set_transform(project(hc - fwd_h * 0.01 - side * 0.09 - up * 0.01), 0.0, Vector2(0.7, 1.0))
+	draw_circle(Vector2.ZERO, 0.026 * k, sk.darkened(0.15), true, -1.0, true)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	# Helmet shell: covers the top and back of the head, peak over the eyes.
+	var shell := PackedVector2Array()
+	var sc := hc + up * 0.018
+	for i in 22:
+		for jj in 6:
+			var lon := TAU * i / 22.0
+			var lat := -0.25 + 1.45 * jj / 5.0
+			var dirv := (fwd_h * cos(lon) * cos(lat) + side * sin(lon) * cos(lat) + up * sin(lat))
+			if dirv.dot(fwd_h) > 0.55 and lat < 0.35:
+				continue   # face opening
+			shell.append(project(sc + dirv * 0.138))
+	var sh_hull := _hull(shell)
+	_lit_poly(sh_hull, helmet)
+	# Peak
+	var peak := PackedVector2Array()
+	for i in 9:
+		var a := -0.9 + 1.8 * i / 8.0
+		var dirv := (fwd_h * cos(a) + side * sin(a))
+		peak.append(project(sc + dirv * 0.135 + up * 0.035))
+	for i in 9:
+		var a := 0.9 - 1.8 * i / 8.0
+		var dirv := (fwd_h * cos(a) + side * sin(a))
+		peak.append(project(sc + dirv * 0.19 + up * 0.02))
+	peak = _hull(peak)
+	if peak.size() >= 3:
+		draw_colored_polygon(peak, helmet.darkened(0.2))
+	# Highlight, vents and the neck (stem) guard at the back.
+	var hl := project(sc + (up * 0.8 - fwd_h * 0.3 - side * 0.4).normalized() * 0.12)
+	draw_circle(hl, 0.03 * k, Color(1, 1, 1, 0.16), true, -1.0, true)
+	for v: float in [-0.35, 0.0, 0.35]:
+		var vd := (up * 0.75 - fwd_h * 0.55 + side * v).normalized()
+		draw_circle(project(sc + vd * 0.137), maxf(1.0, 0.009 * k), helmet.darkened(0.5), true, -1.0, true)
+	var back := -fwd_h
+	for sd: float in [-0.035, 0.035]:
+		var a := sc + back * 0.12 + side * sd - up * 0.1
+		var b := a - up * 0.05 + back * 0.01
+		_cap3(a, b, 0.012, 0.011, w.batting_kit.darkened(0.45))
+	# Chin strap catches the light under the ear.
+	draw_line(project(hc - side * 0.09 - up * 0.02), project(hc - side * 0.06 + fwd_h * 0.05 - up * 0.11), _lit(Color(0.85, 0.85, 0.85)), maxf(1.0, 0.007 * k), true)
+
+
+func _glove(h: Vector3, bd: Vector3, white: Color, accent: Color) -> void:
+	_cap3(h - bd * 0.03, h + bd * 0.045, 0.048, 0.045, white)
+	var k := scale_at(h)
+	var c := _lit(white)
+	var pa := project(h - bd * 0.03)
+	var pb := project(h + bd * 0.045)
+	var d := (pb - pa).normalized()
+	var n := Vector2(-d.y, d.x)
+	for f in [0.2, 0.5, 0.8]:
+		var q := pa.lerp(pb, f)
+		draw_line(q - n * 0.04 * k, q + n * 0.04 * k, c.darkened(0.2), maxf(1.0, 0.007 * k), true)
+	# Kit-coloured cuff
+	var cuff := project(h - bd * 0.04)
+	draw_line(cuff - n * 0.045 * k, cuff + n * 0.045 * k, _lit(accent), maxf(1.5, 0.018 * k), true)
+
+
+func _bat3(j: Dictionary) -> void:
+	var bd: Vector3 = j["bat_dir"]
+	var face: Vector3 = j["bat_face"]
+	var wv: Vector3 = j["bat_width"]
+	var top: Vector3 = j["bat_top"]
+	var shoulder: Vector3 = j["bat_shoulder"]
+	var toe: Vector3 = j["bat_toe"]
+	var k := scale_at(j["bat_sweet"])
+	# Handle with rubber grip.
+	_cap3(top, shoulder, 0.017, 0.016, Color(0.12, 0.13, 0.13))
+	var grip := _lit(Color(0.1, 0.32, 0.24))
+	draw_line(project(top), project(top.lerp(shoulder, 0.8)), grip, maxf(2.0, 0.026 * k), true)
+	# Blade: box from shoulder to toe, face toward `face`, spine on the back.
+	var hw := 0.054
+	var corners := PackedVector2Array()
+	var faces_cam := face.dot((CAM - j["bat_sweet"]).normalized()) > 0.0
+	for p in [shoulder + bd * 0.02, toe]:
+		for sd in [-hw, hw]:
+			corners.append(project(p + wv * sd))
+			corners.append(project(p + wv * sd - face * 0.035))
+		corners.append(project(p - face * 0.06))
+	var willow := _lit(Color(0.92, 0.82, 0.6))
+	_lit_poly(_hull(corners), willow.darkened(0.12))
+	var fp := PackedVector2Array()
+	var off := Vector3.ZERO if faces_cam else -face * 0.06
+	for p in [[shoulder + bd * 0.02, -hw], [shoulder + bd * 0.02, hw], [toe, hw], [toe, -hw]]:
+		fp.append(project(p[0] + wv * p[1] * (1.0 if faces_cam else 0.4) + off))
+	fp = _hull(fp)
+	if fp.size() >= 3:
+		draw_colored_polygon(fp, willow if faces_cam else willow.darkened(0.2))
+	if faces_cam:
+		# Maker's sticker band and grain on the face.
+		var s0 := shoulder.lerp(toe, 0.12)
+		var s1 := shoulder.lerp(toe, 0.3)
+		var band := _hull(PackedVector2Array([project(s0 - wv * hw * 0.9), project(s0 + wv * hw * 0.9), project(s1 + wv * hw * 0.9), project(s1 - wv * hw * 0.9)]))
+		if band.size() >= 3:
+			draw_colored_polygon(band, _lit(w.batting_kit))
+		for g in [-0.5, 0.0, 0.5]:
+			draw_line(project(shoulder.lerp(toe, 0.35) + wv * hw * g), project(toe + wv * hw * g * 0.9), willow.darkened(0.08), 1.0, true)
+	else:
+		# Spine ridge down the back of the blade.
+		draw_line(project(shoulder + bd * 0.05 - face * 0.06), project(toe - face * 0.05), willow.lightened(0.15), maxf(1.0, 0.01 * k), true)
+
+
+func _bat_trail(j: Dictionary) -> void:
+	var a := project(j["bat_sweet"])
+	var b := project(j["bat_toe"])
+	var u := -1.0
+	if w.swing_time >= 0.0 and w.clock >= w.swing_time:
+		u = (w.clock - w.swing_time) / WorldView.SWING_DUR
 	if u > 0.05 and u < 0.75 and not w.reduced_motion:
-		_trail.append([hands + dir * 0.55 * k * fore, tip])
+		_trail.append([a, b])
 		if _trail.size() > 7:
 			_trail.pop_front()
 		for i in range(1, _trail.size()):
 			var a0: Array = _trail[i - 1]
 			var a1: Array = _trail[i]
-			var al := float(i) / _trail.size() * 0.45
+			var al := float(i) / _trail.size() * 0.35
 			draw_colored_polygon(PackedVector2Array([a0[0], a0[1], a1[1], a1[0]]), Color(1.0, 0.97, 0.85, al))
-	elif u < 0.0 or u >= 0.75:
+	else:
 		_trail.clear()
-	var sh_bat := hands + dir * 0.27 * k * fore
-	var sh_r := sh + Vector2(0.2 * k, 0.04 * k)
-	var sh_l := sh + Vector2(-0.2 * k, 0.04 * k)
-	for shp in [sh_l, sh_r]:
-		var el: Vector2 = shp.lerp(hands, 0.5) + Vector2(0, 0.04 * k)
-		_tq(shp, el, 0.12 * k, 0.09 * k, _lit(w.skin_tone_batter))
-		_tq(shp, shp.lerp(el, 0.6), 0.14 * k, 0.12 * k, shirt)
-		_tq(el, hands, 0.09 * k, 0.075 * k, _lit(w.skin_tone_batter))
-	draw_line(hands, sh_bat, ink, 0.05 * k + 3.0, true)
-	draw_line(hands, sh_bat, _lit(Color(0.75, 0.15, 0.12)), 0.05 * k, true)
-	draw_line(sh_bat, tip, ink, 0.13 * k + 4.0, true)
-	draw_line(sh_bat, tip, _lit(Color(0.93, 0.82, 0.58)), 0.13 * k, true)
-	draw_circle(hands, 0.085 * k + 1.2, _lit(Color(0.96, 0.95, 0.9)).darkened(0.45))
-	draw_circle(hands, 0.085 * k, _lit(Color(0.96, 0.95, 0.9)))
-	# Neck + helmet from behind (shell, highlight, neck guard, grille edges)
-	var hc := sh + Vector2(0, -0.22 * k)
-	_tq(sh, hc + Vector2(0, 0.08 * k), 0.11 * k, 0.1 * k, _lit(w.skin_tone_batter))
-	var hcol := _lit(w.batting_kit.darkened(0.3))
-	draw_circle(hc, 0.165 * k + 1.5, hcol.darkened(0.5))
-	draw_circle(hc, 0.165 * k, hcol)
-	draw_arc(hc + Vector2(-0.03 * k, -0.03 * k), 0.11 * k, PI * 1.1, PI * 1.7, 12, Color(1, 1, 1, 0.25), 0.03 * k, true)
-	draw_rect(Rect2(hc + Vector2(-0.1 * k, 0.1 * k), Vector2(0.2 * k, 0.07 * k)), hcol.darkened(0.15))
-	for gx in [-0.17, 0.17]:
-		draw_line(hc + Vector2(gx * k, 0.0), hc + Vector2(gx * k * 1.05, 0.12 * k), Color(0.78, 0.8, 0.84), maxf(1.0, 0.015 * k), true)
 
 
 func _stumps(p: Vector3, broken_t: float) -> void:
