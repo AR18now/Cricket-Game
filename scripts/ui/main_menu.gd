@@ -80,7 +80,7 @@ func build() -> void:
 	var gear := IconButton.make("gear", "Settings", 64)
 	gear.pressed.connect(func(): _tap(); settings_pressed.emit())
 	tr.add_child(gear)
-	var foot := UiTheme.label("Offline - no account needed.  A DevTorque game (working title).", 16, Color(1, 1, 1, 0.7), "regular")
+	var foot := UiTheme.label("Offline - no account needed.", 16, Color(1, 1, 1, 0.7), "regular")
 	foot.name = "Foot"
 	add_child(foot)
 	_update_chips()

@@ -5,7 +5,7 @@ Compatibility renderer). One-tap batting with believable ball flight, fielding a
 *from the neighbourhood pitch to the floodlights*.
 
 > "Pocket Boundary" is a provisional internal title and has **not** been cleared as a public
-> brand. Team names, the DevTorque identity mark and all text are placeholders for review.
+> brand. Team names and all text are placeholders for review.
 
 ## Current status
 

@@ -18,6 +18,9 @@ const BAT_LEN := 0.86
 const GRIP_GAP := 0.11       # top hand to bottom hand along the handle
 const SWEET := 0.6           # sweet spot, metres from the top hand along the bat
 
+static var _cache_key: Array = []
+static var _cache_corr := Vector3.ZERO
+
 const L := Vector3(-1, 0, 0)
 const F := Vector3(0, 1, 0)
 const U := Vector3(0, 0, 1)
@@ -107,14 +110,21 @@ static func solve(t: float, o: Dictionary) -> Dictionary:
 	# Self-correct the swing: measure where the sweet spot lands at the contact frame and
 	# shift/crouch the body by the error (a few iterations), so the bat really meets the ball.
 	if not o.has("_corr") and float(o.get("swing_time", -1.0)) >= 0.0 and o.get("target", null) is Vector3:
+		# The correction depends only on this swing, so it is computed once and cached.
+		var key := [o["swing_time"], o["target"], o.get("ideal_t", 99.0), o.get("base", Vector2(-1.05, -0.42)), o.get("swing_dur", 0.34)]
 		var corr := Vector3.ZERO
-		var tc: float = float(o["swing_time"]) + float(o.get("swing_dur", 0.34)) * float(o.get("contact_u", 0.3))
-		for it in 3:
-			var oi := o.duplicate()
-			oi["_corr"] = corr
-			var jc := solve(tc, oi)
-			corr += (o["target"] as Vector3) - (jc["bat_sweet"] as Vector3)
-			corr = Vector3(clampf(corr.x, -0.6, 0.6), clampf(corr.y, -0.3, 0.3), clampf(corr.z, -0.28, 0.15))
+		if key == _cache_key:
+			corr = _cache_corr
+		else:
+			var tc: float = float(o["swing_time"]) + float(o.get("swing_dur", 0.34)) * float(o.get("contact_u", 0.3))
+			for it in 3:
+				var oi := o.duplicate()
+				oi["_corr"] = corr
+				var jc := solve(tc, oi)
+				corr += (o["target"] as Vector3) - (jc["bat_sweet"] as Vector3)
+				corr = Vector3(clampf(corr.x, -0.6, 0.6), clampf(corr.y, -0.3, 0.3), clampf(corr.z, -0.28, 0.15))
+			_cache_key = key
+			_cache_corr = corr
 		var o2 := o.duplicate()
 		o2["_corr"] = corr
 		return solve(t, o2)

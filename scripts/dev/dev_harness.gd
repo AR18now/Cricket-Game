@@ -58,6 +58,8 @@ func _go() -> void:
 			await _batter_sheet()
 		"screens":
 			await _screens_tour()
+		"perf":
+			await _perf()
 		_:
 			await _capture_tour()
 	_finish()
@@ -608,3 +610,36 @@ func _screens_tour() -> void:
 		await frames(2)
 	await wait(2.5)
 	await shot("u05_result")
+
+
+## Script (CPU) cost per frame across real deliveries in both camera views. GPU time
+## under software rendering is not representative, so only process time is judged.
+func _perf() -> void:
+	await wait(1.6)
+	var save = get_node("/root/Save")
+	var samples := []
+	var sampling := true
+	var sampler := func():
+		while sampling:
+			samples.append(Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0)
+			await get_tree().process_frame
+	sampler.call()
+	for view in ["batter", "side"]:
+		save.set_setting("view", view)
+		app.start_mode("classic")
+		await wait(0.2)
+		app._close_overlay()
+		for i in 3:
+			if app.screen != app.Screen.MATCH:
+				break
+			await play_ball(0.0)
+	sampling = false
+	samples.sort()
+	var avg := 0.0
+	for v in samples:
+		avg += v
+	avg /= maxf(1.0, samples.size())
+	var p95: float = samples[int(samples.size() * 0.95)] if samples.size() > 0 else 0.0
+	var mx: float = samples[samples.size() - 1] if samples.size() > 0 else 0.0
+	_log("process ms per frame: avg %.2f  p95 %.2f  max %.2f  (%d frames)" % [avg, p95, mx, samples.size()])
+	check(p95 < 4.0, "script time per frame stays small (p95 < 4 ms)")

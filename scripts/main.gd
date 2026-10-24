@@ -202,12 +202,13 @@ func _show_splash() -> void:
 	bg.color = UiTheme.EMERALD_DEEP
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_splash.add_child(bg)
-	var l := UiTheme.label("DevTorque", 54, UiTheme.GOLD, "black")
-	l.set_anchors_preset(Control.PRESET_CENTER)
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	l.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	l.grow_vertical = Control.GROW_DIRECTION_BOTH
-	_splash.add_child(l)
+	# The game's own title mark (no studio name).
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_splash.add_child(center)
+	var logo := TitleMark.new()
+	logo.custom_minimum_size = Vector2(560, 150)
+	center.add_child(logo)
 	ui_root.add_child(_splash)
 	audio.play("sting_open", "Music", -6.0, 0.0)
 	var tw := create_tween()
