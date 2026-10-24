@@ -154,29 +154,106 @@ def crowd_loop(sec=8.0, seed=21, level=1.0):
     return base[: L - xf]
 
 
-def ambience_pindi(sec=10.0):
-    r = random.Random(33)
-    L = n(sec)
-    lp = Biquad("lp", 300)
-    out = [lp(r.uniform(-1, 1)) * 0.35 * (0.8 + 0.2 * math.sin(2 * math.pi * 0.1 * i / SR)) for i in range(L)]
-    # Evening birds: short chirps (sine sweeps).
-    for k in range(14):
-        at = r.uniform(0, sec - 0.4)
-        f0 = r.uniform(2800, 4200)
-        chirps = r.randint(2, 4)
-        for c in range(chirps):
-            ch = [math.sin(2 * math.pi * (f0 + 1200 * (i / n(0.06))) * i / SR) * math.sin(math.pi * i / n(0.06)) * 0.25 for i in range(n(0.06))]
-            place(out, ch, at + c * 0.09)
-    # Distant tea-stall cup clinks.
-    for k in range(4):
-        at = r.uniform(0, sec - 0.3)
-        cl = [(math.sin(2 * math.pi * 3100 * i / SR) + math.sin(2 * math.pi * 4700 * i / SR)) * env_exp(i, 0.04) * 0.12 for i in range(n(0.2))]
-        place(out, cl, at)
-    xf = n(0.5)
+def _loopify(out, xf_sec=0.5):
+    xf = n(xf_sec)
+    L = len(out)
     for i in range(xf):
         a = i / xf
         out[i] = out[i] * a + out[L - xf + i] * (1 - a)
     return out[: L - xf]
+
+
+def _babble_voice(r, L, pitch):
+    # One distant talker: jittery glottal buzz, syllable-rate swells, vowel formants that hop.
+    vowels = [(730, 1090), (530, 1840), (270, 2290), (570, 840), (440, 1020), (660, 1720)]
+    f1 = Biquad("bp", 600, 4.0)
+    f2 = Biquad("bp", 1400, 5.0)
+    out = [0.0] * L
+    ph = 0.0
+    i = 0
+    talking = r.random() < 0.6
+    while i < L:
+        if talking:
+            syl = n(r.uniform(0.12, 0.26))
+            v1, v2 = r.choice(vowels)
+            f1.__init__("bp", v1, 4.0)
+            f2.__init__("bp", v2, 5.0)
+            p0 = pitch * r.uniform(0.85, 1.2)
+            amp = r.uniform(0.5, 1.0)
+            for k in range(min(syl, L - i)):
+                u = k / syl
+                ph += 2 * math.pi * p0 * (1.0 - 0.15 * u) / SR
+                buzz = (ph / math.pi % 2.0) - 1.0  # sawtooth
+                e = math.sin(math.pi * u) ** 0.7 * amp
+                out[i + k] = (f1(buzz) * 0.9 + f2(buzz) * 0.5) * e
+            i += syl
+            if r.random() < 0.18:
+                talking = False
+        else:
+            i += n(r.uniform(0.3, 1.6))
+            talking = True
+    return out
+
+
+def _rickshaw(r, L, at, dur):
+    # A two-stroke auto-rickshaw puttering past in the lane: firing pulses + exhaust noise,
+    # rising then falling with a slight Doppler drop.
+    out = [0.0] * L
+    lp = Biquad("lp", 900)
+    s0 = n(at)
+    ph = 0.0
+    for k in range(n(dur)):
+        if s0 + k >= L:
+            break
+        u = k / n(dur)
+        prox = math.exp(-((u - 0.5) / 0.22) ** 2)
+        rate = 31.0 * (1.03 if u < 0.5 else 0.97) * (1 + 0.04 * math.sin(2 * math.pi * 1.3 * k / SR))
+        ph += rate / SR
+        fire = math.exp(-(ph % 1.0) / 0.12)
+        x = fire * (0.7 + 0.6 * r.uniform(-1, 1))
+        out[s0 + k] = lp(x) * prox * 0.55
+    return out
+
+
+def ambience_pindi(sec=16.0):
+    # Neighbourhood ground ambience (replaces the old birdsong): rooftop spectators
+    # chatting, a soft breeze, a rickshaw in the lane, distant traffic and tea-stall clinks.
+    r = random.Random(33)
+    L = n(sec)
+    wind_lp = Biquad("lp", 260)
+    hum_lp = Biquad("lp", 140)
+    out = []
+    for i in range(L):
+        t = i / SR
+        gust = 0.75 + 0.25 * math.sin(2 * math.pi * 0.07 * t) * math.sin(2 * math.pi * 0.19 * t + 0.6)
+        out.append(wind_lp(r.uniform(-1, 1)) * 0.22 * gust + hum_lp(r.uniform(-1, 1)) * 0.35)
+    # Distant chatter: a handful of voices, low-passed by distance.
+    chat = [0.0] * L
+    for v in range(7):
+        voice = _babble_voice(r, L, r.choice([105, 120, 135, 190, 215, 240]))
+        g = r.uniform(0.10, 0.2)
+        for i in range(L):
+            chat[i] += voice[i] * g
+    dist = Biquad("lp", 1700)
+    for i in range(L):
+        out[i] += dist(chat[i])
+    # Lane traffic: one rickshaw pass, a far-off motorbike.
+    for i, v in enumerate(_rickshaw(r, L, 3.0, 5.5)):
+        out[i] += v
+    for i, v in enumerate(_rickshaw(r, L, 10.5, 4.0)):
+        out[i] += v * 0.4
+    # Tea-stall cup clinks and a spoon stirring.
+    for k in range(5):
+        at = r.uniform(0, sec - 0.3)
+        cl = [(math.sin(2 * math.pi * 3100 * i / SR) + math.sin(2 * math.pi * 4700 * i / SR)) * env_exp(i, 0.04) * 0.1 for i in range(n(0.2))]
+        place(out, cl, at)
+    # A couple of claps and a distant shout of encouragement-like swell.
+    for k in range(6):
+        at = r.uniform(0, sec - 0.2)
+        clap = [r.uniform(-1, 1) * env_exp(i, 0.008) * 0.35 for i in range(n(0.04))]
+        place(out, clap, at)
+    pk = max(abs(v) for v in out)
+    return _loopify([math.tanh(1.8 * v / pk) for v in out])  # tame the rickshaw peak
 
 
 def cheer(sec=2.2, seed=41, big=True):
@@ -264,21 +341,56 @@ def ambience_night(sec=8.0):
     return out[: L - xf]
 
 
-def truck_horn():
-    # Two-tone musical truck horn (original synthesis), three short blasts.
-    out = [0.0] * n(1.6)
-    for k, (at, dur) in enumerate([(0.0, 0.22), (0.3, 0.22), (0.62, 0.7)]):
-        blast = []
-        for i in range(n(dur)):
-            t = i / SR
-            e = min(1.0, t / 0.02) * min(1.0, (dur - t) / 0.05)
-            v = 0.0
-            for f in (311.0, 392.0):
-                ph = 2 * math.pi * f * t
-                v += math.sin(ph) + 0.5 * math.sin(2 * ph) + 0.3 * math.sin(3 * ph)
-            blast.append(v * e * 0.3)
-        place(out, blast, at)
+def _air_horn(f, dur, amp=1.0, bend=0.05, bright=1.0):
+    # One trumpet of a truck pressure-horn set: buzzy reed tone that "blooms" up to pitch
+    # as the air pressure builds, a resonant bell, a little breath, two detuned trumpets.
+    out = []
+    bell = Biquad("bp", 1250 * bright, 1.1)
+    hp = Biquad("hp", 140)
+    rr = random.Random(int(f * 10))
+    phs = [0.0, 0.0]
+    for i in range(n(dur)):
+        t = i / SR
+        e = min(1.0, t / 0.025) * min(1.0, (dur - t) / 0.05)
+        v = 0.0
+        for j, det in enumerate((1.0, 1.006)):
+            fi = f * det * (1.0 - bend * math.exp(-t / 0.05)) * (1 + 0.003 * math.sin(2 * math.pi * 6.0 * t))
+            phs[j] += 2 * math.pi * fi / SR
+            p = phs[j]
+            w = 0.0
+            for k in range(1, 12):
+                if f * k > 6000:
+                    break
+                w += math.sin(k * p) / (k ** 0.8)
+            v += math.tanh(1.8 * w)  # reed overdrive
+        v += rr.uniform(-1, 1) * 0.15 * math.exp(-t / 0.05)
+        out.append(hp(v * 0.6 + bell(v) * 1.2) * e * amp)
     return out
+
+
+def truck_horn():
+    # Pakistani decorated-truck "musical pressure horn": a set of tuned trumpets played as
+    # a quick, jaunty original tune, finished by the big two-tone pressure blast.
+    G4, A4, B4, C5, D5, E5 = 392.0, 440.0, 493.9, 523.3, 587.3, 659.3
+    tune = [(D5, 0.1), (D5, 0.1), (B4, 0.1), (G4, 0.1), (A4, 0.1), (B4, 0.1),
+            (C5, 0.1), (E5, 0.18), (D5, 0.24)]
+    out = [0.0] * n(2.0)
+    at = 0.0
+    for f, d in tune:
+        place(out, _air_horn(f, d * 0.92, 0.8), at)
+        at += d
+    blast_at = at + 0.08
+    place(out, _air_horn(277.2, 0.75, 0.9, 0.08, 0.8), blast_at)   # C#4
+    place(out, _air_horn(349.2, 0.75, 0.8, 0.08, 0.9), blast_at)   # F4
+    place(out, _air_horn(207.7, 0.75, 0.6, 0.10, 0.7), blast_at)   # G#3 body
+    # Street slap-back so it sounds outdoors, between houses.
+    d1, d2 = n(0.07), n(0.16)
+    y = out + [0.0] * d2
+    for i, v in enumerate(out):
+        y[i + d1] += v * 0.28
+        y[i + d2] += v * 0.14
+    pk = max(abs(v) for v in y)
+    return [math.tanh(2.2 * v / pk) for v in y]  # pressure-horn loudness, soft-clipped
 
 
 def jingle():

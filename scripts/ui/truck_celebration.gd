@@ -43,7 +43,7 @@ func _process(delta: float) -> void:
 	if t < 0.0:
 		return
 	t += delta
-	if not _horned and t > 0.45:
+	if not _horned and t > 0.12:  # horn as it rolls in; the tune ends as it leaves
 		_horned = true
 		horn.emit()
 	if t > DUR:
