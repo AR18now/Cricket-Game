@@ -24,6 +24,13 @@ var _ci: CanvasItem
 var _static_key := ""
 var _trail: Array = []
 var _hand_screen := Vector2.INF
+## Canvas the figure helpers draw on (self, or the cached fielder layer).
+var _cv: CanvasItem = self
+## Fielders barely move in this view, so they live on a cached layer that is only
+## redrawn when their stance changes (or the screen/atmosphere does).
+var fig_layer: Node2D
+var _fig_key := ""
+var _fig_t := 0.0
 
 
 func setup(world: WorldView) -> void:
@@ -32,6 +39,10 @@ func setup(world: WorldView) -> void:
 	static_layer.show_behind_parent = true
 	add_child(static_layer)
 	static_layer.draw.connect(_draw_static)
+	fig_layer = Node2D.new()
+	fig_layer.show_behind_parent = true
+	add_child(fig_layer)
+	fig_layer.draw.connect(_draw_fielders)
 	var r := DetRng.new(4242)
 	for i in 260:
 		var a := r.range_f(0.0, TAU)
@@ -88,6 +99,23 @@ func _process(_d: float) -> void:
 # ------------------------------------------------------------------ drawing
 func invalidate() -> void:
 	_static_key = ""
+
+
+func _draw_fielders() -> void:
+	_cv = fig_layer
+	var items: Array = []
+	for i in range(2, w.specs.size()):
+		var s: FielderSpec = w.specs[i]
+		if CAM.x - s.pos.x < 3.0:
+			continue
+		var fp := Vector3(s.pos.x, s.pos.y, 0)
+		items.append([depth_of(fp), fp])
+	items.sort_custom(func(a, b): return a[0] > b[0])
+	for it in items:
+		_figure(it[1], w.fielding_kit, {"crouch": 0.35 if _fig_t > -0.8 else 0.0, "front": true, "cap": true})
+	# The umpire stands still too (and well to the side of the bowler's run-up).
+	_figure(Vector3(WorldView.UMPIRE_POS.x, WorldView.UMPIRE_POS.y, 0), Color(0.95, 0.93, 0.88), {"front": true, "hat": true, "trousers": Color(0.2, 0.2, 0.25)})
+	_cv = self
 
 
 func _draw_static() -> void:
@@ -276,13 +304,11 @@ func _pitch() -> void:
 func _actors() -> void:
 	var t := w.clock
 	var items: Array = []   # [depth, callable]
-	for i in range(2, w.specs.size()):
-		var s: FielderSpec = w.specs[i]
-		if CAM.x - s.pos.x < 3.0:
-			continue
-		var fp := Vector3(s.pos.x, s.pos.y, 0)
-		items.append([depth_of(fp), _figure.bind(fp, w.fielding_kit, {"crouch": 0.35 if t > -0.8 else 0.0, "front": true, "t": t + i, "cap": true})])
-	items.append([depth_of(Vector3(WorldView.UMPIRE_POS.x, WorldView.UMPIRE_POS.y, 0)), _figure.bind(Vector3(WorldView.UMPIRE_POS.x, WorldView.UMPIRE_POS.y, 0), Color(0.95, 0.93, 0.88), {"front": true, "t": t, "hat": true, "trousers": Color(0.2, 0.2, 0.25)})])
+	var fkey := "%s:%d" % [_static_key, 1 if t > -0.8 else 0]
+	if fkey != _fig_key:
+		_fig_key = fkey
+		_fig_t = t
+		fig_layer.queue_redraw()
 	if w.two_batters:
 		var ns := Vector3(WorldView.NON_STRIKER_BASE.x + 1.2 * Poses.ease_io((t + 0.6) / 1.0), WorldView.NON_STRIKER_BASE.y, 0)
 		items.append([depth_of(ns), _figure.bind(ns, w.batting_kit, {"front": true, "t": t, "helmet": true, "bat": true, "pads": true, "trousers": WorldView.trouser_colour(w.batting_kit)})])
@@ -305,19 +331,19 @@ func _actors() -> void:
 func _tq(a: Vector2, b: Vector2, w0: float, w1: float, c: Color) -> void:
 	var d := b - a
 	if d.length() < 0.5:
-		draw_circle(a, w0 * 0.5, c, true, -1.0, true)
+		_cv.draw_circle(a, w0 * 0.5, c, true, -1.0, true)
 		return
 	var n := Vector2(-d.y, d.x).normalized()
 	var e := c.darkened(0.5)
-	draw_colored_polygon(PackedVector2Array([a + n * (w0 * 0.5 + 1.2), b + n * (w1 * 0.5 + 1.2), b - n * (w1 * 0.5 + 1.2), a - n * (w0 * 0.5 + 1.2)]), e)
-	draw_circle(a, w0 * 0.5 + 1.2, e, true, -1.0, true)
-	draw_circle(b, w1 * 0.5 + 1.2, e, true, -1.0, true)
-	draw_colored_polygon(PackedVector2Array([a + n * w0 * 0.5, b + n * w1 * 0.5, b - n * w1 * 0.5, a - n * w0 * 0.5]), c)
-	draw_circle(a, w0 * 0.5, c, true, -1.0, true)
-	draw_circle(b, w1 * 0.5, c, true, -1.0, true)
+	_cv.draw_colored_polygon(PackedVector2Array([a + n * (w0 * 0.5 + 1.2), b + n * (w1 * 0.5 + 1.2), b - n * (w1 * 0.5 + 1.2), a - n * (w0 * 0.5 + 1.2)]), e)
+	_cv.draw_circle(a, w0 * 0.5 + 1.2, e, true, -1.0, true)
+	_cv.draw_circle(b, w1 * 0.5 + 1.2, e, true, -1.0, true)
+	_cv.draw_colored_polygon(PackedVector2Array([a + n * w0 * 0.5, b + n * w1 * 0.5, b - n * w1 * 0.5, a - n * w0 * 0.5]), c)
+	_cv.draw_circle(a, w0 * 0.5, c, true, -1.0, true)
+	_cv.draw_circle(b, w1 * 0.5, c, true, -1.0, true)
 	var lit := n if n.x < 0.0 else -n
-	draw_colored_polygon(PackedVector2Array([a + lit * w0 * 0.42, b + lit * w1 * 0.42, b + lit * w1 * 0.1, a + lit * w0 * 0.1]), Color(1, 1, 1, 0.14))
-	draw_colored_polygon(PackedVector2Array([a - lit * w0 * 0.48, b - lit * w1 * 0.48, b - lit * w1 * 0.2, a - lit * w0 * 0.2]), Color(0, 0, 0, 0.14))
+	_cv.draw_colored_polygon(PackedVector2Array([a + lit * w0 * 0.42, b + lit * w1 * 0.42, b + lit * w1 * 0.1, a + lit * w0 * 0.1]), Color(1, 1, 1, 0.14))
+	_cv.draw_colored_polygon(PackedVector2Array([a - lit * w0 * 0.48, b - lit * w1 * 0.48, b - lit * w1 * 0.2, a - lit * w0 * 0.2]), Color(0, 0, 0, 0.14))
 
 
 ## Torso as a trapezoid (hips -> shoulders) with soft shading.
@@ -330,10 +356,10 @@ func _torso_shape(hipc: Vector2, shc: Vector2, hw: float, sw: float, c: Color) -
 	var cen := hipc.lerp(shc, 0.5)
 	for v in poly:
 		edge.append(v + (v - cen).normalized() * 1.3)
-	draw_colored_polygon(edge, c.darkened(0.5))
-	draw_colored_polygon(poly, c)
-	draw_colored_polygon(PackedVector2Array([poly[3], poly[4], poly[5], hipc - n * hw * 0.15, shc - n * sw * 0.2]), Color(1, 1, 1, 0.1))
-	draw_colored_polygon(PackedVector2Array([poly[0], poly[1], poly[2], shc + n * sw * 0.25, hipc + n * hw * 0.2]), Color(0, 0, 0, 0.13))
+	_cv.draw_colored_polygon(edge, c.darkened(0.5))
+	_cv.draw_colored_polygon(poly, c)
+	_cv.draw_colored_polygon(PackedVector2Array([poly[3], poly[4], poly[5], hipc - n * hw * 0.15, shc - n * sw * 0.2]), Color(1, 1, 1, 0.1))
+	_cv.draw_colored_polygon(PackedVector2Array([poly[0], poly[1], poly[2], shc + n * sw * 0.25, hipc + n * hw * 0.2]), Color(0, 0, 0, 0.13))
 
 
 func _figure(p: Vector3, kit: Color, o: Dictionary) -> void:
@@ -351,9 +377,9 @@ func _figure(p: Vector3, kit: Color, o: Dictionary) -> void:
 	var sh_h := hip_h + 0.52
 	var lw := maxf(2.0, 0.13 * k)
 	# Shadow
-	draw_set_transform(base, 0.0, Vector2(1.0, 0.3))
-	draw_circle(Vector2.ZERO, 0.4 * k, Color(0, 0, 0, 0.25))
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	_cv.draw_set_transform(base, 0.0, Vector2(1.0, 0.3))
+	_cv.draw_circle(Vector2.ZERO, 0.4 * k, Color(0, 0, 0, 0.25))
+	_cv.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	# Legs (running lifts alternate feet; toward-camera stride shown as lift + spread)
 	for side in [-1.0, 1.0]:
 		var lift := maxf(0.0, sin(phase + (0.0 if side < 0.0 else PI))) * 0.35 * run
@@ -364,14 +390,14 @@ func _figure(p: Vector3, kit: Color, o: Dictionary) -> void:
 		_tq(knee, foot, 0.12 * k, 0.08 * k, trousers)
 		if o.get("pads", false):
 			_tq(knee.lerp(hip, 0.15), foot, 0.16 * k, 0.13 * k, _lit(Color(0.97, 0.96, 0.92)))
-		draw_colored_polygon(PackedVector2Array([foot + Vector2(-0.07 * k, 0), foot + Vector2(0.07 * k, 0), foot + Vector2(0.06 * k, -0.06 * k), foot + Vector2(-0.06 * k, -0.06 * k)]), Color(0.18, 0.16, 0.16))
+		_cv.draw_colored_polygon(PackedVector2Array([foot + Vector2(-0.07 * k, 0), foot + Vector2(0.07 * k, 0), foot + Vector2(0.06 * k, -0.06 * k), foot + Vector2(-0.06 * k, -0.06 * k)]), Color(0.18, 0.16, 0.16))
 	# Torso (broader shoulders) + collar
 	var hipc := base + Vector2(0, -hip_h * k)
 	var shc := base + Vector2(0, -sh_h * k)
 	_torso_shape(hipc + Vector2(0, 0.04 * k), shc, 0.3 * k, 0.42 * k, shirt)
-	draw_line(hipc + Vector2(-0.15 * k, 0.02 * k), hipc + Vector2(0.15 * k, 0.02 * k), trousers.darkened(0.25), maxf(1.0, 0.03 * k), true)
+	_cv.draw_line(hipc + Vector2(-0.15 * k, 0.02 * k), hipc + Vector2(0.15 * k, 0.02 * k), trousers.darkened(0.25), maxf(1.0, 0.03 * k), true)
 	if o.get("front", false):
-		draw_colored_polygon(PackedVector2Array([shc + Vector2(-0.06 * k, 0), shc + Vector2(0.06 * k, 0), shc + Vector2(0, 0.08 * k)]), shirt.lightened(0.4))
+		_cv.draw_colored_polygon(PackedVector2Array([shc + Vector2(-0.06 * k, 0), shc + Vector2(0.06 * k, 0), shc + Vector2(0, 0.08 * k)]), shirt.lightened(0.4))
 	# Arms with short sleeves
 	var arm_l: float = o.get("arm_l", 0.35 + crouch)
 	var arm_r: float = o.get("arm_r", 0.35 + crouch)
@@ -394,38 +420,38 @@ func _figure(p: Vector3, kit: Color, o: Dictionary) -> void:
 		_tq(sh2, sh2.lerp(hand2, 0.3), 0.13 * k, 0.11 * k, shirt)
 		_tq(sh2.lerp(hand2, 0.55), hand2, 0.085 * k, 0.065 * k, skin)
 		if o.get("ball_in_hand", false):
-			draw_circle(hand2, maxf(3.0, 0.07 * k), Color(1.0, 0.95, 0.5))
+			_cv.draw_circle(hand2, maxf(3.0, 0.07 * k), Color(1.0, 0.95, 0.5))
 		if o.get("track_hand", false):
 			_hand_screen = hand2
 	if o.get("bat", false):
 		var hb := shc + Vector2(0.15 * k, 0.45 * k)
-		draw_line(hb, hb + Vector2(0.05 * k, 0.8 * k), ink, 0.12 * k + 2.0, true)
-		draw_line(hb, hb + Vector2(0.05 * k, 0.8 * k), _lit(Color(0.93, 0.82, 0.58)), 0.12 * k, true)
+		_cv.draw_line(hb, hb + Vector2(0.05 * k, 0.8 * k), ink, 0.12 * k + 2.0, true)
+		_cv.draw_line(hb, hb + Vector2(0.05 * k, 0.8 * k), _lit(Color(0.93, 0.82, 0.58)), 0.12 * k, true)
 	# Neck + head (oval), hair or headgear, simple face when facing the camera
 	var hc := shc + Vector2(0, -0.19 * k)
 	_tq(shc, hc + Vector2(0, 0.06 * k), 0.1 * k, 0.09 * k, skin)
 	var hr := 0.115 * k
-	draw_set_transform(hc, 0.0, Vector2(0.92, 1.08))
-	draw_circle(Vector2.ZERO, hr + 1.3, skin.darkened(0.45), true, -1.0, true)
-	draw_circle(Vector2.ZERO, hr, skin, true, -1.0, true)
-	draw_circle(Vector2(hr * 0.3, hr * 0.15), hr * 0.65, Color(0, 0, 0, 0.08), true, -1.0, true)
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	_cv.draw_set_transform(hc, 0.0, Vector2(0.92, 1.08))
+	_cv.draw_circle(Vector2.ZERO, hr + 1.3, skin.darkened(0.45), true, -1.0, true)
+	_cv.draw_circle(Vector2.ZERO, hr, skin, true, -1.0, true)
+	_cv.draw_circle(Vector2(hr * 0.3, hr * 0.15), hr * 0.65, Color(0, 0, 0, 0.08), true, -1.0, true)
+	_cv.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if o.get("helmet", false):
-		draw_arc(hc, hr * 1.12, PI * 0.95, TAU + 0.05, 18, _lit(kit.darkened(0.25)), 0.12 * k, true)
+		_cv.draw_arc(hc, hr * 1.12, PI * 0.95, TAU + 0.05, 18, _lit(kit.darkened(0.25)), 0.12 * k, true)
 	elif o.get("hat", false):
-		draw_rect(Rect2(hc + Vector2(-0.19 * k, -0.11 * k), Vector2(0.38 * k, 0.04 * k)), _lit(Color(0.96, 0.95, 0.9)))
-		draw_rect(Rect2(hc + Vector2(-0.1 * k, -0.2 * k), Vector2(0.2 * k, 0.1 * k)), _lit(Color(0.96, 0.95, 0.9)))
+		_cv.draw_rect(Rect2(hc + Vector2(-0.19 * k, -0.11 * k), Vector2(0.38 * k, 0.04 * k)), _lit(Color(0.96, 0.95, 0.9)))
+		_cv.draw_rect(Rect2(hc + Vector2(-0.1 * k, -0.2 * k), Vector2(0.2 * k, 0.1 * k)), _lit(Color(0.96, 0.95, 0.9)))
 	elif o.get("cap", false):
-		draw_arc(hc, hr * 1.02, PI, TAU, 16, _lit(kit.darkened(0.25)), 0.09 * k, true)
-		draw_line(hc + Vector2(-0.07 * k, -0.06 * k), hc + Vector2(0.07 * k, -0.06 * k), _lit(kit.darkened(0.35)), maxf(1.0, 0.03 * k), true)
+		_cv.draw_arc(hc, hr * 1.02, PI, TAU, 16, _lit(kit.darkened(0.25)), 0.09 * k, true)
+		_cv.draw_line(hc + Vector2(-0.07 * k, -0.06 * k), hc + Vector2(0.07 * k, -0.06 * k), _lit(kit.darkened(0.35)), maxf(1.0, 0.03 * k), true)
 	else:
-		draw_arc(hc, hr * 0.98, PI * 0.95, TAU + 0.05, 16, Color(0.08, 0.06, 0.05), 0.08 * k, true)
+		_cv.draw_arc(hc, hr * 0.98, PI * 0.95, TAU + 0.05, 16, Color(0.08, 0.06, 0.05), 0.08 * k, true)
 	if o.get("front", false) and k > 22.0:
-		draw_circle(hc + Vector2(-0.04 * k, 0.0), maxf(1.0, 0.014 * k), ink)
-		draw_circle(hc + Vector2(0.04 * k, 0.0), maxf(1.0, 0.014 * k), ink)
-		draw_line(hc + Vector2(-0.035 * k, 0.06 * k), hc + Vector2(0.035 * k, 0.06 * k), skin.darkened(0.35), maxf(1.0, 0.01 * k), true)
+		_cv.draw_circle(hc + Vector2(-0.04 * k, 0.0), maxf(1.0, 0.014 * k), ink)
+		_cv.draw_circle(hc + Vector2(0.04 * k, 0.0), maxf(1.0, 0.014 * k), ink)
+		_cv.draw_line(hc + Vector2(-0.035 * k, 0.06 * k), hc + Vector2(0.035 * k, 0.06 * k), skin.darkened(0.35), maxf(1.0, 0.01 * k), true)
 		if o.get("beard", false):
-			draw_arc(hc + Vector2(0, 0.02 * k), hr * 0.85, 0.2, PI - 0.2, 10, Color(0.1, 0.08, 0.06), 0.05 * k, true)
+			_cv.draw_arc(hc + Vector2(0, 0.02 * k), hr * 0.85, 0.2, PI - 0.2, 10, Color(0.1, 0.08, 0.06), 0.05 * k, true)
 
 
 func _bowler(p: Vector3, t: float) -> void:
@@ -515,6 +541,19 @@ func _skeleton_opts(t: float) -> Dictionary:
 
 
 const LIGHT2 := Vector2(-0.55, -0.83)
+## Unit normals around a capsule: back half-circle at the start, front half at the end.
+static var SEMI: Array = _semi()
+
+
+static func _semi() -> Array:
+	var out := []
+	for i in 7:
+		var q := PI * 0.5 + PI * i / 6.0
+		out.append(Vector2(cos(q), sin(q)))
+	for i in 7:
+		var q := -PI * 0.5 + PI * i / 6.0
+		out.append(Vector2(cos(q), sin(q)))
+	return out
 
 
 static func _shade(c: Color, k: float) -> Color:
@@ -557,19 +596,19 @@ func _cap3(a: Vector3, b: Vector3, ra: float, rb: float, col: Color) -> void:
 	var d := pb - pa
 	var ang := d.angle() if d.length() > 0.01 else 0.0
 	var pts := PackedVector2Array()
-	for i in 9:
-		var q := ang + PI * 0.5 + PI * i / 8.0
-		pts.append(pa + Vector2(cos(q), sin(q)) * r0)
-	for i in 9:
-		var q := ang - PI * 0.5 + PI * i / 8.0
-		pts.append(pb + Vector2(cos(q), sin(q)) * r1)
 	var e := PackedVector2Array()
 	var cols := PackedColorArray()
-	for i in pts.size():
-		var cen := pa if i < 9 else pb
-		var nrm := (pts[i] - cen).normalized()
-		e.append(pts[i] + nrm * 1.2)
-		cols.append(_shade(c, nrm.dot(LIGHT2)))
+	pts.resize(14)
+	e.resize(14)
+	cols.resize(14)
+	for i in 14:
+		var nrm: Vector2 = SEMI[i].rotated(ang)
+		var cen := pa if i < 7 else pb
+		var rr := r0 if i < 7 else r1
+		pts[i] = cen + nrm * rr
+		e[i] = cen + nrm * (rr + 1.2)
+		var k := nrm.dot(LIGHT2)
+		cols[i] = _shade(c, k)
 	draw_colored_polygon(e, c.darkened(0.55))
 	draw_polygon(pts, cols)
 
@@ -660,8 +699,8 @@ func _torso3(j: Dictionary, shirt: Color, trousers: Color) -> void:
 	var pts := PackedVector2Array()
 	for ring in [[0.1, 0.16, 0.12], [0.24, 0.175, 0.14], [0.36, 0.205, 0.15], [0.45, 0.215, 0.12]]:
 		var c: Vector3 = pel + spine * float(ring[0])
-		for i in 16:
-			var a := TAU * i / 16.0
+		for i in 12:
+			var a := TAU * i / 12.0
 			pts.append(project(c + side * cos(a) * float(ring[1]) + fwd * sin(a) * float(ring[2])))
 	var hull := _hull(pts)
 	_lit_poly(hull, _lit(shirt))
@@ -713,10 +752,10 @@ func _head3(j: Dictionary, skin: Color) -> void:
 	# Helmet shell: covers the top and back of the head, peak over the eyes.
 	var shell := PackedVector2Array()
 	var sc := hc + up * 0.018
-	for i in 22:
-		for jj in 6:
-			var lon := TAU * i / 22.0
-			var lat := -0.25 + 1.45 * jj / 5.0
+	for i in 11:
+		for jj in 4:
+			var lon := TAU * i / 11.0
+			var lat := -0.25 + 1.45 * jj / 3.0
 			var dirv := (fwd_h * cos(lon) * cos(lat) + side * sin(lon) * cos(lat) + up * sin(lat))
 			if dirv.dot(fwd_h) > 0.55 and lat < 0.35:
 				continue   # face opening

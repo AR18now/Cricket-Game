@@ -43,6 +43,29 @@ xvfb-run -a -s "-screen 0 1280x720x24" godot --path . --resolution 1280x720 -- -
 xvfb-run -a -s "-screen 0 720x1280x24" godot --path . --resolution 720x1280 -- --harness=smoke --portrait --out=$PWD/captures/smoke_portrait
 ```
 
+### Performance (CPU per frame)
+
+`--harness=perf` run **headless** (no GPU rasterisation, frame cap and idle sleep off)
+measures wall-clock CPU time per frame on the menu and across real deliveries in both
+views:
+
+```bash
+godot --headless --path . -- --harness=perf --out=$PWD/captures/perf
+```
+
+| Screen | Before round 7 (avg / p95) | After (avg / p95) |
+| --- | --- | --- |
+| Menu | 5.44 / 9.80 ms | 0.25 / 0.36 ms |
+| Batter's view | 6.29 / 9.39 ms | 1.32 / 2.46 ms |
+| Side view | 5.10 / 7.39 ms | 0.75 / 1.42 ms |
+
+Fixes: side-view figures redraw only when their pose visibly changes and are not posed
+or drawn at all while the batter's view covers them (hidden at renderer level, so their
+cached drawings survive); batter's-view fielders and umpire live on a cached layer;
+the swing's bat-to-ball correction is computed once per swing; capsule geometry uses
+precomputed tables. (Engine `TIME_PROCESS` is only refreshed about once a second, so it is
+not used for per-frame figures.)
+
 Other modes: `batter` (frozen pose sheet of the striker in both views), `screens` (menu,
 settings, truck, pause, result), `look`, `hints`, `restart`, `approach`. Smoke passes in
 landscape and portrait (round 6).

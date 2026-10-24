@@ -76,6 +76,13 @@ _Last updated: 2026-09-25 (session 1)._
 | Better than the birdsong | `amb_pindi` is now a neighbourhood bed: rooftop chatter, breeze, a passing rickshaw, distant traffic, tea-stall clinks, odd claps |
 | Pakistani truck horn | `truck_horn`: tuned pressure-horn trumpets play a short original tune, then a two-tone blast with street echo; sounds as the truck rolls in |
 
+## Owner feedback round 7 (implemented)
+
+| Request | Done |
+| --- | --- |
+| Make the app well responsive | **Speed:** CPU per frame cut ~20x on the menu and 5-7x in play (batter's view 6.3 -> 1.3 ms avg, side view 5.1 -> 0.75 ms; see TESTING.md, `--harness=perf`). **Layout:** screens tour passes with no errors and no clipping at 16:9, 20:9 and 4:3 in landscape and 9:16, 9:20 and 3:4 in portrait; the result card now hides the last-ball banner |
+| Remove DevTorque from the start | Splash shows the game's title mark; menu footer just says "Offline - no account needed."; Windows file properties say "Pocket Boundary". The hidden Android/iOS package id keeps `com.devtorque.pocketboundary` until the final store name is chosen (changing it makes phones treat it as a different app) |
+
 ## What exists now (evidence)
 
 - Deterministic simulation: analytic delivery path (bounce, deviation), timing → contact at the

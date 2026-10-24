@@ -227,6 +227,7 @@ static func trouser_colour(kit: Color) -> Color:
 func set_batting_kit(kit: Color) -> void:
 	batting_kit = kit
 	for r in [striker, non_striker]:
+		r.force_redraw()
 		r.shirt = kit
 		r.cap_color = kit.darkened(0.25)
 		r.trousers = trouser_colour(kit)
@@ -275,15 +276,17 @@ func set_resolved(r: BallResolver, swing_t: float) -> void:
 # ------------------------------------------------------------------ render
 func render(t: float) -> void:
 	clock = t
-	_render_bowler(t)
-	_render_batters(t)
-	_render_keeper(t)
-	_render_fielders(t)
-	_render_umpire(t)
+	var bv := batter_view_active(t)
+	if not (bv and _bv_on):
+		# Side-view figures are only posed while they can be seen (or about to be).
+		_render_bowler(t)
+		_render_batters(t)
+		_render_keeper(t)
+		_render_fielders(t)
+		_render_umpire(t)
 	_render_ball(t)
 	_render_stumps(t)
 	effects.render(self, t)
-	var bv := batter_view_active(t)
 	if bv and not _bv_on:
 		snap_camera_to_delivery()
 		_bv_fade = 1.0
@@ -295,10 +298,30 @@ func render(t: float) -> void:
 		batter_view.visible = true
 		batter_view.modulate.a = 1.0
 		sky_layer.visible = false
-		return   # side-view figures are hidden behind the batter's view: skip their redraw
+		# The batter's view covers the screen: don't draw the side-view world under it.
+		_set_side_world_shown(false)
+		return
 	sky_layer.visible = true
+	_set_side_world_shown(true)
+	_redraw_changed_rigs()
+
+
+## Hides/shows the side-view ground and figures at the renderer level. (Toggling the
+## nodes' `visible` would make Godot rebuild their drawings - ~20 ms - every time.)
+var _side_shown := true
+
+
+func _set_side_world_shown(on: bool) -> void:
+	if on == _side_shown:
+		return
+	_side_shown = on
+	RenderingServer.canvas_item_set_visible(ground.get_canvas_item(), on)
+	RenderingServer.canvas_item_set_visible(actors.get_canvas_item(), on)
+
+
+func _redraw_changed_rigs() -> void:
 	for r in actors.get_children():
-		if r is CricketerRig:
+		if r is CricketerRig and r.visible and r.needs_redraw():
 			r.queue_redraw()
 
 
@@ -308,6 +331,7 @@ func render_menu(delta: float) -> void:
 	batter_view.visible = false
 	_bv_on = false
 	sky_layer.visible = true
+	_set_side_world_shown(true)
 	striker.position = Proj.ground_v(STRIKER_BASE)
 	striker.facing = -1.0
 	striker.set_pose(Poses.bat_stance(idle_t))
@@ -334,6 +358,7 @@ func render_menu(delta: float) -> void:
 	ball.visible_ball = false
 	ball_shadow.visible = false
 	ball.queue_redraw()
+	_redraw_changed_rigs()
 	# Slow drifting overview camera.
 	var drift := 0.0 if reduced_motion else sin(idle_t * 0.12) * 6.0
 	cam_center = Proj.ground(-10.0 + drift, 3.0) + Vector2(0, -160)

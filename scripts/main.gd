@@ -125,7 +125,6 @@ func _apply_orientation(mode: String) -> void:
 		mode = "landscape"
 	if mode == _orientation:
 		return
-	var first := _orientation == ""
 	_orientation = mode
 	if OS.has_feature("mobile"):
 		match mode:
@@ -140,7 +139,7 @@ func _apply_orientation(mode: String) -> void:
 		var want_portrait := mode == "portrait"
 		var mode_now := DisplayServer.window_get_mode()
 		var windowed := mode_now == DisplayServer.WINDOW_MODE_WINDOWED or mode_now == DisplayServer.WINDOW_MODE_MAXIMIZED
-		if windowed and (win.y > win.x) != want_portrait and not (first and _harness_fixed_window()):
+		if windowed and (win.y > win.x) != want_portrait and not _harness_fixed_window():
 			var scr := DisplayServer.screen_get_usable_rect()
 			var sz := Vector2i(1280, 720)
 			if want_portrait:
@@ -156,8 +155,12 @@ func _apply_orientation(mode: String) -> void:
 	_on_resized()
 
 
+## Dev harness runs keep the window size they were launched with.
 func _harness_fixed_window() -> bool:
-	return _harness != null
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--harness"):
+			return true
+	return false
 
 
 func _on_resized() -> void:
@@ -439,6 +442,7 @@ func _on_match_over(state: MatchState) -> void:
 	await get_tree().create_timer(1.0).timeout
 	if mode == "classic":
 		var prev_best: int = int(hud.best_runs)
+		hud.banner.visible = false   # the result card replaces the last-ball banner
 		var cr := ClassicResult.new()
 		cr.build(state, prev_best, venue, controller.hints)
 		cr.play_again.connect(func(): start_mode("classic"))

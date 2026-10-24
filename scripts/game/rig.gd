@@ -48,9 +48,51 @@ func _ready() -> void:
 		pose = DEFAULT_POSE.duplicate()
 
 
+## Poses arrive every frame, but a figure is only redrawn when it would look different
+## (tiny idle wobbles below a pixel are skipped) - the world asks via `needs_redraw()`.
+var dirty := true
+var _drawn := {}
+var _drawn_state := []
+
+
 func set_pose(p: Dictionary) -> void:
 	pose = p
-	queue_redraw()
+	if not dirty:
+		dirty = _differs(p)
+
+
+func force_redraw() -> void:
+	dirty = true
+
+
+func _state() -> Array:
+	return [facing, lift, ball_in_hand, name_tag, tag_strong, has_bat, shirt, trousers, skin, headgear]
+
+
+func _differs(p: Dictionary) -> bool:
+	if p.size() != _drawn.size() or _state() != _drawn_state:
+		return true
+	for k in p:
+		if not _drawn.has(k):
+			return true
+		var a = p[k]
+		var b = _drawn[k]
+		if a is Vector2:
+			if (a as Vector2).distance_squared_to(b) > 0.00002:
+				return true
+		elif a is float or a is int:
+			if absf(float(a) - float(b)) > (0.003 if k == "bob" or k == "root_x" else 0.012):
+				return true
+		elif a != b:
+			return true
+	return false
+
+
+## True (once) when the pose changed enough to be visible since the last draw.
+func needs_redraw() -> bool:
+	if dirty or _state() != _drawn_state:
+		return true
+	return false
 
 
 static func dir_down(a: float, f: float) -> Vector2:
@@ -368,6 +410,9 @@ func _bat(j: Dictionary) -> void:
 
 
 func _draw() -> void:
+	dirty = false
+	_drawn = pose.duplicate()
+	_drawn_state = _state()
 	var j := joints()
 	if show_shadow:
 		# Soft contact shadow, longer than wide, cast slightly away from the light.
