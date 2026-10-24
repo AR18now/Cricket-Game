@@ -66,6 +66,16 @@ _Last updated: 2026-09-25 (session 1)._
 | Commentary (spoken) | Every commentary line is spoken in English (`vo_<id>` clips, 27) with a matching caption; music ducks for the clip's length; a newer line replaces an older one. **Voices are robotic eSpeak NG placeholders** (`tools/gen_voice.py`); real recordings drop in with the same file names. Voice experience is **not** complete until reviewed recordings replace them |
 | Remove Urdu completely | Urdu clips, the language option (menu chip + Settings), Roman Urdu commentary text and Urdu UI words removed; the truck now shows "FOUR!" / "SIX!" and toasts say "Well played!" |
 
+## Owner feedback round 6 (implemented)
+
+| Request | Done |
+| --- | --- |
+| Batsman less robotic, more human (movement) | Batter's-eye striker is now a 3D skeleton (`BatterSkeleton`) with two-bone IK: breathing, weight shift, two bat taps as the bowler runs in, back-and-across trigger, backlift, forward press, stride and weight transfer, curved hand path (~10 m/s peak), back-heel pivot and held high finish; the bat comes back down when a ball is left. Tests check bone lengths, hands on the bat, sweet spot at contact (1-4 cm) and frame-to-frame continuity. Side view: breathing, deliberate bat taps, trigger settle, loaded backlift |
+| Batsman appearance more real | Seen side-on as a real right-hander from behind the stumps; rounded, light-shaded body parts; coloured-clothing trousers; pads with canes, knee roll and straps; shoes; gloves with cuffs; shirt with sleeves, collar and folds; helmet with peak, vents, grille and neck guards; 3D bat (face, sticker, spine, grip); soft ground shadow |
+| Portrait and landscape | Menu chip and Settings row "Screen": Landscape / Portrait / Auto-rotate. Phones lock or free rotation (`screen_set_orientation`); on Windows the window is reshaped. Layout follows the real window shape: 720x1280 design size when tall; HUD re-arranged (bigger SWING bottom-centre, scoreboard under the top row), centred menu, side camera zoomed to fit and framed toward the houses/sky, batter's view framed by width. Harness smoke passes in both orientations |
+| Better than the birdsong | `amb_pindi` is now a neighbourhood bed: rooftop chatter, breeze, a passing rickshaw, distant traffic, tea-stall clinks, odd claps |
+| Pakistani truck horn | `truck_horn`: tuned pressure-horn trumpets play a short original tune, then a two-tone blast with street echo; sounds as the truck rolls in |
+
 ## What exists now (evidence)
 
 - Deterministic simulation: analytic delivery path (bounce, deviation), timing → contact at the

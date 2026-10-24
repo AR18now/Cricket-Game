@@ -19,7 +19,7 @@ Status legend: ✅ done · 🟡 in progress · ⬜ not started · 👤 needs own
 - ⬜ Signed release AAB (after keystore)
 - 👤 Play Console account, identity verification, and check which testing-track requirements apply to the account (e.g. closed testing with testers before production for new personal accounts — verify current policy)
 - 👤 Mac access for iOS (Xcode version per current Godot docs), Apple Developer account, team selection, device pairing
-- ⬜ iOS Xcode project export, signing, bundle id, icons, orientations, device families
+- ⬜ iOS Xcode project export, signing, bundle id, icons, orientations (project allows all; the game locks per the Screen setting), device families
 - ⬜ TestFlight build (only after approval)
 
 ## Quality gates

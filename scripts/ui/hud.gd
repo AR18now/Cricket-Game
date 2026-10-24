@@ -51,6 +51,7 @@ var _toast_until := 0.0
 var _last_bowler := ""
 var confetti: Confetti
 var reduced_motion := false
+var portrait := false
 var _best_announced := false
 var _last_milestone := 0
 var hit_now: Label
@@ -238,6 +239,16 @@ func _layout() -> void:
 	minimap.position = Vector2(s.x - 210.0 - m, m + 72.0)
 	swing_btn.size = Vector2(190, 190)
 	swing_btn.position = Vector2(s.x - 190.0 - m, s.y - 190.0 - m)
+	if portrait:
+		# Tall screen: buttons and bowler card share the top row, the scoreboard sits
+		# under them, the map tucks below the buttons, and a bigger SWING sits
+		# bottom-centre under the thumb.
+		var row_h := maxf(bs.y, bowler_panel.size.y)
+		score_panel.position = Vector2((s.x - ss.x) * 0.5, m + row_h + 10.0)
+		minimap.size = Vector2(170, 122)
+		minimap.position = Vector2(s.x - 170.0 - m, score_panel.position.y + ss.y + 10.0)
+		swing_btn.size = Vector2(220, 220)
+		swing_btn.position = Vector2((s.x - 220.0) * 0.5, s.y - 220.0 - m * 3.0)
 	hint_label.size = Vector2(s.x, 40)
 	hint_label.position = Vector2(0, s.y * 0.7)
 	debug_label.position = Vector2(m, s.y * 0.42)
@@ -245,10 +256,11 @@ func _layout() -> void:
 		replay_btn.position = Vector2(s.x * 0.5 - 75.0, banner.position.y + banner.size.y + 12.0)
 	else:
 		replay_btn.position = Vector2(m, s.y - 58.0 - m)
-	replay_tag.position = Vector2((s.x - replay_tag.get_combined_minimum_size().x) * 0.5, ss.y + 28.0)
+	var below_score := score_panel.position.y + ss.y + 12.0
+	replay_tag.position = Vector2((s.x - replay_tag.get_combined_minimum_size().x) * 0.5, below_score)
 	var ts := toast.get_combined_minimum_size()
 	toast.size = ts
-	toast.position = Vector2((s.x - ts.x) * 0.5, ss.y + 28.0)
+	toast.position = Vector2((s.x - ts.x) * 0.5, below_score)
 
 
 func _process(_d: float) -> void:
@@ -266,6 +278,8 @@ func _process(_d: float) -> void:
 		var cs := caption_panel.get_combined_minimum_size()
 		caption_panel.size = cs
 		caption_panel.position = Vector2((size.x - cs.x) * 0.5, size.y - cs.y - 24.0)
+		if portrait:
+			caption_panel.position.y = swing_btn.position.y - cs.y - 18.0
 	if banner.visible:
 		var bs := banner.get_combined_minimum_size()
 		banner.size = bs

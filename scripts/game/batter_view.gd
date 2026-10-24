@@ -102,7 +102,9 @@ func _draw() -> void:
 	var vs := get_viewport_rect().size
 	W = vs.x
 	H = vs.y
-	F = H * 1.25
+	# Landscape frames by height; a tall portrait screen frames by width (same scene
+	# scale as landscape, cropped at the sides, with more sky and ground).
+	F = H * 1.25 if W >= H else W * 1.4
 	var key := "%d:%d:%s" % [int(W), int(H), w.atm.id]
 	if key != _static_key:
 		_static_key = key

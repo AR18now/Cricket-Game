@@ -12,14 +12,18 @@ const BOWLING := ["mixed", "pace", "spin"]
 const BOWLING_LABEL := {"mixed": "Mixed", "pace": "Fast", "spin": "Spin"}
 const VIEWS := ["batter", "side"]
 const VIEW_LABEL := {"batter": "Batter's eye", "side": "Side-on"}
+const SCREENS := ["landscape", "portrait", "auto"]
+const SCREEN_LABEL := {"landscape": "Landscape", "portrait": "Portrait", "auto": "Auto-rotate"}
 
 var play_btn: Button
 var best_label: Label
 var mute_btn: IconButton
 var chips := {}
 var reduced_motion := false
+var portrait := false
 var _pulse: Tween
-var _values := {"bowling": "mixed", "time_of_day": "evening", "view": "batter", "hints": "off"}
+var _values := {"bowling": "mixed", "time_of_day": "evening", "view": "batter", "hints": "off",
+	"orientation": "landscape"}
 
 
 func _init() -> void:
@@ -41,7 +45,7 @@ func build() -> void:
 	col.add_child(logo)
 	col.add_child(UiTheme.label("From the neighbourhood pitch to the floodlights", 22, UiTheme.SAND, "regular"))
 	play_btn = UiTheme.button("PLAY", 48, 420)
-	play_btn.custom_minimum_size = Vector2(420, 104)
+	play_btn.custom_minimum_size = Vector2(520, 104)
 	var sb := UiTheme.panel_box(UiTheme.TERRACOTTA, 26, UiTheme.GOLD, 4)
 	play_btn.add_theme_stylebox_override("normal", sb)
 	var sbh := sb.duplicate()
@@ -50,10 +54,14 @@ func build() -> void:
 	play_btn.add_theme_stylebox_override("pressed", sbh)
 	play_btn.pressed.connect(func(): _tap(); play_pressed.emit())
 	col.add_child(play_btn)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
+	var row := HFlowContainer.new()
+	row.name = "Chips"
+	row.add_theme_constant_override("h_separation", 10)
+	row.add_theme_constant_override("v_separation", 10)
+	row.custom_minimum_size = Vector2(118 * 5 + 40, 0)
+	row.alignment = FlowContainer.ALIGNMENT_CENTER
 	col.add_child(row)
-	for key in ["bowling", "time_of_day", "view", "hints"]:
+	for key in ["bowling", "time_of_day", "view", "hints", "orientation"]:
 		var b := UiTheme.button("", 19, 118)
 		b.custom_minimum_size = Vector2(118, 64)
 		var k: String = key
@@ -99,6 +107,7 @@ func _cycle(key: String) -> void:
 		"bowling": list = BOWLING
 		"time_of_day": list = Atmosphere.IDS
 		"view": list = VIEWS
+		"orientation": list = SCREENS
 	var i := list.find(_values[key])
 	_values[key] = list[(i + 1) % list.size()]
 	_update_chips()
@@ -117,6 +126,7 @@ func _update_chips() -> void:
 	chips["time_of_day"].text = "Time\n" + Atmosphere.LABELS[_values["time_of_day"]]
 	chips["view"].text = "View\n" + VIEW_LABEL[_values["view"]]
 	chips["hints"].text = "Hints\n" + ("On" if _values["hints"] == "on" else "Off")
+	chips["orientation"].text = "Screen\n" + SCREEN_LABEL.get(_values["orientation"], "Landscape")
 
 
 func _tap() -> void:
@@ -142,6 +152,17 @@ func _process(_d: float) -> void:
 	var tr := get_node("TopRight") as Control
 	tr.position = Vector2(size.x - tr.get_combined_minimum_size().x - 24.0, 20.0)
 	var col := get_node("MenuColumn") as Control
-	col.position = Vector2(64, maxf(24.0, (size.y - col.get_combined_minimum_size().y) * 0.42))
+	var cm := col.get_combined_minimum_size()
 	var foot := get_node("Foot") as Control
-	foot.position = Vector2(64, size.y - 40.0)
+	var chips_row := col.get_node("Chips") as Control
+	chips_row.custom_minimum_size.x = minf(size.x - 40.0, 680.0) if portrait else 760.0
+	for c in col.get_children():
+		(c as Control).size_flags_horizontal = Control.SIZE_SHRINK_CENTER if portrait else Control.SIZE_SHRINK_BEGIN
+	if portrait:
+		# Tall screen: everything centred, PLAY in the lower-middle where thumbs reach.
+		col.size = cm
+		col.position = Vector2((size.x - cm.x) * 0.5, maxf(110.0, (size.y - cm.y) * 0.55))
+		foot.position = Vector2((size.x - foot.get_combined_minimum_size().x) * 0.5, size.y - 40.0)
+	else:
+		col.position = Vector2(64, maxf(24.0, (size.y - cm.y) * 0.42))
+		foot.position = Vector2(64, size.y - 40.0)

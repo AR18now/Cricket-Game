@@ -25,7 +25,10 @@ func run(main_node) -> void:
 	save.configure(OS.get_user_data_dir() + "/harness_save")
 	DirAccess.make_dir_recursive_absolute(OS.get_user_data_dir() + "/harness_save")
 	save.data = save.defaults()
+	if "--portrait" in OS.get_cmdline_user_args():
+		save.data["settings"]["orientation"] = "portrait"
 	save.save()
+	app._apply_settings()
 	app.controller.swing_feedback.connect(func(r): _log("swing_feedback=" + r + " t=" + str(app.controller.clock.time)))
 	# Slow the game down so frame-quantised waits can place real input events precisely
 	# (software rendering in CI/containers runs at a low frame rate).
@@ -53,6 +56,8 @@ func _go() -> void:
 			await _look_tour()
 		"batter":
 			await _batter_sheet()
+		"screens":
+			await _screens_tour()
 		_:
 			await _capture_tour()
 	_finish()
@@ -563,3 +568,43 @@ func _batter_sheet() -> void:
 		await shot(s[0])
 	wv.set_view_mode("batter")
 	c.set_process(true)
+
+
+## Every overlay and celebration in the current orientation (run with --portrait too).
+func _screens_tour() -> void:
+	await wait(1.6)
+	await shot("u01_menu")
+	app.open_settings()
+	await wait(0.3)
+	await shot("u02_settings")
+	app._close_overlay()
+	app.start_mode("classic")
+	await wait(0.2)
+	app._close_overlay()
+	var c = app.controller
+	# Hit until a boundary brings the truck out (or 6 balls).
+	for i in 6:
+		var o: BallOutcome = await play_ball(0.0)
+		if o.is_boundary():
+			break
+	await wait(0.1)
+	await shot("u03_after_boundary")
+	app.hud.truck.play("six")
+	await wait(0.8)
+	await shot("u03b_truck")
+	app.open_pause()
+	await wait(0.3)
+	await shot("u04_pause")
+	app._close_overlay()
+	for i in 30:
+		if app.screen != app.Screen.MATCH:
+			break
+		await until_phase(MatchController.Phase.FLIGHT)
+		await swing_at(ideal_swing() - 0.40)
+		await until_phase(MatchController.Phase.OUTCOME)
+		if c.state.is_complete():
+			break
+		press_space()
+		await frames(2)
+	await wait(2.5)
+	await shot("u05_result")

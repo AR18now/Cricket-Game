@@ -39,7 +39,13 @@ path as a keyboard/mouse, captures screenshots of the running game and asserts s
 
 ```bash
 xvfb-run -a -s "-screen 0 1280x720x24" godot --path . --resolution 1280x720 -- --harness=smoke --out=$PWD/captures/smoke
+# Portrait: tall window plus the saved Screen setting
+xvfb-run -a -s "-screen 0 720x1280x24" godot --path . --resolution 720x1280 -- --harness=smoke --portrait --out=$PWD/captures/smoke_portrait
 ```
+
+Other modes: `batter` (frozen pose sheet of the striker in both views), `screens` (menu,
+settings, truck, pause, result), `look`, `hints`, `restart`, `approach`. Smoke passes in
+landscape and portrait (round 6).
 
 Recorded results (development container, software OpenGL via Mesa llvmpipe under Xvfb):
 

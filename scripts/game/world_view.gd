@@ -58,6 +58,7 @@ var floodlights: Floodlights
 var weather_layer: CanvasLayer
 var weather: WeatherOverlay
 var view_mode := "batter"
+var portrait := false
 var batter_layer: CanvasLayer
 var batter_view: BatterView
 var signal_t := 0.0
@@ -139,6 +140,19 @@ func build(v: VenueConfig, t: GameTuning) -> void:
 	cam.make_current()
 	set_atmosphere(atm)
 	_compute_release_root()
+
+
+func set_portrait(p: bool) -> void:
+	if p != portrait:
+		portrait = p
+		batter_view.invalidate()
+
+
+## Side-camera zoom factor so the same ground fits a narrow (portrait) screen.
+func view_fit() -> float:
+	if not portrait:
+		return 1.0
+	return clampf(get_viewport_rect().size.x / 1280.0 * 1.3, 0.4, 1.0)
 
 
 func set_view_mode(m: String) -> void:
@@ -325,7 +339,7 @@ func render_menu(delta: float) -> void:
 	cam_center = Proj.ground(-10.0 + drift, 3.0) + Vector2(0, -160)
 	cam_zoom = 0.62
 	cam.position = cam_center
-	cam.zoom = Vector2(cam_zoom, cam_zoom)
+	cam.zoom = Vector2(cam_zoom, cam_zoom) * view_fit()
 	sky.cam_offset = cam.position
 
 
@@ -684,6 +698,9 @@ func update_camera(delta: float) -> void:
 				zoom = clampf(0.92 - d * 0.017, 0.36, 0.9)
 				var focus := Proj.to_screen(Vector3(bp.x, bp.y, bp.z * 0.6))
 				center = Proj.ground(-2.0, 0.0).lerp(focus, 0.72) + Vector2(0, -60)
+	if portrait:
+		# Tall screen: spend the extra height on the houses and sky, not the near wall.
+		center.y -= get_viewport_rect().size.y / (zoom * view_fit()) * 0.12
 	var rate := 5.0
 	if reduced_motion or _snap_follow:
 		_snap_follow = false
@@ -696,13 +713,13 @@ func update_camera(delta: float) -> void:
 	# Never lose the ball: clamp the camera so the ball stays inside the view.
 	var bpos := ball_world(clock)
 	if bpos != Vector3.INF:
-		var vs := get_viewport_rect().size / cam_zoom
+		var vs := get_viewport_rect().size / (cam_zoom * view_fit())
 		var sp := Proj.to_screen(bpos)
 		var margin := vs * 0.12
 		cam_center.x = clampf(cam_center.x, sp.x - vs.x * 0.5 + margin.x, sp.x + vs.x * 0.5 - margin.x)
 		cam_center.y = clampf(cam_center.y, sp.y - vs.y * 0.5 + margin.y, sp.y + vs.y * 0.5 - margin.y)
 	cam.position = cam_center
-	cam.zoom = Vector2(cam_zoom, cam_zoom)
+	cam.zoom = Vector2(cam_zoom, cam_zoom) * view_fit()
 	sky.cam_offset = cam.position
 	sky.reduced_motion = reduced_motion
 	weather.reduced_motion = reduced_motion

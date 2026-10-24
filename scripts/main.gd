@@ -73,8 +73,8 @@ func _ready() -> void:
 	audio.caption.connect(func(text, speaker): hud.show_caption(text, speaker))
 	save.changed.connect(_apply_settings)
 	_apply_settings()
-	get_tree().root.size_changed.connect(_apply_safe_area)
-	_apply_safe_area()
+	get_tree().root.size_changed.connect(_on_resized)
+	_on_resized()
 	world.render_menu(0.0)
 	_show_splash()
 	if OS.is_debug_build():
@@ -102,6 +102,7 @@ func _apply_settings() -> void:
 		if screen != Screen.SPLASH:
 			audio.start_ambience(atm.ambience)
 	world.set_view_mode(String(s["view"]))
+	_apply_orientation(String(s.get("orientation", "landscape")))
 	world.effects.reduced_motion = world.reduced_motion
 	hud.set_muted(bool(s["muted"]))
 	hud.set_stance_available(bool(save.data["stance_unlocked"]))
@@ -109,6 +110,68 @@ func _apply_settings() -> void:
 	world.set_batting_kit(OnboardingPanel.KITS[clampi(kit_idx, 0, OnboardingPanel.KITS.size() - 1)])
 	if menu.visible:
 		menu.refresh(save.data)
+
+
+# ------------------------------------------------------------------ orientation
+const ORIENTATIONS := ["landscape", "portrait", "auto"]
+var _orientation := ""
+var portrait := false
+
+
+## Landscape / portrait / auto-rotate. Phones lock (or free) the screen rotation; on a
+## desktop the window is reshaped. The layout itself follows the actual window shape.
+func _apply_orientation(mode: String) -> void:
+	if mode not in ORIENTATIONS:
+		mode = "landscape"
+	if mode == _orientation:
+		return
+	var first := _orientation == ""
+	_orientation = mode
+	if OS.has_feature("mobile"):
+		match mode:
+			"portrait":
+				DisplayServer.screen_set_orientation(DisplayServer.SCREEN_SENSOR_PORTRAIT)
+			"auto":
+				DisplayServer.screen_set_orientation(DisplayServer.SCREEN_SENSOR)
+			_:
+				DisplayServer.screen_set_orientation(DisplayServer.SCREEN_SENSOR_LANDSCAPE)
+	elif mode != "auto" and DisplayServer.get_name() != "headless":
+		var win := DisplayServer.window_get_size()
+		var want_portrait := mode == "portrait"
+		var mode_now := DisplayServer.window_get_mode()
+		var windowed := mode_now == DisplayServer.WINDOW_MODE_WINDOWED or mode_now == DisplayServer.WINDOW_MODE_MAXIMIZED
+		if windowed and (win.y > win.x) != want_portrait and not (first and _harness_fixed_window()):
+			var scr := DisplayServer.screen_get_usable_rect()
+			var sz := Vector2i(1280, 720)
+			if want_portrait:
+				var h := mini(int(scr.size.y * 0.92), 1280)
+				sz = Vector2i(int(h * 9.0 / 16.0), h)
+			else:
+				var w2 := mini(int(scr.size.x * 0.9), 1280)
+				sz = Vector2i(w2, int(w2 * 9.0 / 16.0))
+			if mode_now == DisplayServer.WINDOW_MODE_MAXIMIZED:
+				DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+			DisplayServer.window_set_size(sz)
+			DisplayServer.window_set_position(scr.position + (scr.size - sz) / 2)
+	_on_resized()
+
+
+func _harness_fixed_window() -> bool:
+	return _harness != null
+
+
+func _on_resized() -> void:
+	var win := DisplayServer.window_get_size()
+	var p := win.y > win.x
+	var want := Vector2i(720, 1280) if p else Vector2i(1280, 720)
+	if get_tree().root.content_scale_size != want:
+		get_tree().root.content_scale_size = want
+	portrait = p
+	world.set_portrait(p)
+	hud.portrait = p
+	if is_instance_valid(menu):
+		menu.portrait = p
+	_apply_safe_area()
 
 
 func _apply_safe_area() -> void:
