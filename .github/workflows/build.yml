@@ -102,40 +102,6 @@ jobs:
           sha256sum build/android/PocketBoundary-debug.apk
           unzip -l build/android/PocketBoundary-debug.apk | grep -E "lib/.*\.so" 
 
-      - name: Build Google Play App Bundle (.aab)
-        env:
-          UPLOAD_KS_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
-          UPLOAD_KS_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
-          UPLOAD_KS_PASS: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
-        run: |
-          godot --headless --path . --install-android-build-template
-          mkdir -p build/store
-          if [ -n "$UPLOAD_KS_B64" ]; then
-            # Signed with the owner's upload key (kept only in GitHub Secrets, never in the repo).
-            echo "$UPLOAD_KS_B64" | base64 -d > "$RUNNER_TEMP/upload.keystore"
-            export GODOT_ANDROID_KEYSTORE_RELEASE_PATH="$RUNNER_TEMP/upload.keystore"
-            export GODOT_ANDROID_KEYSTORE_RELEASE_USER="$UPLOAD_KS_ALIAS"
-            export GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD="$UPLOAD_KS_PASS"
-            godot --headless --path . --export-release "Android Store" build/store/PocketBoundary-play-${GITHUB_RUN_NUMBER}.aab
-            rm -f "$RUNNER_TEMP/upload.keystore"
-            echo "STORE_AAB=build/store/PocketBoundary-play-${GITHUB_RUN_NUMBER}.aab" >> "$GITHUB_ENV"
-          else
-            # No upload key configured yet: build a debug-signed bundle only to prove the
-            # store build works. It is NOT uploadable to Google Play.
-            godot --headless --path . --export-debug "Android Store" build/store/PocketBoundary-pipeline-check.aab
-          fi
-          AAB=$(ls build/store/*.aab | head -1)
-          test -s "$AAB"
-          unzip -l "$AAB" | grep -E "base/manifest/AndroidManifest.xml|base/lib/arm64-v8a/.*\.so"
-          "$JAVA_HOME_17_X64/bin/jarsigner" -verify "$AAB" | tail -1
-          ls -l "$AAB"
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: PocketBoundary-google-play-bundle
-          path: build/store/
-          if-no-files-found: error
-
       - name: Publish test APK as a direct download (GitHub Release, no zip)
         if: github.event_name == 'push'
         env:
@@ -158,10 +124,47 @@ jobs:
           EOT
           WIN="PocketBoundary-windows-test-${GITHUB_RUN_NUMBER}.zip"
           (cd build/windows && zip -q -9 "$GITHUB_WORKSPACE/$WIN" PocketBoundary.exe)
-          EXTRA=""
-          if [ -n "${STORE_AAB:-}" ]; then EXTRA="$STORE_AAB"; fi
-          gh release create "$TAG" "$APK" "$WIN" $EXTRA --target "$GITHUB_SHA" --prerelease \
+          gh release create "$TAG" "$APK" "$WIN" --target "$GITHUB_SHA" --prerelease \
             --title "Pocket Boundary test build ${GITHUB_RUN_NUMBER}" --notes-file notes.md
+
+      - name: Build Google Play App Bundle (.aab)
+        timeout-minutes: 25
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UPLOAD_KS_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+          UPLOAD_KS_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          UPLOAD_KS_PASS: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+        run: |
+          mkdir -p build/store
+          if [ -n "$UPLOAD_KS_B64" ]; then
+            # Signed with the owner's upload key (kept only in GitHub Secrets, never in the repo).
+            echo "$UPLOAD_KS_B64" | base64 -d > "$RUNNER_TEMP/upload.keystore"
+            export GODOT_ANDROID_KEYSTORE_RELEASE_PATH="$RUNNER_TEMP/upload.keystore"
+            export GODOT_ANDROID_KEYSTORE_RELEASE_USER="$UPLOAD_KS_ALIAS"
+            export GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD="$UPLOAD_KS_PASS"
+            timeout 1200 godot --headless --verbose --path . --install-android-build-template --export-release "Android Store" build/store/PocketBoundary-play-${GITHUB_RUN_NUMBER}.aab
+            rm -f "$RUNNER_TEMP/upload.keystore"
+            echo "STORE_AAB=build/store/PocketBoundary-play-${GITHUB_RUN_NUMBER}.aab" >> "$GITHUB_ENV"
+          else
+            # No upload key configured yet: build a debug-signed bundle only to prove the
+            # store build works. It is NOT uploadable to Google Play.
+            timeout 1200 godot --headless --verbose --path . --install-android-build-template --export-debug "Android Store" build/store/PocketBoundary-pipeline-check.aab
+          fi
+          AAB=$(ls build/store/*.aab | head -1)
+          test -s "$AAB"
+          unzip -l "$AAB" | grep -E "base/manifest/AndroidManifest.xml|base/lib/arm64-v8a/.*\.so"
+          "$JAVA_HOME_17_X64/bin/jarsigner" -verify "$AAB" | tail -1
+          ls -l "$AAB"
+          if [ -n "${STORE_AAB:-}" ] && [ "${{ github.event_name }}" = "push" ]; then
+            gh release upload "test-build-${GITHUB_RUN_NUMBER}" "$STORE_AAB" --clobber
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PocketBoundary-google-play-bundle
+          path: build/store/
+          if-no-files-found: warn
 
       - uses: actions/upload-artifact@v4
         with:
