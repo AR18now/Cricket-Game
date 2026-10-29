@@ -341,9 +341,11 @@ def ambience_night(sec=8.0):
     return out[: L - xf]
 
 
-def _air_horn(f, dur, amp=1.0, bend=0.05, bright=1.0):
+def _air_horn(f, dur, amp=1.0, bend=0.05, bright=1.0, flutter=0.0, sag=0.0):
     # One trumpet of a truck pressure-horn set: buzzy reed tone that "blooms" up to pitch
     # as the air pressure builds, a resonant bell, a little breath, two detuned trumpets.
+    # flutter: valve tremolo depth (the wavering "baja" sound); sag: pitch drop as the
+    # air runs out at the end of a long blast.
     out = []
     bell = Biquad("bp", 1250 * bright, 1.1)
     hp = Biquad("hp", 140)
@@ -352,9 +354,12 @@ def _air_horn(f, dur, amp=1.0, bend=0.05, bright=1.0):
     for i in range(n(dur)):
         t = i / SR
         e = min(1.0, t / 0.025) * min(1.0, (dur - t) / 0.05)
+        tail = max(0.0, (t - dur * 0.7) / (dur * 0.3))
+        trem = 1.0 - flutter * (0.5 + 0.5 * math.sin(2 * math.pi * 11.0 * t))
         v = 0.0
         for j, det in enumerate((1.0, 1.006)):
             fi = f * det * (1.0 - bend * math.exp(-t / 0.05)) * (1 + 0.003 * math.sin(2 * math.pi * 6.0 * t))
+            fi *= 1.0 - sag * tail * tail
             phs[j] += 2 * math.pi * fi / SR
             p = phs[j]
             w = 0.0
@@ -364,33 +369,85 @@ def _air_horn(f, dur, amp=1.0, bend=0.05, bright=1.0):
                 w += math.sin(k * p) / (k ** 0.8)
             v += math.tanh(1.8 * w)  # reed overdrive
         v += rr.uniform(-1, 1) * 0.15 * math.exp(-t / 0.05)
-        out.append(hp(v * 0.6 + bell(v) * 1.2) * e * amp)
+        out.append(hp(v * 0.6 + bell(v) * 1.2) * e * amp * trem)
     return out
 
 
-def truck_horn():
-    # Pakistani decorated-truck "musical pressure horn": a set of tuned trumpets played as
-    # a quick, jaunty original tune, finished by the big two-tone pressure blast.
-    G4, A4, B4, C5, D5, E5 = 392.0, 440.0, 493.9, 523.3, 587.3, 659.3
-    tune = [(D5, 0.1), (D5, 0.1), (B4, 0.1), (G4, 0.1), (A4, 0.1), (B4, 0.1),
-            (C5, 0.1), (E5, 0.18), (D5, 0.24)]
-    out = [0.0] * n(2.0)
-    at = 0.0
+def _play_tune(out, tune, at=0.0, amp=0.8, gap=0.92, **kw):
+    # tune: [(freq or None for a rest, seconds)]; returns the time after the last note.
     for f, d in tune:
-        place(out, _air_horn(f, d * 0.92, 0.8), at)
+        if f:
+            place(out, _air_horn(f, d * gap, amp, **kw), at)
         at += d
-    blast_at = at + 0.08
-    place(out, _air_horn(277.2, 0.75, 0.9, 0.08, 0.8), blast_at)   # C#4
-    place(out, _air_horn(349.2, 0.75, 0.8, 0.08, 0.9), blast_at)   # F4
-    place(out, _air_horn(207.7, 0.75, 0.6, 0.10, 0.7), blast_at)   # G#3 body
-    # Street slap-back so it sounds outdoors, between houses.
+    return at
+
+
+def _blast(out, at, freqs, dur, sag=0.0, flutter=0.0):
+    for k, f in enumerate(freqs):
+        place(out, _air_horn(f, dur, 0.9 - 0.15 * k, 0.08 + 0.01 * k, 0.8 + 0.1 * k, flutter, sag), at)
+
+
+def _street(out):
+    # Street slap-back so it sounds outdoors between houses, then pressure-horn loudness.
     d1, d2 = n(0.07), n(0.16)
     y = out + [0.0] * d2
     for i, v in enumerate(out):
         y[i + d1] += v * 0.28
         y[i + d2] += v * 0.14
     pk = max(abs(v) for v in y)
-    return [math.tanh(2.2 * v / pk) for v in y]  # pressure-horn loudness, soft-clipped
+    return [math.tanh(2.2 * v / pk) for v in y]
+
+
+# Note names (Hz)
+G3, Ab3, Bb3, C4, Db4, D4, E4, F4, G4, A4, B4 = 196.0, 207.7, 233.1, 261.6, 277.2, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9
+C5, D5, E5, F5, G5, A5 = 523.3, 587.3, 659.3, 698.5, 784.0, 880.0
+
+
+def truck_horns():
+    """Pakistani decorated-truck horns - a different one each time the truck rolls in.
+    All tunes are original; each is a set of tuned air-horn trumpets (and the big
+    pressure horn) as fitted to painted trucks."""
+    horns = []
+    # 1. Jaunty tune, then the two-tone pressure blast.
+    out = [0.0] * n(2.0)
+    at = _play_tune(out, [(D5, 0.1), (D5, 0.1), (B4, 0.1), (G4, 0.1), (A4, 0.1), (B4, 0.1),
+                          (C5, 0.1), (E5, 0.18), (D5, 0.24)])
+    _blast(out, at + 0.08, [Db4, F4, Ab3], 0.75)
+    horns.append(_street(out))
+    # 2. Shaadi band: a quick wedding-procession flourish, ending on a held chord.
+    out = [0.0] * n(2.0)
+    at = _play_tune(out, [(A4, 0.08), (C5, 0.08), (E5, 0.08), (A5, 0.16), (G5, 0.08), (E5, 0.08),
+                          (F5, 0.08), (E5, 0.08), (D5, 0.08), (C5, 0.16), (None, 0.04)], amp=0.75)
+    _blast(out, at, [C5, E5, A4], 0.7, flutter=0.25)
+    horns.append(_street(out))
+    # 3. Big pressure blasts: "PAAAM ... POOOOM", air sagging at the end.
+    out = [0.0] * n(2.2)
+    _blast(out, 0.0, [Bb3, D4, F4], 0.55, sag=0.03)
+    _blast(out, 0.75, [G3, Bb3, D4], 1.25, sag=0.09)
+    horns.append(_street(out))
+    # 4. Rolling arpeggio up and down the trumpet set, twice, then a held top note.
+    out = [0.0] * n(2.1)
+    roll = [(C5, 0.07), (D5, 0.07), (E5, 0.07), (G5, 0.07), (A5, 0.07), (G5, 0.07), (E5, 0.07), (D5, 0.07)]
+    at = _play_tune(out, roll + roll, amp=0.7, gap=0.9)
+    _play_tune(out, [(C5, 0.5)], at, amp=0.85)
+    _blast(out, at, [C4, E4], 0.5)
+    horns.append(_street(out))
+    # 5. Toot-toot-toot, then a long fluttering valve horn.
+    out = [0.0] * n(2.1)
+    at = 0.0
+    for k in range(3):
+        _blast(out, at, [G4, B4], 0.11)
+        at += 0.18
+    _blast(out, at + 0.05, [E4, G4, C5], 1.1, flutter=0.55, sag=0.02)
+    horns.append(_street(out))
+    # 6. Call and answer: high trumpets ask, the deep pressure horn answers, a last flourish.
+    out = [0.0] * n(2.2)
+    at = _play_tune(out, [(E5, 0.12), (D5, 0.12), (C5, 0.12), (G4, 0.22)], amp=0.8)
+    _blast(out, at + 0.06, [Ab3, C4], 0.55, sag=0.04)
+    at += 0.7
+    _play_tune(out, [(G4, 0.08), (C5, 0.08), (E5, 0.08), (G5, 0.3)], at, amp=0.8)
+    horns.append(_street(out))
+    return horns
 
 
 def jingle():
@@ -499,7 +556,8 @@ if __name__ == "__main__":
     write("amb_pindi", ambience_pindi())
     write("amb_rain", ambience_rain())
     write("amb_night", ambience_night())
-    write("truck_horn", truck_horn())
+    for k, h in enumerate(truck_horns(), 1):
+        write("truck_horn_%d" % k, h)
     write("jingle", jingle())
     write("cheer_big", cheer(2.4, 41, True))
     write("cheer_small", cheer(1.4, 43, False))
