@@ -89,6 +89,14 @@ _Last updated: 2026-09-25 (session 1)._
 | --- | --- |
 | A different Pakistani truck horn every time | Six original horns (`truck_horn_1..6`): jaunty tune + pressure blast, shaadi-band flourish, big sagging pressure blasts, rolling arpeggio, toot-toot-toot + fluttering valve horn, call-and-answer. The game picks one at random each time the truck appears and never repeats the last one (test: all six used, no repeats over 60 trucks) |
 
+## Owner feedback round 9 (implemented)
+
+| Request | Done |
+| --- | --- |
+| 50 and 100 celebrations with a special screen | When the batter's own score passes 50, 100, 150... the game pauses ~3 s (tap to skip after 1.2 s): golden rays, big "50"/"100", "FIFTY!"/"HUNDRED!", the innings line (balls, 4s, 6s), sparkles and three confetti bursts; the camera cuts to the batter raising his bat (Stick Cricket-style bat raise); dhol + horn fanfare, crowd roar, vibration, and its own commentary line. Tested in landscape and portrait (harness `milestone`) |
+| Inspiration from Stick Cricket, keep it simple | Took the bat-raise milestone moment and big, clear milestone splash; nothing else added - still one button |
+| Store readiness (Play + App Store) | See `STORE_LISTING.md`: App Bundle build in CI (`Android Store` preset; signed when the owner's upload key is added as GitHub secrets), version code = build number, icons for both stores (incl. adaptive + themed), iOS: 1024 icon without alpha, encryption declaration, iPhone+iPad, CI macOS job exports and compiles the Xcode project; Android back button handled; in-app Credits & licences; privacy policy; store text and screenshots |
+
 ## What exists now (evidence)
 
 - Deterministic simulation: analytic delivery path (bounce, deviation), timing → contact at the

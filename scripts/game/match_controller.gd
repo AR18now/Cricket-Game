@@ -10,6 +10,8 @@ signal delivery_started(info: Dictionary)
 signal swing_feedback(result: String)
 signal timing_revealed(contact: ContactResult)
 signal ball_settled(outcome: BallOutcome, card: Scorecard)
+## A batter reached 50, 100, 150... on this ball (runs, and the batter's scorecard row).
+signal milestone_reached(runs: int, batter: Dictionary)
 signal match_over(state: MatchState)
 signal tutorial_step(level: int, success: bool)
 signal commentary_line(line: Dictionary)
@@ -20,6 +22,8 @@ const READY_PAUSE := 0.3
 const OUTCOME_HOLD := 0.7
 const OUTCOME_HOLD_BIG := 1.5      # wickets
 const OUTCOME_HOLD_BOUNDARY := 1.8 # truck celebration
+const MILESTONE_HOLD := 3.0        # fifty / hundred celebration screen
+const MILESTONE_MIN_SKIP := 1.2    # a tap can skip it after this long
 ## After contact the (already resolved) shot plays back faster so the game never drags.
 ## Presentation only: outcomes are decided at the swing and are unaffected.
 const POST_CONTACT_SPEED := 2.0
@@ -56,6 +60,7 @@ var replay_t := 0.0
 var _replay_end := 0.0
 var replays_shown := 0
 var _hold_real := 0.0
+var milestone := 0   # 50, 100... reached on the ball just settled, else 0
 var _hitstop_left := 0.0
 var _mute_audio := false
 var reduced_motion := false
@@ -165,7 +170,7 @@ func swing_input(usec: int) -> String:
 	if phase == Phase.REPLAY:
 		_end_replay()
 		return "replay_end"
-	if phase == Phase.OUTCOME and _recorded and _hold_real > 0.2:
+	if phase == Phase.OUTCOME and _recorded and _hold_real > (MILESTONE_MIN_SKIP if milestone > 0 else 0.2):
 		skip_outcome()
 		return "skip"
 	# Tap during an already-decided shot: jump straight to its result (no waiting).
@@ -264,6 +269,8 @@ func _process(delta: float) -> void:
 	if phase == Phase.OUTCOME and _recorded:
 		_hold_real += delta
 		var hold := OUTCOME_HOLD_BOUNDARY if resolver.outcome.is_boundary() else (OUTCOME_HOLD_BIG if resolver.outcome.wicket else OUTCOME_HOLD)
+		if milestone > 0:
+			hold = MILESTONE_HOLD
 		if auto_continue and _hold_real >= hold:
 			_advance_after_outcome()
 
@@ -276,17 +283,33 @@ func _settle() -> void:
 	if tutorial_level >= 0:
 		var ok := resolver.contact.is_contact()
 		tutorial_step.emit(tutorial_level, ok)
-	else:
+	milestone = 0
+	var facing := -1
+	if tutorial_level < 0:
+		facing = state.card.striker
 		state.record(delivery_id, o, profile.id)
+		if facing >= 0 and facing < state.card.batters.size():
+			var after := int(state.card.batters[facing]["runs"])
+			milestone = MatchController.milestone_crossed(after - o.runs, after)
 	world.umpire_signal = "six" if o.kind == BallOutcome.SIX else ("four" if o.kind == BallOutcome.FOUR else ("out" if o.wicket else ""))
 	_set_phase(Phase.OUTCOME)
 	ball_settled.emit(o, state.card)
 	var ev := Commentary.event_for(o)
 	var ctx := {"runs": o.runs, "timing": o.timing, "needed": state.card.runs_needed, "balls_left": state.card.balls_left}
+	if milestone > 0:
+		world.milestone_at = clock.time
+		milestone_reached.emit(milestone, state.card.batters[facing])
+		ev = "fifty" if milestone == 50 else ("hundred" if milestone == 100 else "milestone")
 	if state.card.complete and tutorial_level < 0:
 		if state.card.result in ["won", "lost", "tied"]:
 			ev = state.card.result
 	_say(ev, ctx)
+
+
+## The milestone (50, 100, 150...) passed when a score goes from `before` to `after`, else 0.
+static func milestone_crossed(before: int, after: int) -> int:
+	var m := (after / 50) * 50
+	return m if m >= 50 and m > before else 0
 
 
 func _advance_after_outcome() -> void:

@@ -34,6 +34,11 @@ const LINES := [
 	["win_1", "won", "", "Victory! Hero of the neighbourhood!"],
 	["lost_1", "lost", "", "Never mind - one more match!"],
 	["tied_1", "tied", "", "All square! What a contest!"],
+	["fifty_1", "fifty", "", "That's fifty! Raise the bat!"],
+	["fifty_2", "fifty", "", "A brilliant half-century!"],
+	["hundred_1", "hundred", "", "A hundred! What an innings!"],
+	["hundred_2", "hundred", "", "Century! The whole street is on its feet!"],
+	["milestone_1", "milestone", "", "Another fifty! Unstoppable!"],
 ]
 
 var cooldown_balls := 1

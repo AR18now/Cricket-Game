@@ -59,6 +59,7 @@ var weather_layer: CanvasLayer
 var weather: WeatherOverlay
 var view_mode := "batter"
 var portrait := false
+var milestone_at := -1.0   # clock time a fifty/hundred was reached this ball (else -1)
 var batter_layer: CanvasLayer
 var batter_view: BatterView
 var signal_t := 0.0
@@ -256,6 +257,7 @@ func begin_delivery(d: Delivery, p: BowlerProfile, striker_name: String, non_str
 	profile = p
 	swing_time = -1.0
 	resolved = null
+	milestone_at = -1.0
 	menu_mode = false
 	umpire_signal = ""
 	striker_label = striker_name
@@ -503,6 +505,10 @@ func _render_batters(t: float) -> void:
 		st_pos = base + Vector2(wt2 * 1.1, wt2 * 0.9)
 	elif swing_time < 0.0 and delivery != null and t > delivery.stumps_time() + 0.1:
 		pose = Poses.blend(Poses.bat_backlift(), Poses.bat_stance(t), Poses.ease_io((t - delivery.stumps_time()) / 0.6))
+	if milestone_at >= 0.0 and t >= milestone_at:
+		# Raise the bat to the crowd (where he is standing now, facing the pavilion side).
+		pose = Poses.bat_raise(t - milestone_at)
+		striker.facing = 1.0 if st_pos.x < -10.0 else -1.0
 	striker.position = Proj.ground_v(st_pos)
 	striker.set_pose(pose)
 	non_striker.position = Proj.ground_v(ns_pos)
@@ -723,6 +729,12 @@ func update_camera(delta: float) -> void:
 				zoom = clampf(0.92 - d * 0.017, 0.36, 0.9)
 				var focus := Proj.to_screen(Vector3(bp.x, bp.y, bp.z * 0.6))
 				center = Proj.ground(-2.0, 0.0).lerp(focus, 0.72) + Vector2(0, -60)
+	if milestone_at >= 0.0 and clock >= milestone_at:
+		# Fifty / hundred: close on the batter raising his bat.
+		center = striker.position + Vector2(0, -200)   # batter in the lower half, card above
+		zoom = 1.3
+		if reduced_motion:
+			_snap_follow = true
 	if portrait:
 		# Tall screen: spend the extra height on the houses and sky, not the near wall.
 		center.y -= get_viewport_rect().size.y / (zoom * view_fit()) * 0.12
@@ -737,7 +749,7 @@ func update_camera(delta: float) -> void:
 		cam_zoom = lerpf(cam_zoom, zoom, k)
 	# Never lose the ball: clamp the camera so the ball stays inside the view.
 	var bpos := ball_world(clock)
-	if bpos != Vector3.INF:
+	if bpos != Vector3.INF and not (milestone_at >= 0.0 and clock >= milestone_at):
 		var vs := get_viewport_rect().size / (cam_zoom * view_fit())
 		var sp := Proj.to_screen(bpos)
 		var margin := vs * 0.12

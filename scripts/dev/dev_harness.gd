@@ -60,6 +60,10 @@ func _go() -> void:
 			await _screens_tour()
 		"perf":
 			await _perf()
+		"milestone":
+			await _milestone_check()
+		"store":
+			await _store_shots()
 		_:
 			await _capture_tour()
 	_finish()
@@ -85,6 +89,10 @@ func _finish() -> void:
 		f.close()
 	_log("DONE failures=%d" % failures.size())
 	get_tree().quit(1 if failures.size() > 0 else 0)
+
+
+func eq(a, b, msg: String) -> void:
+	check(a == b, "%s (got %s)" % [msg, str(a)])
 
 
 func wait(sec: float) -> void:
@@ -579,6 +587,12 @@ func _screens_tour() -> void:
 	app.open_settings()
 	await wait(0.3)
 	await shot("u02_settings")
+	app.overlay.licences.emit()
+	await wait(0.3)
+	check(app.overlay is LicencesPanel, "credits & licences screen opens from settings")
+	check(LicencesPanel.notices().contains("Godot Engine") and LicencesPanel.notices().contains("Open Font License"), "licence notices include Godot (MIT) and Lato (OFL)")
+	await shot("u02b_licences")
+	eq(app.handle_back(), "closed", "back closes the licences screen")
 	app._close_overlay()
 	app.start_mode("classic")
 	await wait(0.2)
@@ -594,10 +608,11 @@ func _screens_tour() -> void:
 	app.hud.truck.play("six")
 	await wait(0.8)
 	await shot("u03b_truck")
-	app.open_pause()
+	eq(app.handle_back(), "paused", "back during a match pauses it (does not quit)")
 	await wait(0.3)
+	check(app.overlay is PauseMenu, "pause menu showing after back")
 	await shot("u04_pause")
-	app._close_overlay()
+	eq(app.handle_back(), "closed", "back again resumes")
 	for i in 30:
 		if app.screen != app.Screen.MATCH:
 			break
@@ -670,3 +685,79 @@ func _perf() -> void:
 		_log("%s: CPU ms per frame avg %.2f  p95 %.2f  p99 %.2f  max %.2f  (%d frames)" % [view, avg, p95, p99, samples[samples.size() - 1], samples.size()])
 	Engine.time_scale = 0.2
 	check(results["batter"] < 4.0 and results["side"] < 4.0, "CPU time per frame stays small in play (p95 < 4 ms on this machine)")
+
+
+## Puts the batter on 47 / 97 and hits until a fifty / hundred: checks the celebration
+## shows, the game waits for it, and captures it.
+func _milestone_check() -> void:
+	await wait(1.6)
+	var c = app.controller
+	for target in [50, 100]:
+		app.start_mode("classic")
+		await wait(0.2)
+		app._close_overlay()
+		var got := [0]   # lambdas capture locals by value: use a container
+		var conn := func(m, _b): got[0] = m
+		c.milestone_reached.connect(conn)
+		# Earlier sixes recorded straight into the ball-by-ball log (the scorecard is
+		# rebuilt from it), leaving the batter a few short of the milestone.
+		var pre := int((target - 6) / 6)
+		for k in pre:
+			var o := BallOutcome.new()
+			o.kind = BallOutcome.SIX
+			o.runs = 6
+			c.state.record(900000 + k, o, "harness")
+		for i in 6:
+			await play_ball(0.0)
+			if got[0] > 0 or app.screen != app.Screen.MATCH:
+				break
+		c.milestone_reached.disconnect(conn)
+		check(got[0] == target, "reached %d (got %d)" % [target, got[0]])
+		check(app.hud.milestone_fx.visible, "celebration screen shows for %d" % target)
+		await wait(0.12)
+		await shot("m_%d_a" % target)
+		await wait(0.75)
+		await shot("m_%d_b" % target)
+		check(c.phase == MatchController.Phase.OUTCOME, "game waits during the celebration")
+
+
+## Store screenshots: menu, batter's view waiting, the hit, a six with the truck, a fifty.
+func _store_shots() -> void:
+	await wait(1.6)
+	await shot("s1_menu")
+	var c = app.controller
+	app.start_mode("classic")
+	await wait(0.2)
+	app._close_overlay()
+	await until_phase(MatchController.Phase.RUNUP)
+	await until_clock(0.15)
+	await shot("s2_batters_eye")
+	app.hud.visible = false
+	await frames(2)
+	await shot("x_clean_batters_eye")   # no HUD: used for the feature graphic
+	app.hud.visible = true
+	await until_phase(MatchController.Phase.FLIGHT)
+	await swing_at(ideal_swing())
+	await until_clock(ideal_swing() + 0.12)
+	await shot("s3_hit")
+	await until_phase(MatchController.Phase.OUTCOME)
+	app.hud.truck.play("six")
+	await wait(0.8)
+	await shot("s4_six_truck")
+	press_space()
+	var pre := 7
+	for k in pre:
+		var o := BallOutcome.new()
+		o.kind = BallOutcome.SIX
+		o.runs = 6
+		c.state.record(910000 + k, o, "harness")
+	var got := [0]
+	var conn := func(m, _b): got[0] = m
+	c.milestone_reached.connect(conn)
+	for i in 4:
+		await play_ball(0.0)
+		if got[0] > 0:
+			break
+	c.milestone_reached.disconnect(conn)
+	await wait(0.85)
+	await shot("s5_fifty")

@@ -4,6 +4,7 @@ extends OverlayPanel
 
 signal closed
 signal replay_tutorial
+signal licences
 
 
 func build() -> void:
@@ -45,10 +46,13 @@ func build() -> void:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 12)
 	body.add_child(row)
-	var rt := UiTheme.button("Replay tutorial", 22, 220)
+	var rt := UiTheme.button("Replay tutorial", 20, 180)
 	rt.pressed.connect(func(): replay_tutorial.emit())
 	row.add_child(rt)
-	var done := UiTheme.button("Done", 24, 220)
+	var lic := UiTheme.button("Credits & licences", 18, 200)
+	lic.pressed.connect(func(): licences.emit())
+	row.add_child(lic)
+	var done := UiTheme.button("Done", 22, 160)
 	done.pressed.connect(func(): closed.emit())
 	row.add_child(done)
 	done.call_deferred("grab_focus")

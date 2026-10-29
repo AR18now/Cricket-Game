@@ -70,6 +70,12 @@ func _ready() -> void:
 	controller.tutorial_step.connect(_on_tutorial_step)
 	controller.commentary_line.connect(func(line): audio.say(line, "Bilal"))
 	controller.ball_settled.connect(_on_ball_settled)
+	controller.milestone_reached.connect(func(_m, _b):
+		audio.play("sting_milestone", "Music", -2.0, 0.0)
+		audio.play("cheer_big", "Crowd", 0.0, 0.0)
+		audio.set_crowd_intensity(1.0)
+		if bool(save.data["settings"]["haptics"]):
+			Input.vibrate_handheld(90))
 	audio.caption.connect(func(text, speaker): hud.show_caption(text, speaker))
 	save.changed.connect(_apply_settings)
 	_apply_settings()
@@ -395,6 +401,15 @@ func open_settings() -> void:
 	s.replay_tutorial.connect(func():
 		_close_overlay()
 		start_tutorial())
+	s.licences.connect(func():
+		_close_overlay()
+		var lp := LicencesPanel.new()
+		ui_root.add_child(lp)
+		lp.build()
+		overlay = lp
+		lp.closed.connect(func():
+			_close_overlay()
+			open_settings()))
 
 
 func open_scorecard() -> void:
@@ -528,8 +543,33 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 
+## Android back button / gesture (store reviewers check this): close what is open, pause
+## a match, leave the result screen; only quit from the main menu.
+func handle_back() -> String:
+	if overlay != null:
+		if screen == Screen.RESULT:
+			show_menu()
+			return "menu"
+		_close_overlay()
+		return "closed"
+	match screen:
+		Screen.MATCH, Screen.TUTORIAL:
+			open_pause()
+			return "paused"
+		Screen.RESULT:
+			show_menu()
+			return "menu"
+		Screen.SPLASH:
+			return "ignored"
+	if _harness == null:
+		get_tree().quit()
+	return "quit"
+
+
 func _notification(what: int) -> void:
 	match what:
+		NOTIFICATION_WM_GO_BACK_REQUEST:
+			handle_back()
 		NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_WM_WINDOW_FOCUS_OUT:
 			# Pause safely mid-delivery; nothing is recorded until a ball settles.
 			if (screen == Screen.MATCH or screen == Screen.TUTORIAL) and overlay == null and _harness == null:

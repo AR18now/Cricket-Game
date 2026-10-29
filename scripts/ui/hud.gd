@@ -37,6 +37,7 @@ var swing_btn: SwingButton
 var minimap: Minimap
 var guide: GuideOverlay
 var truck: TruckCelebration
+var milestone_fx: MilestoneCelebration
 var replay_btn: Button
 var replay_tag: Label
 var debug_label: Label
@@ -53,7 +54,6 @@ var confetti: Confetti
 var reduced_motion := false
 var portrait := false
 var _best_announced := false
-var _last_milestone := 0
 var hit_now: Label
 var _hit_shown_for := -1
 
@@ -154,8 +154,11 @@ func build(c: MatchController, w: WorldView) -> void:
 	add_child(truck)
 	move_child(truck, 1)
 	truck.stop()
+	milestone_fx = MilestoneCelebration.new()
+	add_child(milestone_fx)
 	confetti = Confetti.new()
 	add_child(confetti)
+	controller.milestone_reached.connect(_on_milestone)
 	# --- Caption (banter)
 	caption_panel = PanelContainer.new()
 	caption_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -438,7 +441,6 @@ func _on_timing(c: ContactResult) -> void:
 func _on_settled(o: BallOutcome, _card: Scorecard) -> void:
 	if controller.state != null and controller.state.events.size() <= 1:
 		_best_announced = false
-		_last_milestone = 0
 	refresh()
 	var title := ""
 	match o.kind:
@@ -497,14 +499,22 @@ func _float_text(text: String, at: Vector2, col: Color, fs: int) -> void:
 	tw.tween_callback(l.queue_free)
 
 
+## Fifty / hundred: the celebration screen plus three confetti bursts.
+func _on_milestone(m: int, batter: Dictionary) -> void:
+	banner.visible = false
+	truck.stop()
+	milestone_fx.reduced_motion = reduced_motion
+	milestone_fx.play(m, batter)
+	var c := Vector2(size.x * 0.5, size.y * 0.4)
+	confetti.burst(c, 140, 1.3)
+	if not reduced_motion:
+		get_tree().create_timer(0.6).timeout.connect(func(): confetti.burst(Vector2(size.x * 0.25, size.y * 0.35), 70, 1.0))
+		get_tree().create_timer(1.1).timeout.connect(func(): confetti.burst(Vector2(size.x * 0.75, size.y * 0.35), 70, 1.0))
+
+
 func _check_milestones(card: Scorecard) -> void:
 	if not _is_classic():
 		return
-	var m := (card.runs / 50) * 50
-	if m >= 50 and m > _last_milestone:
-		_last_milestone = m
-		show_toast("%d up! Well played!" % m)
-		confetti.burst(Vector2(size.x * 0.5, 120.0), 80, 1.0)
 	if not _best_announced and best_runs > 0 and card.runs > best_runs:
 		_best_announced = true
 		show_toast("NEW BEST SCORE!")
@@ -536,4 +546,5 @@ func hide_transient() -> void:
 	toast.visible = false
 	hint_label.text = ""
 	truck.stop()
+	milestone_fx.stop()
 	confetti.clear()

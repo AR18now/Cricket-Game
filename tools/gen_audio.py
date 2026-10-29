@@ -485,6 +485,28 @@ def dhol_tak(seed, amp=0.6):
     return [(bp(r.uniform(-1, 1)) * 2 + math.sin(2 * math.pi * 420 * i / SR) * 0.5) * env_exp(i, 0.03) * amp for i in range(n(0.12))]
 
 
+def milestone_fanfare():
+    """Fifty / hundred: a dhol roll that speeds up into a horn fanfare, then a held,
+    fluttering horn chord over dhol beats (original)."""
+    out = [0.0] * n(3.0)
+    # Accelerating dhol roll.
+    at, gap, k = 0.0, 0.12, 0
+    while at < 0.62:
+        place(out, dhol_tak(500 + k, 0.45 + 0.4 * at), at)
+        if k % 3 == 0:
+            place(out, dhol_dhum(0.8), at)
+        at += gap
+        gap = max(0.045, gap * 0.86)
+        k += 1
+    # Fanfare up the horn trumpets, then the big chord.
+    at = _play_tune(out, [(G4, 0.12), (C5, 0.12), (E5, 0.12), (G5, 0.2)], 0.62, amp=0.85)
+    _blast(out, at, [C5, E5, G5, C4], 1.5, flutter=0.3)
+    for b in range(5):
+        place(out, dhol_dhum(1.0), at + b * 0.3)
+        place(out, dhol_tak(600 + b, 0.5), at + b * 0.3 + 0.15)
+    return _street(out)
+
+
 def music_loop(bpm=96, bars=4):
     beat = 60.0 / bpm
     L = n(beat * 4 * bars)
@@ -556,6 +578,7 @@ if __name__ == "__main__":
     write("amb_pindi", ambience_pindi())
     write("amb_rain", ambience_rain())
     write("amb_night", ambience_night())
+    write("sting_milestone", milestone_fanfare())
     for k, h in enumerate(truck_horns(), 1):
         write("truck_horn_%d" % k, h)
     write("jingle", jingle())

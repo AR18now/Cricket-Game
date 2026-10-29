@@ -88,6 +88,15 @@ static func hand_rise_for_height(z: float) -> float:
 	return maxf(0.0, z - 0.45) * 0.45
 
 
+## Fifty / hundred: bat raised high to the crowd, pumped gently, chin up.
+static func bat_raise(t: float) -> Dictionary:
+	var up := ease_io(t / 0.45)
+	var pump := 0.035 * sin(t * 4.5) * up
+	var p := blend(bat_stance(0.0), {"lean": -0.06, "thigh_f": 0.08, "shin_f": 0.0, "thigh_b": -0.08,
+		"shin_b": -0.04, "hands": Vector2(0.08, 0.66 + pump), "bat": PI - 0.12, "head": 0.32, "bob": 0.0}, up)
+	return p
+
+
 # --- Locomotion --------------------------------------------------------------
 
 static func run(phase: float, amp: float = 1.0, carrying_bat: bool = false) -> Dictionary:

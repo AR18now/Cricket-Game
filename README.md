@@ -95,4 +95,6 @@ docs/               Progress, style guide, toolchain notes
 - [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) — store preparation and owner actions
 - [docs/STYLE_GUIDE.md](docs/STYLE_GUIDE.md) — visual/audio style guide
 - [docs/TOOLCHAIN.md](docs/TOOLCHAIN.md) — environment findings and tool decisions
+- [STORE_LISTING.md](STORE_LISTING.md) — store text, forms, graphics and how to build the store files
+- [PRIVACY_POLICY.md](PRIVACY_POLICY.md) — privacy policy (no data collected)
 - [VOICE_SCRIPT.csv](VOICE_SCRIPT.csv) — commentary manifest (English placeholder TTS clips; final recordings pending)
