@@ -17,7 +17,7 @@ permissions:
 jobs:
   test-and-export:
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
 
@@ -127,8 +127,16 @@ jobs:
           gh release create "$TAG" "$APK" "$WIN" --target "$GITHUB_SHA" --prerelease \
             --title "Pocket Boundary test build ${GITHUB_RUN_NUMBER}" --notes-file notes.md
 
+      - name: Cache Gradle downloads (avoids Maven Central rate limits)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-godot-${{ env.GODOT_VERSION }}-v1
+
       - name: Build Google Play App Bundle (.aab)
-        timeout-minutes: 25
+        timeout-minutes: 40
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
@@ -137,19 +145,31 @@ jobs:
           UPLOAD_KS_PASS: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
         run: |
           mkdir -p build/store
+          # Gradle fetches libraries from Maven Central, which sometimes rate-limits CI
+          # (HTTP 429): retry with a pause; the cache above makes later runs mostly offline.
+          export_aab() {
+            for attempt in 1 2 3; do
+              if timeout 1200 godot --headless --verbose --path . --install-android-build-template "$@"; then
+                return 0
+              fi
+              echo "App Bundle export attempt $attempt failed; retrying in $((attempt * 60)) s"
+              sleep $((attempt * 60))
+            done
+            return 1
+          }
           if [ -n "$UPLOAD_KS_B64" ]; then
             # Signed with the owner's upload key (kept only in GitHub Secrets, never in the repo).
             echo "$UPLOAD_KS_B64" | base64 -d > "$RUNNER_TEMP/upload.keystore"
             export GODOT_ANDROID_KEYSTORE_RELEASE_PATH="$RUNNER_TEMP/upload.keystore"
             export GODOT_ANDROID_KEYSTORE_RELEASE_USER="$UPLOAD_KS_ALIAS"
             export GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD="$UPLOAD_KS_PASS"
-            timeout 1200 godot --headless --verbose --path . --install-android-build-template --export-release "Android Store" build/store/PocketBoundary-play-${GITHUB_RUN_NUMBER}.aab
+            export_aab --export-release "Android Store" build/store/PocketBoundary-play-${GITHUB_RUN_NUMBER}.aab
             rm -f "$RUNNER_TEMP/upload.keystore"
             echo "STORE_AAB=build/store/PocketBoundary-play-${GITHUB_RUN_NUMBER}.aab" >> "$GITHUB_ENV"
           else
             # No upload key configured yet: build a debug-signed bundle only to prove the
             # store build works. It is NOT uploadable to Google Play.
-            timeout 1200 godot --headless --verbose --path . --install-android-build-template --export-debug "Android Store" build/store/PocketBoundary-pipeline-check.aab
+            export_aab --export-debug "Android Store" build/store/PocketBoundary-pipeline-check.aab
           fi
           AAB=$(ls build/store/*.aab | head -1)
           test -s "$AAB"
