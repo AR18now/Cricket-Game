@@ -284,7 +284,7 @@ func start_mode(mode: String) -> void:
 	var r: MatchRules
 	match mode:
 		"classic":
-			r = MatchRules.classic(name, String(save.data["settings"]["bowling"]))
+			r = MatchRules.classic(name, "mixed", seed_value)   # bowlers: a random mix each match
 		"practice":
 			r = MatchRules.practice(name)
 			r.bowlers_by_over = ["daniyal", "hamza", "saad"]

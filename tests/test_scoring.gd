@@ -191,7 +191,7 @@ func test_classic_mode_rules() -> void:
 	eq(st.current_bowler_id(), "ayaan_coach")
 	_play(st, [1, 1, 1, 1, 1, 1])
 	eq(st.card.striker, 0, "single batter keeps strike")
-	eq(st.current_bowler_id(), "daniyal")
+	check(st.current_bowler_id() in ["hamza", "daniyal", "saad"], "after the gentle over: a random fast/medium/spin bowler")
 	for i in 40:
 		_play(st, [0])
 	near(st.ease_in(), 1.0, 1e-6, "full pace after the intro")
@@ -215,3 +215,18 @@ func test_classic_pace_ramps_up_and_stays_bounded() -> void:
 	check(early.speed <= DeliveryGenerator.START_SPEED + 0.001, "first ball is gentle (%.1f)" % early.speed)
 	check(late.speed > 20.0, "full pace later (%.1f)" % late.speed)
 	check(late.speed <= b.speed_max * (1.0 + DeliveryGenerator.MAX_PACE_BOOST) + 0.001, "bounded")
+
+
+func test_bowlers_are_a_random_mix_every_match() -> void:
+	var seen := {}
+	var orders := {}
+	for seed in range(1, 30):
+		var list: Array = MatchRules.surprise_bowlers(seed)
+		eq(list[0], "ayaan_coach", "gentle first over")
+		for i in range(1, list.size()):
+			check(list[i] in ["hamza", "daniyal", "saad"], "only real bowlers after the intro")
+			check(list[i] != list[i - 1], "never the same bowler two overs running")
+			seen[list[i]] = true
+		orders[str(list.slice(1, 6))] = true
+	eq(seen.size(), 3, "fast, medium and spin all appear")
+	check(orders.size() > 10, "the mix differs from match to match")

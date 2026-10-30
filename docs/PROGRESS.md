@@ -105,6 +105,15 @@ _Last updated: 2026-09-25 (session 1)._
 | Commentary: only the important words | Calls only: "Six!", "Four!", "One run", "Two runs", "Three runs", "Dot ball", "Bowled! Out!", "Caught out!", "Fifty!", "Hundred!", "Another fifty!", match result. All chatty lines removed (14 clips). There is no stumping in the game, so no "Stumped" call |
 | Better opening and menu sound | New opening sting (building dhol roll, harmonium chord swell, rabab flourish, ghungroo shimmer) and new 19 s menu music (bhangra-style dhol chaal with ghungroo, harmonium chords D-D-G-A-D-G-A-D, original 8-bar rabab melody with an answer phrase, seamless loop); the menu music starts after the opening finishes |
 
+## Owner feedback round 11 (implemented)
+
+| Request | Done |
+| --- | --- |
+| Remove View / Hints / Bowlers buttons and the tagline from the menu | Done. Camera is automatic (portrait = batter's eye, landscape = side-on); Hints moved to Settings (off by default); Screen choice is in Settings |
+| Bowlers: random fast/spin during the game | After the coach's gentle first over, each over gets a random fast, medium or spin bowler (never the same one twice running), different every match (test over 29 seeds) |
+| Friendlier menu, portrait and landscape | New welcome card: greeting by name ("Welcome" / "Welcome back"), gold BEST badge or a first-time tip, one big PLAY, a single Time-of-day pill. Landscape: card on the left, ground visible on the right. Portrait: logo on top, the ground in the middle, the card at the bottom within thumb reach |
+| Game name | Suggestions given to the owner; not renamed until chosen (store-critical) |
+
 ## What exists now (evidence)
 
 - Deterministic simulation: analytic delivery path (bounce, deviation), timing → contact at the

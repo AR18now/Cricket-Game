@@ -45,7 +45,7 @@ static func quick_match(target_runs: int, player_name: String = "Ayaan") -> Matc
 
 
 ## The main mode: keep batting until out (1 wicket); pace starts gentle and builds up.
-static func classic(player_name: String = "Ayaan", bowling: String = "mixed") -> MatchRules:
+static func classic(player_name: String = "Ayaan", bowling: String = "mixed", seed_value: int = 1) -> MatchRules:
 	var r := MatchRules.new()
 	r.mode = CLASSIC
 	r.title = "Classic"
@@ -61,9 +61,25 @@ static func classic(player_name: String = "Ayaan", bowling: String = "mixed") ->
 		"spin":
 			r.bowlers_by_over = ["saad"]
 		_:
-			r.bowlers_by_over = ["ayaan_coach", "daniyal", "saad", "hamza", "daniyal", "saad", "hamza"]
-			r.bowler_cycle_start = 3
+			r.bowlers_by_over = MatchRules.surprise_bowlers(seed_value)
+			r.bowler_cycle_start = 1
 	return r
+
+
+## A gentle opening over from the coach, then a random mix of fast, medium and spin
+## bowlers over by over (never the same bowler twice in a row), different every match.
+static func surprise_bowlers(seed_value: int, overs: int = 24) -> Array:
+	var pool := ["hamza", "daniyal", "saad"]   # fast, medium, spin
+	var rng := DetRng.new(seed_value)
+	var out := ["ayaan_coach"]
+	var last := ""
+	for i in overs:
+		var pick: String = pool[rng.range_i(0, pool.size() - 1)]
+		if pick == last:
+			pick = pool[(pool.find(pick) + 1 + rng.range_i(0, 1)) % pool.size()]
+		out.append(pick)
+		last = pick
+	return out
 
 
 static func endless(player_name: String = "Ayaan") -> MatchRules:

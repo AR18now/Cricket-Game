@@ -5,7 +5,7 @@ extends Node
 
 signal changed
 
-const SCHEMA_VERSION := 3
+const SCHEMA_VERSION := 4
 const MAX_APPLIED := 64
 
 var dir_path := "user://"
@@ -110,6 +110,12 @@ static func migrate(d: Dictionary) -> Dictionary:
 			d["settings"]["view"] = "auto"
 			d["settings"]["orientation"] = "auto"
 		v = 3
+	if v < 4:
+		# v4: simpler menu - bowlers are always a random mix, hints are off by default.
+		if d.has("settings") and d["settings"] is Dictionary:
+			d["settings"]["bowling"] = "mixed"
+			d["settings"]["hints"] = false
+		v = 4
 	d["version"] = v
 	return d
 

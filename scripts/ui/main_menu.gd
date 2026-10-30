@@ -1,17 +1,17 @@
 class_name MainMenu
 extends Control
-## One big PLAY over the living ground, plus a few optional choices that remember
-## themselves: bowlers (mixed / pace / spin), time & weather, and camera view.
+## The welcome screen: the living ground behind, a friendly greeting, your best score and
+## one big PLAY. Only one optional choice (time of day / weather) - everything else is
+## automatic (bowlers mix fast and spin by themselves; the camera follows how the phone is
+## held) or tucked away in Settings.
+##  Landscape: a card on the left, the ground visible on the right.
+##  Portrait: the logo at the top, the ground in the middle, the card at the bottom (thumb).
 
 signal play_pressed
 signal settings_pressed
 signal mute_pressed
 signal option_changed(key: String, value: String)
 
-const BOWLING := ["mixed", "pace", "spin"]
-const BOWLING_LABEL := {"mixed": "Mixed", "pace": "Fast", "spin": "Spin"}
-const VIEWS := ["auto", "batter", "side"]
-const VIEW_LABEL := {"auto": "Auto", "batter": "Batter's eye", "side": "Side-on"}
 const SCREENS := ["landscape", "portrait", "auto"]
 const SCREEN_LABEL := {"landscape": "Landscape", "portrait": "Portrait", "auto": "Auto-rotate"}
 
@@ -22,8 +22,17 @@ var chips := {}
 var reduced_motion := false
 var portrait := false
 var _pulse: Tween
-var _values := {"bowling": "mixed", "time_of_day": "evening", "view": "auto", "hints": "off",
-	"orientation": "auto"}
+var _values := {"time_of_day": "evening"}
+var _shade: MenuShade
+var _card: PanelContainer
+var _logo_top: TitleMark      # portrait: logo above the scene
+var _logo_card: TitleMark     # landscape: logo inside the card
+var _greet: Label
+var _best_box: PanelContainer
+var _best_num: Label
+var _best_sub: Label
+var _foot: Label
+var _top_right: HBoxContainer
 
 
 func _init() -> void:
@@ -32,57 +41,83 @@ func _init() -> void:
 
 
 func build() -> void:
-	var shade := MenuShade.new()
-	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(shade)
+	_shade = MenuShade.new()
+	_shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_shade)
+	_logo_top = TitleMark.new()
+	_logo_top.custom_minimum_size = Vector2(520, 140)
+	_logo_top.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_logo_top)
+	# --- The card
+	_card = PanelContainer.new()
+	_card.name = "Card"
+	_card.add_theme_stylebox_override("panel", UiTheme.panel_box(Color(0.02, 0.14, 0.11, 0.84), 30, UiTheme.GOLD.darkened(0.25), 2))
+	add_child(_card)
+	var m := MarginContainer.new()
+	for side in ["left", "right", "top", "bottom"]:
+		m.add_theme_constant_override("margin_" + side, 26)
+	_card.add_child(m)
 	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 14)
-	col.name = "MenuColumn"
-	add_child(col)
-	var logo := TitleMark.new()
-	logo.custom_minimum_size = Vector2(560, 150)
-	col.add_child(logo)
-	col.add_child(UiTheme.label("From the neighbourhood pitch to the floodlights", 22, UiTheme.SAND, "regular"))
-	play_btn = UiTheme.button("PLAY", 48, 420)
-	play_btn.custom_minimum_size = Vector2(520, 104)
-	var sb := UiTheme.panel_box(UiTheme.TERRACOTTA, 26, UiTheme.GOLD, 4)
+	col.add_theme_constant_override("separation", 16)
+	m.add_child(col)
+	_logo_card = TitleMark.new()
+	_logo_card.custom_minimum_size = Vector2(440, 118)
+	_logo_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.add_child(_logo_card)
+	_greet = UiTheme.label("", 30, UiTheme.OFF_WHITE, "black")
+	_greet.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	col.add_child(_greet)
+	# Best score badge (or a friendly first-time tip).
+	_best_box = PanelContainer.new()
+	_best_box.add_theme_stylebox_override("panel", UiTheme.panel_box(Color(0.99, 0.79, 0.33, 0.12), 18, UiTheme.GOLD.darkened(0.1), 2))
+	col.add_child(_best_box)
+	var bb := HBoxContainer.new()
+	bb.alignment = BoxContainer.ALIGNMENT_CENTER
+	bb.add_theme_constant_override("separation", 14)
+	_best_box.add_child(bb)
+	var best_tag := UiTheme.label("BEST", 20, UiTheme.GOLD, "black")
+	bb.add_child(best_tag)
+	_best_num = UiTheme.label("", 40, UiTheme.GOLD, "black")
+	bb.add_child(_best_num)
+	_best_sub = UiTheme.label("", 20, UiTheme.SAND, "regular")
+	bb.add_child(_best_sub)
+	best_label = UiTheme.label("", 21, UiTheme.SAND, "regular")
+	best_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	best_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	col.add_child(best_label)
+	# PLAY
+	play_btn = UiTheme.button("PLAY", 54, 420)
+	play_btn.custom_minimum_size = Vector2(420, 112)
+	var sb := UiTheme.panel_box(UiTheme.TERRACOTTA, 30, UiTheme.GOLD, 4)
 	play_btn.add_theme_stylebox_override("normal", sb)
 	var sbh := sb.duplicate()
-	sbh.bg_color = UiTheme.TERRACOTTA.lightened(0.1)
+	sbh.bg_color = UiTheme.TERRACOTTA.lightened(0.12)
 	play_btn.add_theme_stylebox_override("hover", sbh)
 	play_btn.add_theme_stylebox_override("pressed", sbh)
+	play_btn.add_theme_stylebox_override("focus", sbh)
 	play_btn.pressed.connect(func(): _tap(); play_pressed.emit())
 	col.add_child(play_btn)
-	var row := HFlowContainer.new()
-	row.name = "Chips"
-	row.add_theme_constant_override("h_separation", 10)
-	row.add_theme_constant_override("v_separation", 10)
-	row.custom_minimum_size = Vector2(118 * 5 + 40, 0)
-	row.alignment = FlowContainer.ALIGNMENT_CENTER
-	col.add_child(row)
-	for key in ["bowling", "time_of_day", "view", "hints", "orientation"]:
-		var b := UiTheme.button("", 19, 118)
-		b.custom_minimum_size = Vector2(118, 64)
-		var k: String = key
-		b.pressed.connect(func(): _cycle(k))
-		row.add_child(b)
-		chips[key] = b
-	best_label = UiTheme.label("", 21, UiTheme.OFF_WHITE, "regular")
-	col.add_child(best_label)
-	var tr := HBoxContainer.new()
-	tr.name = "TopRight"
-	tr.add_theme_constant_override("separation", 10)
-	add_child(tr)
+	# The one optional choice: time of day / weather.
+	var tb := UiTheme.button("", 21, 260)
+	tb.custom_minimum_size = Vector2(260, 54)
+	tb.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	tb.add_theme_stylebox_override("normal", UiTheme.panel_box(Color(1, 1, 1, 0.08), 27, Color(1, 1, 1, 0.25), 1))
+	tb.pressed.connect(func(): _cycle("time_of_day"))
+	col.add_child(tb)
+	chips["time_of_day"] = tb
+	# --- Top-right: sound + settings
+	_top_right = HBoxContainer.new()
+	_top_right.add_theme_constant_override("separation", 10)
+	add_child(_top_right)
 	mute_btn = IconButton.make("sound_on", "Mute / unmute", 64)
 	mute_btn.pressed.connect(func(): mute_pressed.emit())
-	tr.add_child(mute_btn)
+	_top_right.add_child(mute_btn)
 	var gear := IconButton.make("gear", "Settings", 64)
 	gear.pressed.connect(func(): _tap(); settings_pressed.emit())
-	tr.add_child(gear)
-	var foot := UiTheme.label("Offline - no account needed.", 16, Color(1, 1, 1, 0.7), "regular")
-	foot.name = "Foot"
-	add_child(foot)
+	_top_right.add_child(gear)
+	_foot = UiTheme.label("Offline - no account, no ads", 16, Color(1, 1, 1, 0.65), "regular")
+	add_child(_foot)
 	_update_chips()
 	start_pulse()
 
@@ -94,7 +129,6 @@ func start_pulse() -> void:
 	play_btn.scale = Vector2.ONE
 	if reduced_motion:
 		return
-	play_btn.pivot_offset = play_btn.custom_minimum_size * 0.5
 	_pulse = create_tween().set_loops()
 	_pulse.tween_property(play_btn, "scale", Vector2(1.04, 1.04), 0.8).set_trans(Tween.TRANS_SINE)
 	_pulse.tween_property(play_btn, "scale", Vector2.ONE, 0.8).set_trans(Tween.TRANS_SINE)
@@ -102,12 +136,7 @@ func start_pulse() -> void:
 
 func _cycle(key: String) -> void:
 	_tap()
-	var list: Array = ["off", "on"]
-	match key:
-		"bowling": list = BOWLING
-		"time_of_day": list = Atmosphere.IDS
-		"view": list = VIEWS
-		"orientation": list = SCREENS
+	var list: Array = Atmosphere.IDS
 	var i := list.find(_values[key])
 	_values[key] = list[(i + 1) % list.size()]
 	_update_chips()
@@ -116,17 +145,13 @@ func _cycle(key: String) -> void:
 		b.pivot_offset = b.size * 0.5
 		b.scale = Vector2(0.9, 0.9)
 		create_tween().tween_property(b, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	option_changed.emit(key, _values[key] if key != "hints" else (_values[key] == "on"))
+	option_changed.emit(key, _values[key])
 
 
 func _update_chips() -> void:
 	if chips.is_empty():
 		return
-	chips["bowling"].text = "Bowlers\n" + BOWLING_LABEL[_values["bowling"]]
-	chips["time_of_day"].text = "Time\n" + Atmosphere.LABELS[_values["time_of_day"]]
-	chips["view"].text = "View\n" + VIEW_LABEL.get(_values["view"], "Auto")
-	chips["hints"].text = "Hints\n" + ("On" if _values["hints"] == "on" else "Off")
-	chips["orientation"].text = "Screen\n" + SCREEN_LABEL.get(_values["orientation"], "Landscape")
+	chips["time_of_day"].text = "Time:  %s   >" % Atmosphere.LABELS[_values["time_of_day"]]
 
 
 func _tap() -> void:
@@ -138,31 +163,43 @@ func _tap() -> void:
 func refresh(save_data: Dictionary) -> void:
 	var b: Dictionary = save_data["best"]
 	var s: Dictionary = save_data["settings"]
-	for k in _values.keys():
-		if k == "hints":
-			_values[k] = "on" if bool(s.get("hints", false)) else "off"
-		else:
-			_values[k] = String(s.get(k, _values[k]))
+	_values["time_of_day"] = String(s.get("time_of_day", "evening"))
 	_update_chips()
-	best_label.text = "Best score: %d  (%d balls)" % [int(b["classic_runs"]), int(b["classic_balls"])] if int(b["classic_played"]) > 0 else "Tap PLAY - the first balls are gentle."
+	var player := String(save_data["profile"].get("display_name", "Ayaan"))
+	var played := int(b["classic_played"]) > 0
+	_greet.text = ("Welcome back, %s!" if played else "Welcome, %s!") % player
+	_best_box.visible = played
+	_best_num.text = str(int(b["classic_runs"]))
+	_best_sub.text = "(%d balls)" % int(b["classic_balls"])
+	best_label.text = "Ready to bat? Beat your best!" if played else "Tap PLAY and time your swing.\nThe first balls are gentle."
 	mute_btn.set_kind("sound_off" if s["muted"] else "sound_on")
 
 
 func _process(_d: float) -> void:
-	var tr := get_node("TopRight") as Control
-	tr.position = Vector2(size.x - tr.get_combined_minimum_size().x - 24.0, 20.0)
-	var col := get_node("MenuColumn") as Control
-	var cm := col.get_combined_minimum_size()
-	var foot := get_node("Foot") as Control
-	var chips_row := col.get_node("Chips") as Control
-	chips_row.custom_minimum_size.x = minf(size.x - 40.0, 680.0) if portrait else 760.0
-	for c in col.get_children():
-		(c as Control).size_flags_horizontal = Control.SIZE_SHRINK_CENTER if portrait else Control.SIZE_SHRINK_BEGIN
+	_shade.portrait = portrait
+	_top_right.position = Vector2(size.x - _top_right.get_combined_minimum_size().x - 20.0, 18.0)
+	_logo_top.visible = portrait
+	_logo_card.visible = not portrait
+	var cs: Vector2
 	if portrait:
-		# Tall screen: everything centred, PLAY in the lower-middle where thumbs reach.
-		col.size = cm
-		col.position = Vector2((size.x - cm.x) * 0.5, maxf(110.0, (size.y - cm.y) * 0.55))
-		foot.position = Vector2((size.x - foot.get_combined_minimum_size().x) * 0.5, size.y - 40.0)
+		# Logo at the top, the living ground in the middle, the card at the bottom.
+		var w := minf(size.x - 32.0, 600.0)
+		_card.custom_minimum_size = Vector2(w, 0)
+		play_btn.custom_minimum_size = Vector2(w - 52.0, 116)
+		cs = _card.get_combined_minimum_size()
+		_card.size = cs
+		_card.position = Vector2((size.x - cs.x) * 0.5, size.y - cs.y - 58.0)
+		var lw := minf(size.x - 40.0, 560.0)
+		_logo_top.custom_minimum_size = Vector2(lw, lw * 0.27)
+		_logo_top.size = _logo_top.custom_minimum_size
+		_logo_top.position = Vector2((size.x - lw) * 0.5 + lw * 0.06, maxf(90.0, size.y * 0.09))
+		_foot.position = Vector2((size.x - _foot.get_combined_minimum_size().x) * 0.5, size.y - 40.0)
 	else:
-		col.position = Vector2(64, maxf(24.0, (size.y - cm.y) * 0.42))
-		foot.position = Vector2(64, size.y - 40.0)
+		# A card on the left; the ground and the batter stay visible on the right.
+		_card.custom_minimum_size = Vector2(520, 0)
+		play_btn.custom_minimum_size = Vector2(468, 112)
+		cs = _card.get_combined_minimum_size()
+		_card.size = cs
+		_card.position = Vector2(40.0, maxf(16.0, (size.y - cs.y) * 0.5))
+		_foot.position = Vector2(48.0, size.y - 34.0)
+	play_btn.pivot_offset = play_btn.size * 0.5

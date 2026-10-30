@@ -128,9 +128,10 @@ func test_rewards_applied_once() -> void:
 
 
 func test_v3_camera_follows_phone_orientation() -> void:
-	var old := {"version": 2, "settings": {"view": "batter", "orientation": "landscape", "music": 0.3}}
+	var old := {"version": 2, "settings": {"view": "batter", "orientation": "landscape", "music": 0.3, "hints": true, "bowling": "spin"}}
 	var m: Dictionary = SaveScript.migrate(old)
-	eq(m["version"], 3, "migrated to v3")
+	eq(m["version"], SaveScript.SCHEMA_VERSION, "migrated to the latest version")
+	eq(m["settings"]["hints"], false, "hints off (now in Settings)")
 	eq(m["settings"]["view"], "auto", "view becomes auto")
 	eq(m["settings"]["orientation"], "auto", "screen rotates with the phone")
 	eq(m["settings"]["music"], 0.3, "other settings kept")

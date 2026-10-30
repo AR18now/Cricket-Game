@@ -26,7 +26,7 @@ func build() -> void:
 		var key: String = s[1]
 		sl.value_changed.connect(func(v): save.set_setting(key, v))
 		grid.add_child(sl)
-	for s in [["Mute all", "muted"], ["Captions", "captions"], ["Reduced motion", "reduced_motion"], ["Vibration", "haptics"], ["Practice timing guide", "timing_guide"]]:
+	for s in [["Mute all", "muted"], ["Captions", "captions"], ["Reduced motion", "reduced_motion"], ["Vibration", "haptics"], ["Practice timing guide", "timing_guide"], ["Hints (HIT NOW cue)", "hints"]]:
 		grid.add_child(UiTheme.label(s[0], 22))
 		var cb := CheckButton.new()
 		cb.button_pressed = bool(save.data["settings"][s[1]])

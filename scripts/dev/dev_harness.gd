@@ -634,6 +634,9 @@ func _screens_tour() -> void:
 		await frames(2)
 	await wait(2.5)
 	await shot("u05_result")
+	app.show_menu()
+	await wait(0.6)
+	await shot("u06_menu_returning")
 
 
 ## CPU cost per frame (wall clock, uncapped) across real deliveries in both camera views
