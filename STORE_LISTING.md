@@ -7,22 +7,22 @@ decision or your account; nothing here has been submitted anywhere.
 
 | Item | Why it matters |
 | --- | --- |
-| **Final app name** (currently "Pocket Boundary", working title) | Shown on the store and the phone |
-| **Package / bundle id** (currently `com.devtorque.pocketboundary`) | **Permanent** after the first Play upload. Pick e.g. `com.<yourname>.pocketboundary`; change it in `export_presets.cfg` (Android, Android Store, iOS) |
+| **App name: Tap Tap Cricket** (chosen) | Check the stores for an existing app with the same name before your first upload |
+| **Package / bundle id** (currently `com.taptapcricket.game`) | **Permanent** after the first Play upload. Keep it, or change it now in `export_presets.cfg` (Android, Android Store, iOS) |
 | Developer accounts | Google Play Console (one-time US$25); Apple Developer Program (US$99/year) |
 | Contact email + public privacy-policy URL | Both stores require them. `PRIVACY_POLICY.md` is ready; publish it as a web page (e.g. GitHub Pages) and fill in the email |
 | Commentary voices | Current English voices are **robotic placeholders** (eSpeak NG). Fine for testing; recommended to replace with recorded lines before release (same file names in `assets/audio/vo_*.wav`) |
 
 ## Text
 
-- **Name (30 chars max):** Pocket Boundary
+- **Name (30 chars max):** Tap Tap Cricket
 - **Short description (Play, 80 max):** One-tap street cricket: time your swing, hit sixes, chase your best score!
 - **Subtitle (App Store, 30 max):** One-tap street cricket
 - **Full description:**
 
 > Grab your bat - the neighbourhood match is on!
 >
-> Pocket Boundary is simple, one-tap cricket. Watch the bowler run in, tap SWING at the
+> Tap Tap Cricket is simple, one-tap cricket. Watch the bowler run in, tap SWING at the
 > right moment, and send the ball over the rooftops. Mistime it and the stumps fly.
 >
 > - One button, real cricket: timing decides everything - fours, sixes, catches, bowled
@@ -84,7 +84,7 @@ decision or your account; nothing here has been submitted anywhere.
 2. In GitHub: Settings -> Secrets and variables -> Actions, add
    `ANDROID_UPLOAD_KEYSTORE_BASE64` (the file, base64-encoded: `base64 -w0 upload.keystore`),
    `ANDROID_UPLOAD_KEY_ALIAS` (`upload`) and `ANDROID_UPLOAD_KEYSTORE_PASSWORD`.
-3. The next build attaches `PocketBoundary-play-<n>.aab` to its release. Upload that to
+3. The next build attaches `TapTapCricket-play-<n>.aab` to its release. Upload that to
    Play Console. Turn on **Play App Signing** (Google holds the final signing key).
    Each build's version code is its build number, so every upload is newer.
 
@@ -94,9 +94,9 @@ to prove the store build works - that one cannot be uploaded.
 **iOS** - CI (`ios-check` job, macOS) exports the Xcode project and compiles it unsigned
 on every push. To publish you need a Mac with Xcode (or a cloud Mac):
 1. Put your Apple Team ID in `export_presets.cfg` (`application/app_store_team_id`) and
-   export the iOS preset from Godot (or download the `PocketBoundary-ios-xcode-project`
+   export the iOS preset from Godot (or download the `TapTapCricket-ios-xcode-project`
    artifact).
-2. Open `PocketBoundary.xcodeproj`, choose your team for signing, Product -> Archive,
+2. Open `TapTapCricket.xcodeproj`, choose your team for signing, Product -> Archive,
    then Distribute App -> App Store Connect.
 
 ## Requirements checklist (verified)

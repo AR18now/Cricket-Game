@@ -1,8 +1,8 @@
-# Pocket Boundary - Privacy Policy
+# Tap Tap Cricket - Privacy Policy
 
 _Last updated: 29 October 2026_
 
-Pocket Boundary is an offline cricket game. We built it so that it does not collect,
+Tap Tap Cricket is an offline cricket game. We built it so that it does not collect,
 store on any server, share or sell any personal information.
 
 ## What the game collects

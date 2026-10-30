@@ -14,7 +14,7 @@ Windows/WSL path bridge to manage; Windows builds are cross-exported and tested 
 | Run game + read logs | works | Xvfb + Mesa llvmpipe (OpenGL 4.5 core, Compatibility renderer) |
 | Real screenshots of the running game | works | `get_viewport().get_texture().get_image()` under Xvfb (captures in session) |
 | Inject input and assert state | works | Dev harness: injected Space → swing at dt = 0.1 ms; rapid taps rejected |
-| Windows export | produced | `build/windows/PocketBoundary.exe` (110 MB, embedded PCK); cannot be executed here (no Windows/Wine) |
+| Windows export | produced | `build/windows/TapTapCricket.exe` (110 MB, embedded PCK); cannot be executed here (no Windows/Wine) |
 | Linux export run | works | release build launched without script errors; debug export passed smoke harness |
 | Android SDK | **blocked** in this container (`dl.google.com` denied by network policy) | built instead by GitHub Actions (runner ships the SDK) |
 | iOS | requires macOS + Xcode | pending authorised Mac access |

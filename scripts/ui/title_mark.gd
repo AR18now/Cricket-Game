@@ -20,7 +20,7 @@ func _draw() -> void:
 	draw_circle(bc, h * 0.085, Color(1.0, 0.95, 0.52))
 	draw_line(bc + Vector2(-h * 0.08, -h * 0.02), bc + Vector2(h * 0.08, h * 0.03), Color(0.85, 0.12, 0.12), h * 0.04, true)
 	var x := h * 0.98
-	draw_string(f, Vector2(x + 3, h * 0.5 + 3), "POCKET", HORIZONTAL_ALIGNMENT_LEFT, -1, int(h * 0.36), UiTheme.INK)
-	draw_string(f, Vector2(x, h * 0.5), "POCKET", HORIZONTAL_ALIGNMENT_LEFT, -1, int(h * 0.36), UiTheme.OFF_WHITE)
-	draw_string(f, Vector2(x + 3, h * 0.9 + 3), "BOUNDARY", HORIZONTAL_ALIGNMENT_LEFT, -1, int(h * 0.36), UiTheme.INK)
-	draw_string(f, Vector2(x, h * 0.9), "BOUNDARY", HORIZONTAL_ALIGNMENT_LEFT, -1, int(h * 0.36), UiTheme.GOLD)
+	draw_string(f, Vector2(x + 3, h * 0.5 + 3), "TAP TAP", HORIZONTAL_ALIGNMENT_LEFT, -1, int(h * 0.36), UiTheme.INK)
+	draw_string(f, Vector2(x, h * 0.5), "TAP TAP", HORIZONTAL_ALIGNMENT_LEFT, -1, int(h * 0.36), UiTheme.OFF_WHITE)
+	draw_string(f, Vector2(x + 3, h * 0.9 + 3), "CRICKET", HORIZONTAL_ALIGNMENT_LEFT, -1, int(h * 0.36), UiTheme.INK)
+	draw_string(f, Vector2(x, h * 0.9), "CRICKET", HORIZONTAL_ALIGNMENT_LEFT, -1, int(h * 0.36), UiTheme.GOLD)

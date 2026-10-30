@@ -1,6 +1,6 @@
 # Game rules (arcade cricket)
 
-Pocket Boundary plays a simplified, *consistent* version of cricket. Every rule below is
+Tap Tap Cricket plays a simplified, *consistent* version of cricket. Every rule below is
 implemented in `scripts/sim/` and covered by tests in `tests/`.
 
 ## A delivery

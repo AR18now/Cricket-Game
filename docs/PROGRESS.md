@@ -114,6 +114,13 @@ _Last updated: 2026-09-25 (session 1)._
 | Friendlier menu, portrait and landscape | New welcome card: greeting by name ("Welcome" / "Welcome back"), gold BEST badge or a first-time tip, one big PLAY, a single Time-of-day pill. Landscape: card on the left, ground visible on the right. Portrait: logo on top, the ground in the middle, the card at the bottom within thumb reach |
 | Game name | Suggestions given to the owner; not renamed until chosen (store-critical) |
 
+## Owner decision: name
+
+The game is now **Tap Tap Cricket** (logo, app name, Windows/Linux/Android/iOS builds,
+store text, privacy policy, screenshots). App/bundle id `com.taptapcricket.game`
+(changeable until the first Play upload). Earlier entries above keep the old working
+title "Pocket Boundary" as history.
+
 ## What exists now (evidence)
 
 - Deterministic simulation: analytic delivery path (bounce, deviation), timing → contact at the

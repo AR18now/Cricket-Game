@@ -5,7 +5,7 @@ config_version=5
 
 [application]
 
-config/name="Pocket Boundary"
+config/name="Tap Tap Cricket"
 config/description="Pakistan-inspired arcade cricket: from the neighbourhood pitch to the floodlights."
 config/version="0.3.0"
 run/main_scene="res://scenes/main.tscn"

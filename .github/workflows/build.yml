@@ -60,13 +60,13 @@ jobs:
       - name: Export desktop builds
         run: |
           mkdir -p build/windows build/linux build/windows-dev
-          godot --headless --path . --export-release "Windows" build/windows/PocketBoundary.exe
-          godot --headless --path . --export-debug "Windows Dev" build/windows-dev/PocketBoundary-dev.exe
-          godot --headless --path . --export-release "Linux" build/linux/PocketBoundary.x86_64
-          test -s build/windows/PocketBoundary.exe
+          godot --headless --path . --export-release "Windows" build/windows/TapTapCricket.exe
+          godot --headless --path . --export-debug "Windows Dev" build/windows-dev/TapTapCricket-dev.exe
+          godot --headless --path . --export-release "Linux" build/linux/TapTapCricket.x86_64
+          test -s build/windows/TapTapCricket.exe
           # Release builds must not contain the development harness.
-          ! grep -q "scripts/dev/dev_harness" build/windows/PocketBoundary.exe
-          ! grep -q "scripts/dev/dev_harness" build/linux/PocketBoundary.x86_64
+          ! grep -q "scripts/dev/dev_harness" build/windows/TapTapCricket.exe
+          ! grep -q "scripts/dev/dev_harness" build/linux/TapTapCricket.x86_64
 
       - name: Configure Android export (fixed debug-only key so updates install over old builds)
         run: |
@@ -88,19 +88,19 @@ jobs:
       - name: Export Android debug APK
         run: |
           mkdir -p build/android
-          godot --headless --path . --export-debug "Android" build/android/PocketBoundary-debug.apk
-          test -s build/android/PocketBoundary-debug.apk
+          godot --headless --path . --export-debug "Android" build/android/TapTapCricket-debug.apk
+          test -s build/android/TapTapCricket-debug.apk
           rm -f build/android/*.idsig
 
       - name: Verify Android APK
         run: |
           BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
-          "$BT/apksigner" verify --verbose --print-certs build/android/PocketBoundary-debug.apk
-          "$BT/aapt2" dump badging build/android/PocketBoundary-debug.apk | grep -iE "^package|sdkVersion|native-code|launchable-activity"
-          "$BT/zipalign" -c -P 16 -v 4 build/android/PocketBoundary-debug.apk | tail -1
-          ls -l build/android/PocketBoundary-debug.apk
-          sha256sum build/android/PocketBoundary-debug.apk
-          unzip -l build/android/PocketBoundary-debug.apk | grep -E "lib/.*\.so" 
+          "$BT/apksigner" verify --verbose --print-certs build/android/TapTapCricket-debug.apk
+          "$BT/aapt2" dump badging build/android/TapTapCricket-debug.apk | grep -iE "^package|sdkVersion|native-code|launchable-activity"
+          "$BT/zipalign" -c -P 16 -v 4 build/android/TapTapCricket-debug.apk | tail -1
+          ls -l build/android/TapTapCricket-debug.apk
+          sha256sum build/android/TapTapCricket-debug.apk
+          unzip -l build/android/TapTapCricket-debug.apk | grep -E "lib/.*\.so" 
 
       - name: Publish test APK as a direct download (GitHub Release, no zip)
         if: github.event_name == 'push'
@@ -108,24 +108,24 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="test-build-${GITHUB_RUN_NUMBER}"
-          APK="PocketBoundary-test-${GITHUB_RUN_NUMBER}.apk"
-          cp build/android/PocketBoundary-debug.apk "$APK"
+          APK="TapTapCricket-test-${GITHUB_RUN_NUMBER}.apk"
+          cp build/android/TapTapCricket-debug.apk "$APK"
           SIZE=$(stat -c %s "$APK")
           SUM=$(sha256sum "$APK" | cut -d' ' -f1)
-          WIN="PocketBoundary-windows-test-${GITHUB_RUN_NUMBER}.zip"
+          WIN="TapTapCricket-windows-test-${GITHUB_RUN_NUMBER}.zip"
           cat > notes.md <<EOT
           Test build ${GITHUB_RUN_NUMBER} (commit ${GITHUB_SHA::7}) for Android phones and Windows PCs.
 
           Android: download **$APK** below and tap it to install (no unzipping needed).
-          Windows: download **$WIN**, unzip, double-click PocketBoundary.exe.
+          Windows: download **$WIN**, unzip, double-click TapTapCricket.exe.
           APK size: $SIZE bytes. APK SHA-256: \`$SUM\`
 
           Debug-signed test build - not for the Play Store.
           EOT
-          WIN="PocketBoundary-windows-test-${GITHUB_RUN_NUMBER}.zip"
-          (cd build/windows && zip -q -9 "$GITHUB_WORKSPACE/$WIN" PocketBoundary.exe)
+          WIN="TapTapCricket-windows-test-${GITHUB_RUN_NUMBER}.zip"
+          (cd build/windows && zip -q -9 "$GITHUB_WORKSPACE/$WIN" TapTapCricket.exe)
           gh release create "$TAG" "$APK" "$WIN" --target "$GITHUB_SHA" --prerelease \
-            --title "Pocket Boundary test build ${GITHUB_RUN_NUMBER}" --notes-file notes.md
+            --title "Tap Tap Cricket test build ${GITHUB_RUN_NUMBER}" --notes-file notes.md
 
       - name: Cache Gradle downloads (avoids Maven Central rate limits)
         uses: actions/cache@v4
@@ -163,13 +163,13 @@ jobs:
             export GODOT_ANDROID_KEYSTORE_RELEASE_PATH="$RUNNER_TEMP/upload.keystore"
             export GODOT_ANDROID_KEYSTORE_RELEASE_USER="$UPLOAD_KS_ALIAS"
             export GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD="$UPLOAD_KS_PASS"
-            export_aab --export-release "Android Store" build/store/PocketBoundary-play-${GITHUB_RUN_NUMBER}.aab
+            export_aab --export-release "Android Store" build/store/TapTapCricket-play-${GITHUB_RUN_NUMBER}.aab
             rm -f "$RUNNER_TEMP/upload.keystore"
-            echo "STORE_AAB=build/store/PocketBoundary-play-${GITHUB_RUN_NUMBER}.aab" >> "$GITHUB_ENV"
+            echo "STORE_AAB=build/store/TapTapCricket-play-${GITHUB_RUN_NUMBER}.aab" >> "$GITHUB_ENV"
           else
             # No upload key configured yet: build a debug-signed bundle only to prove the
             # store build works. It is NOT uploadable to Google Play.
-            export_aab --export-debug "Android Store" build/store/PocketBoundary-pipeline-check.aab
+            export_aab --export-debug "Android Store" build/store/TapTapCricket-pipeline-check.aab
           fi
           AAB=$(ls build/store/*.aab | head -1)
           test -s "$AAB"
@@ -182,25 +182,25 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: PocketBoundary-google-play-bundle
+          name: TapTapCricket-google-play-bundle
           path: build/store/
           if-no-files-found: warn
 
       - uses: actions/upload-artifact@v4
         with:
-          name: PocketBoundary-windows
+          name: TapTapCricket-windows
           path: build/windows/
       - uses: actions/upload-artifact@v4
         with:
-          name: PocketBoundary-windows-dev
+          name: TapTapCricket-windows-dev
           path: build/windows-dev/
       - uses: actions/upload-artifact@v4
         with:
-          name: PocketBoundary-linux
+          name: TapTapCricket-linux
           path: build/linux/
       - uses: actions/upload-artifact@v4
         with:
-          name: PocketBoundary-android-debug
+          name: TapTapCricket-android-debug
           path: build/android/
           if-no-files-found: warn
       - uses: actions/upload-artifact@v4
@@ -240,20 +240,20 @@ jobs:
           # Apple team id goes in at signing time.
           sed -i '' 's/^application\/app_store_team_id=""/application\/app_store_team_id="ABCDE12345"/' export_presets.cfg
           mkdir -p build/ios
-          "$GODOT" --headless --path . --export-release "iOS" build/ios/PocketBoundary.ipa
+          "$GODOT" --headless --path . --export-release "iOS" build/ios/TapTapCricket.ipa
           ls build/ios
 
       - name: Compile for iPhone (unsigned)
         run: |
           cd build/ios
           xcodebuild -version
-          xcodebuild -project PocketBoundary.xcodeproj -scheme PocketBoundary -configuration Release \
+          xcodebuild -project TapTapCricket.xcodeproj -scheme TapTapCricket -configuration Release \
             -sdk iphoneos -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build | tail -20
-          /usr/libexec/PlistBuddy -c "Print :ITSAppUsesNonExemptEncryption" PocketBoundary/PocketBoundary-Info.plist || true
-          ls PocketBoundary/*.xcprivacy 2>/dev/null || find . -name "*.xcprivacy" | head -3
+          /usr/libexec/PlistBuddy -c "Print :ITSAppUsesNonExemptEncryption" TapTapCricket/TapTapCricket-Info.plist || true
+          ls TapTapCricket/*.xcprivacy 2>/dev/null || find . -name "*.xcprivacy" | head -3
 
       - uses: actions/upload-artifact@v4
         with:
-          name: PocketBoundary-ios-xcode-project
+          name: TapTapCricket-ios-xcode-project
           path: build/ios/
           if-no-files-found: warn

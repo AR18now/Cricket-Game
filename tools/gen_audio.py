@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generates Pocket Boundary's original sound palette procedurally (stdlib only).
+"""Generates Tap Tap Cricket's original sound palette procedurally (stdlib only).
 
 Every sound here is synthesised from oscillators, filtered noise and envelopes written in
 this file, so the project owns them outright (see ASSET_LICENSES.md). Deterministic:

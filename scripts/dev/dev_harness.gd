@@ -745,8 +745,10 @@ func _store_shots() -> void:
 	await until_clock(0.15)
 	await shot("s2_batters_eye")
 	app.hud.visible = false
-	await frames(2)
+	get_node("/root/Save").set_setting("view", "batter")   # the feature graphic uses the batter's eye
+	await frames(3)
 	await shot("x_clean_batters_eye")   # no HUD: used for the feature graphic
+	get_node("/root/Save").set_setting("view", "auto")
 	app.hud.visible = true
 	await until_phase(MatchController.Phase.FLIGHT)
 	await swing_at(ideal_swing())

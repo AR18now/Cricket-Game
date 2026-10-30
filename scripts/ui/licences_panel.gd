@@ -28,7 +28,7 @@ func build() -> void:
 
 static func notices() -> String:
 	var parts: Array[String] = []
-	parts.append("Pocket Boundary - a cricket game made for this project. Characters, grounds, art, sound effects, music and placeholder commentary voices were created for the game (voices synthesised with eSpeak NG).")
+	parts.append("Tap Tap Cricket - a cricket game made for this project. Characters, grounds, art, sound effects, music and placeholder commentary voices were created for the game (voices synthesised with eSpeak NG).")
 	parts.append("Made with Godot Engine (godotengine.org).\n\n" + Engine.get_license_text())
 	var tp := []
 	for c in Engine.get_copyright_info():

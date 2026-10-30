@@ -1,10 +1,10 @@
-# Pocket Boundary (working title)
+# Tap Tap Cricket (working title)
 
 A Pakistan-inspired, mobile-first arcade cricket game built with **Godot 4.7.2** (GDScript,
 Compatibility renderer). One-tap batting with believable ball flight, fielding and scoring —
 *from the neighbourhood pitch to the floodlights*.
 
-> "Pocket Boundary" is a provisional internal title and has **not** been cleared as a public
+> "Tap Tap Cricket" is a provisional internal title and has **not** been cleared as a public
 > brand. Team names and all text are placeholders for review.
 
 ## Current status
@@ -27,8 +27,8 @@ SHA-512 values are recorded in the CI workflow.
 
 Every push runs the **Test and build** workflow on GitHub Actions. Open the repository on
 GitHub → **Actions** → the latest *Test and build* run → **Artifacts** → download
-`PocketBoundary-windows`, unzip, run `PocketBoundary.exe`.
-(`PocketBoundary-windows-dev` is a debug build with the F3 debug overlay.)
+`TapTapCricket-windows`, unzip, run `TapTapCricket.exe`.
+(`TapTapCricket-windows-dev` is a debug build with the F3 debug overlay.)
 
 ## Open the project on Windows
 
@@ -57,9 +57,9 @@ godot --headless --path . --script res://tests/run_tests.gd -- --filter=test_sco
 godot --headless --path . --script res://tools/sim_stats.gd
 
 # Exports (templates must be installed)
-godot --headless --path . --export-release "Windows" build/windows/PocketBoundary.exe
-godot --headless --path . --export-release "Linux"   build/linux/PocketBoundary.x86_64
-godot --headless --path . --export-debug   "Android" build/android/PocketBoundary-debug.apk
+godot --headless --path . --export-release "Windows" build/windows/TapTapCricket.exe
+godot --headless --path . --export-release "Linux"   build/linux/TapTapCricket.x86_64
+godot --headless --path . --export-debug   "Android" build/android/TapTapCricket-debug.apk
 
 # Dev harness on a debug build (needs a display; Linux CI uses xvfb-run)
 godot --path . -- --harness=smoke   --out=/abs/path/captures

@@ -45,8 +45,8 @@ def main(shot):
             draw.text((x + dx, y + dy), s, font=f, fill=(12, 10, 8))
         draw.text((x, y), s, font=f, fill=fill)
 
-    text((56, 238), "POCKET", font("Black", 74), white)
-    text((56, 312), "BOUNDARY", font("Black", 74), gold)
+    text((56, 238), "TAP TAP", font("Black", 74), white)
+    text((56, 312), "CRICKET", font("Black", 74), gold)
     text((60, 410), "One-tap street cricket. Time it. Hit it for six!", font("Bold", 28), sand)
     out = os.path.join(ROOT, "store", "feature_graphic_1024x500.png")
     os.makedirs(os.path.dirname(out), exist_ok=True)
