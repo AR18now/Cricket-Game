@@ -19,5 +19,5 @@ release_y = 0.4
 run_up_time = 1.15
 kit_color = Color(0.2, 0.42, 0.75, 1)
 skin_tone = Color(0.78, 0.56, 0.4, 1)
-cue_line = "Chalak pitches it up - look to drive."
+cue_line = "Pitches it up - look to drive."
 description = "Fuller deliveries with controlled line variation. Pitches it up; rarely short."

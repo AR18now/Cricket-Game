@@ -14,11 +14,11 @@ var overs := 2               # 0 = unlimited
 var max_wickets := 3         # 0 = dismissals do not end the innings (practice)
 var target := 0              # runs needed to win; 0 = no chase
 var two_batters := true      # strike rotation between a striker and non-striker
-var batting_team := "Pindi Falcons"
+var batting_team := "You"
 var batting_short := "PIN"
-var fielding_team := "Karachi Comets"
+var fielding_team := "Bowling side"
 var fielding_short := "KAR"
-var batters: Array = ["Ayaan", "Bilal", "Zain", "Faisal"]
+var batters: Array = ["You", "Partner", "Partner 2", "Partner 3"]
 var bowlers_by_over: Array = ["daniyal", "hamza"]   # bowler ids, cycled per over
 var difficulty_ramp := 0.0   # difficulty added per legal ball (endless), clamped to 1
 var window_scale := 1.0
@@ -31,7 +31,7 @@ var ramp_balls := 72
 var title := "Quick Match"
 
 
-static func quick_match(target_runs: int, player_name: String = "Ayaan") -> MatchRules:
+static func quick_match(target_runs: int, player_name: String = "You") -> MatchRules:
 	var r := MatchRules.new()
 	r.mode = QUICK
 	r.title = "Quick Match"
@@ -39,13 +39,13 @@ static func quick_match(target_runs: int, player_name: String = "Ayaan") -> Matc
 	r.max_wickets = 3
 	r.target = target_runs
 	r.two_batters = true
-	r.batters = [player_name, "Bilal", "Zain", "Faisal"]
+	r.batters = [player_name, "Partner", "Partner 2", "Partner 3"]
 	r.bowlers_by_over = ["daniyal", "hamza"]
 	return r
 
 
 ## The main mode: keep batting until out (1 wicket); pace starts gentle and builds up.
-static func classic(player_name: String = "Ayaan", bowling: String = "mixed", seed_value: int = 1) -> MatchRules:
+static func classic(player_name: String = "You", bowling: String = "mixed", seed_value: int = 1) -> MatchRules:
 	var r := MatchRules.new()
 	r.mode = CLASSIC
 	r.title = "Classic"
@@ -82,7 +82,7 @@ static func surprise_bowlers(seed_value: int, overs: int = 24) -> Array:
 	return out
 
 
-static func endless(player_name: String = "Ayaan") -> MatchRules:
+static func endless(player_name: String = "You") -> MatchRules:
 	var r := MatchRules.new()
 	r.mode = ENDLESS
 	r.title = "Endless"
@@ -96,7 +96,7 @@ static func endless(player_name: String = "Ayaan") -> MatchRules:
 	return r
 
 
-static func practice(player_name: String = "Ayaan", bowler_id: String = "daniyal") -> MatchRules:
+static func practice(player_name: String = "You", bowler_id: String = "daniyal") -> MatchRules:
 	var r := MatchRules.new()
 	r.mode = PRACTICE
 	r.title = "Practice"
@@ -109,7 +109,7 @@ static func practice(player_name: String = "Ayaan", bowler_id: String = "daniyal
 	return r
 
 
-static func opening_challenge(player_name: String = "Ayaan") -> MatchRules:
+static func opening_challenge(player_name: String = "You") -> MatchRules:
 	var r := MatchRules.new()
 	r.mode = CHALLENGE
 	r.title = "First Challenge"
@@ -117,7 +117,7 @@ static func opening_challenge(player_name: String = "Ayaan") -> MatchRules:
 	r.max_wickets = 2
 	r.target = 6
 	r.two_batters = false
-	r.batters = [player_name, "Bilal"]
+	r.batters = [player_name, "Partner"]
 	r.bowlers_by_over = ["ayaan_coach"]
 	r.window_scale = 1.3
 	return r

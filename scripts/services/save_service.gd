@@ -32,7 +32,7 @@ static func defaults() -> Dictionary:
 			"captions": true, "reduced_motion": false, "haptics": true,
 			"timing_guide": true, "bowling": "mixed", "time_of_day": "evening", "view": "auto", "hints": false,
 			"orientation": "auto"},
-		"profile": {"display_name": "Ayaan", "kit": 0, "onboarded": false},
+		"profile": {"display_name": "You", "kit": 0, "onboarded": false},
 		"tutorial_done": false,
 		"stance_unlocked": false,
 		"best": {"endless_runs": 0, "endless_balls": 0, "quick_wins": 0, "quick_played": 0,
@@ -82,7 +82,7 @@ static func validate(d: Dictionary):
 	for k in ["master", "music", "sfx", "voice"]:
 		base["settings"][k] = clampf(float(base["settings"][k]), 0.0, 1.0)
 	var dn := String(base["profile"]["display_name"]).strip_edges().left(16)
-	base["profile"]["display_name"] = dn if dn != "" else "Ayaan"
+	base["profile"]["display_name"] = dn if dn != "" else "You"
 	for k in base["best"].keys():
 		base["best"][k] = maxi(0, int(base["best"][k]))
 	return base

@@ -45,8 +45,8 @@ static func resolve(d: Delivery, swing_time: float, stance: int, fielders: Array
 				o.wicket = true
 				o.fielder_name = f.name
 				o.fielder_position = f.position_name
-				o.explanation = "Caught by %s at %s before the ball touched the ground (%.1f m high)" % [
-					f.name, f.position_name, r.shot.collect_pos.z]
+				o.explanation = "Caught at %s before the ball touched the ground (%.1f m high)" % [
+					f.position_name, r.shot.collect_pos.z]
 			_:
 				o.runs = r.shot.runs
 				o.kind = BallOutcome.RUNS if o.runs > 0 else BallOutcome.DOT
@@ -54,9 +54,9 @@ static func resolve(d: Delivery, swing_time: float, stance: int, fielders: Array
 				o.fielder_name = f2.name
 				o.fielder_position = f2.position_name
 				if o.runs == 0:
-					o.explanation = "%s (%s) cut it off quickly - no safe run" % [f2.name, f2.position_name]
+					o.explanation = "%s cut it off quickly - no safe run" % f2.position_name.capitalize()
 				else:
-					o.explanation = "%s (%s) fielded it - %d safe run%s" % [f2.name, f2.position_name, o.runs, "" if o.runs == 1 else "s"]
+					o.explanation = "Fielded at %s - %d safe run%s" % [f2.position_name, o.runs, "" if o.runs == 1 else "s"]
 	else:
 		var t_st := d.stumps_time()
 		o.t_settle = t_st + 0.6

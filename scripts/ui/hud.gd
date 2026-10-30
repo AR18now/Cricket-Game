@@ -17,6 +17,7 @@ var sub_label: Label
 var chase_label: Label
 var over_row: HBoxContainer
 var bowler_panel: PanelContainer
+var bowler_badge: Panel
 var bowler_label: Label
 var speed_label: Label
 var buttons: HBoxContainer
@@ -76,7 +77,7 @@ func build(c: MatchController, w: WorldView) -> void:
 	sv.add_theme_constant_override("separation", 2)
 	sv.alignment = BoxContainer.ALIGNMENT_CENTER
 	score_panel.add_child(sv)
-	score_label = UiTheme.label("0", 40, UiTheme.OFF_WHITE, "black")
+	score_label = UiTheme.outline(UiTheme.label("0", 44, UiTheme.OFF_WHITE, "black"))
 	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sv.add_child(score_label)
 	sub_label = UiTheme.label("", 18, UiTheme.SAND)
@@ -92,12 +93,18 @@ func build(c: MatchController, w: WorldView) -> void:
 	# --- Bowler card (top left)
 	bowler_panel = PanelContainer.new()
 	bowler_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bowler_panel.add_theme_stylebox_override("panel", UiTheme.panel_box(Color(0.02, 0.15, 0.12, 0.72), 16))
+	bowler_panel.add_theme_stylebox_override("panel", UiTheme.panel_box(Color(0.02, 0.15, 0.12, 0.8), 18, UiTheme.GOLD.darkened(0.45), 1))
 	add_child(bowler_panel)
+	var brow := HBoxContainer.new()
+	brow.add_theme_constant_override("separation", 10)
+	bowler_panel.add_child(brow)
+	bowler_badge = Panel.new()
+	bowler_badge.custom_minimum_size = Vector2(12, 40)
+	brow.add_child(bowler_badge)
 	var bv := VBoxContainer.new()
 	bv.add_theme_constant_override("separation", 0)
-	bowler_panel.add_child(bv)
-	bowler_label = UiTheme.label("", 20, UiTheme.OFF_WHITE)
+	brow.add_child(bv)
+	bowler_label = UiTheme.label("", 20, UiTheme.OFF_WHITE, "black")
 	bv.add_child(bowler_label)
 	speed_label = UiTheme.label("", 17, UiTheme.SAND, "regular")
 	bv.add_child(speed_label)
@@ -141,7 +148,7 @@ func build(c: MatchController, w: WorldView) -> void:
 	var bbox := VBoxContainer.new()
 	bbox.add_theme_constant_override("separation", 0)
 	banner.add_child(bbox)
-	banner_title = UiTheme.label("", 50, UiTheme.GOLD, "black")
+	banner_title = UiTheme.outline(UiTheme.label("", 52, UiTheme.GOLD, "black"), 8)
 	banner_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	bbox.add_child(banner_title)
 	banner_sub = UiTheme.label("", 19, UiTheme.OFF_WHITE, "regular")
@@ -338,9 +345,10 @@ func refresh() -> void:
 				chase_label.text = "LAST BALL - need %d" % card.runs_needed
 	if controller.profile != null:
 		var p := controller.profile
-		bowler_label.text = "%s \"%s\"" % [p.display_name, p.nickname]
+		bowler_label.text = p.type_label()
+		bowler_badge.add_theme_stylebox_override("panel", UiTheme.panel_box(UiTheme.BOWLER_COLORS.get(p.style, UiTheme.GOLD), 6))
 		if controller.delivery != null:
-			speed_label.text = "%s  -  %d km/h" % [p.style.capitalize(), controller.delivery.speed_kmh()]
+			speed_label.text = "%d km/h" % controller.delivery.speed_kmh()
 	for ch in over_row.get_children():
 		ch.queue_free()
 	var syms: Array = card.this_over if card.legal_balls % 6 != 0 or controller.phase == MatchController.Phase.OUTCOME else []
@@ -388,7 +396,7 @@ func _on_delivery(info: Dictionary) -> void:
 	refresh()
 	var p: BowlerProfile = info["bowler"]
 	if _last_bowler != "" and p.id != _last_bowler and controller.tutorial_level < 0:
-		show_toast("New bowler: %s \"%s\" - %s" % [p.display_name, p.nickname, p.cue_line])
+		show_toast("New bowler: %s - %s" % [p.type_label(), p.cue_line])
 	_last_bowler = p.id
 	var first_time := not bool(_setting("tutorial_seen", false))
 	var n: int = controller.state.events.size() if controller.state else 0
@@ -523,7 +531,7 @@ func _check_milestones(card: Scorecard) -> void:
 
 
 func show_caption(text: String, speaker: String) -> void:
-	caption_label.text = "%s:  %s" % [speaker, text]
+	caption_label.text = text if speaker == "" else "%s:  %s" % [speaker, text]
 	caption_panel.visible = true
 	_caption_until = Time.get_ticks_msec() / 1000.0 + 2.8
 

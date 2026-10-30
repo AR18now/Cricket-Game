@@ -38,14 +38,31 @@ static func panel_box(bg: Color = PANEL, radius: int = 14, border: Color = Color
 	sb.content_margin_right = 14
 	sb.content_margin_top = 8
 	sb.content_margin_bottom = 8
+	sb.anti_aliasing = true
+	sb.corner_detail = 12
+	# Soft drop shadow: panels feel raised above the ground, not stuck on it.
+	if bg.a > 0.3:
+		sb.shadow_color = Color(0, 0, 0, 0.28)
+		sb.shadow_size = 10
+		sb.shadow_offset = Vector2(0, 4)
 	return sb
+
+
+## Colour for each kind of bowler (shown as a badge instead of a name).
+const BOWLER_COLORS := {"pace": Color(0.86, 0.3, 0.24), "spin": Color(0.55, 0.36, 0.8), "medium": Color(0.16, 0.6, 0.6), "gentle": Color(0.3, 0.62, 0.3), "tutorial": Color(0.3, 0.62, 0.3)}
+
+
+static func outline(l: Label, size: int = 6) -> Label:
+	l.add_theme_color_override("font_outline_color", Color(0.02, 0.06, 0.05, 0.9))
+	l.add_theme_constant_override("outline_size", size)
+	return l
 
 
 static func build() -> Theme:
 	var t := Theme.new()
 	t.default_font = font("bold")
 	t.default_font_size = 22
-	var normal := panel_box(EMERALD, 16, GOLD.darkened(0.3), 2)
+	var normal := panel_box(EMERALD, 18, GOLD.darkened(0.3), 2)
 	normal.content_margin_top = 12
 	normal.content_margin_bottom = 12
 	normal.content_margin_left = 22
@@ -56,6 +73,8 @@ static func build() -> Theme:
 	var pressed := normal.duplicate()
 	pressed.bg_color = EMERALD_DEEP
 	pressed.border_color = GOLD
+	pressed.shadow_size = 3
+	pressed.shadow_offset = Vector2(0, 1)
 	var focus := normal.duplicate()
 	focus.draw_center = false
 	focus.border_color = GOLD

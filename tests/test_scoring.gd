@@ -34,22 +34,22 @@ func test_legal_balls_and_over_rollover() -> void:
 
 
 func test_strike_rotation_odd_runs_and_over_end() -> void:
-	var rules := MatchRules.quick_match(100, "Ayaan")
+	var rules := MatchRules.quick_match(100, "You")
 	rules.overs = 5
 	var st := MatchState.new(rules, 1)
 	_play(st, [1])
-	eq(st.card.batters[st.card.striker]["name"], "Bilal", "single swaps strike")
+	eq(st.card.batters[st.card.striker]["name"], "Partner", "single swaps strike")
 	_play(st, [2])
-	eq(st.card.batters[st.card.striker]["name"], "Bilal", "two keeps strike")
+	eq(st.card.batters[st.card.striker]["name"], "Partner", "two keeps strike")
 	_play(st, [3])
-	eq(st.card.batters[st.card.striker]["name"], "Ayaan", "three swaps strike")
+	eq(st.card.batters[st.card.striker]["name"], "You", "three swaps strike")
 	_play(st, [4, 6])
-	eq(st.card.batters[st.card.striker]["name"], "Ayaan", "boundaries keep strike")
+	eq(st.card.batters[st.card.striker]["name"], "You", "boundaries keep strike")
 	_play(st, [0])  # sixth ball -> over ends -> swap
-	eq(st.card.batters[st.card.striker]["name"], "Bilal", "end of over swaps strike")
+	eq(st.card.batters[st.card.striker]["name"], "Partner", "end of over swaps strike")
 	# Single off the last ball of an over: swap twice -> same batter keeps strike.
 	_play(st, [0, 0, 0, 0, 0, 1])
-	eq(st.card.batters[st.card.striker]["name"], "Bilal", "single off last ball: odd swap + over swap")
+	eq(st.card.batters[st.card.striker]["name"], "Partner", "single off last ball: odd swap + over swap")
 	var bil: Dictionary = st.card.batters[1]
 	var aya: Dictionary = st.card.batters[0]
 	eq(aya["runs"] + bil["runs"], st.card.runs, "batter runs sum to total")
@@ -57,20 +57,20 @@ func test_strike_rotation_odd_runs_and_over_end() -> void:
 
 
 func test_no_strike_swap_after_innings_ends() -> void:
-	var st := MatchState.new(MatchRules.quick_match(100, "Ayaan"), 1)
+	var st := MatchState.new(MatchRules.quick_match(100, "You"), 1)
 	_play(st, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
 	check(st.is_complete(), "innings over at 2.0")
-	eq(st.card.batters[st.card.striker]["name"], "Ayaan", "odd run swap only; no over-end swap after completion")
+	eq(st.card.batters[st.card.striker]["name"], "You", "odd run swap only; no over-end swap after completion")
 
 
 func test_wicket_brings_new_batter_on_strike() -> void:
-	var st := MatchState.new(MatchRules.quick_match(100, "Ayaan"), 1)
+	var st := MatchState.new(MatchRules.quick_match(100, "You"), 1)
 	_play(st, [1])  # Bilal on strike
 	_play(st, [_o(BallOutcome.BOWLED, 0, true)])
 	eq(st.card.batters[1]["out"], true, "Bilal out")
-	eq(st.card.batters[1]["how"], "b Daniyal".replace("Daniyal", st.card.bowlers[0]["name"]))
-	eq(st.card.batters[st.card.striker]["name"], "Zain", "new batter takes strike")
-	eq(st.card.batters[st.card.non_striker]["name"], "Ayaan", "survivor stays at non-striker end")
+	eq(st.card.batters[1]["how"], "bowled", "how out, with no names")
+	eq(st.card.batters[st.card.striker]["name"], "Partner 2", "new batter takes strike")
+	eq(st.card.batters[st.card.non_striker]["name"], "You", "survivor stays at non-striker end")
 	eq(st.card.fall_of_wickets.size(), 1)
 	eq(st.card.fall_of_wickets[0]["score"], 1)
 
@@ -138,7 +138,7 @@ func test_bowler_figures_and_economy() -> void:
 
 
 func test_single_batter_endless_rules() -> void:
-	var st := MatchState.new(MatchRules.endless("Ayaan"), 1)
+	var st := MatchState.new(MatchRules.endless("You"), 1)
 	_play(st, [1, 1, 1, 0, 0, 0, 3])
 	eq(st.card.striker, 0, "single batter keeps strike in endless")
 	eq(st.card.non_striker, -1)
@@ -186,7 +186,7 @@ func test_scorecard_totals_match_event_log() -> void:
 
 
 func test_classic_mode_rules() -> void:
-	var st := MatchState.new(MatchRules.classic("Ayaan"), 1)
+	var st := MatchState.new(MatchRules.classic("You"), 1)
 	near(st.ease_in(), 0.0, 1e-6, "starts gentle")
 	eq(st.current_bowler_id(), "ayaan_coach")
 	_play(st, [1, 1, 1, 1, 1, 1])

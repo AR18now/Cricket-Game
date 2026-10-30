@@ -57,8 +57,8 @@ func play(m: int, batter: Dictionary) -> void:
 	runs = m
 	_number.text = str(m)
 	_title.text = title_for(m)
-	_sub.text = "%s  -  %d off %d balls  -  %d x 4   %d x 6" % [String(batter.get("name", "")),
-		int(batter.get("runs", m)), int(batter.get("balls", 0)), int(batter.get("fours", 0)), int(batter.get("sixes", 0))]
+	_sub.text = "%d off %d balls  -  %d x 4   %d x 6" % [int(batter.get("runs", m)),
+		int(batter.get("balls", 0)), int(batter.get("fours", 0)), int(batter.get("sixes", 0))]
 	t = 0.0
 	visible = true
 	queue_redraw()

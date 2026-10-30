@@ -111,7 +111,7 @@ func test_validation_sanitises() -> void:
 	var v = SaveScript.validate(bad)
 	near(v["settings"]["master"], 1.0, 0.0001, "clamped")
 	eq(v["settings"]["muted"], false, "wrong type ignored")
-	eq(v["profile"]["display_name"], "Ayaan", "blank name -> default")
+	eq(v["profile"]["display_name"], "You", "blank name -> default")
 	eq(v["best"]["endless_runs"], 0, "negative clamped")
 	eq(v["best"]["sixes"], 0, "wrong type ignored")
 	eq(SaveScript.validate({"foo": 1}), null, "unrelated JSON rejected")

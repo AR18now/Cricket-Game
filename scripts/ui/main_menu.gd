@@ -165,9 +165,8 @@ func refresh(save_data: Dictionary) -> void:
 	var s: Dictionary = save_data["settings"]
 	_values["time_of_day"] = String(s.get("time_of_day", "evening"))
 	_update_chips()
-	var player := String(save_data["profile"].get("display_name", "Ayaan"))
 	var played := int(b["classic_played"]) > 0
-	_greet.text = ("Welcome back, %s!" if played else "Welcome, %s!") % player
+	_greet.text = "Welcome back!" if played else "Welcome!"
 	_best_box.visible = played
 	_best_num.text = str(int(b["classic_runs"]))
 	_best_sub.text = "(%d balls)" % int(b["classic_balls"])

@@ -38,7 +38,7 @@ func build(state: MatchState, prev_best: int, venue: VenueConfig, hints: bool = 
 	var how := ""
 	for b in card.batters:
 		if b["out"]:
-			how += "%s %d (%d) - %s\n" % [b["name"], b["runs"], b["balls"], b["how"]]
+			how += "Out for %d (%d balls) - %s\n" % [b["runs"], b["balls"], b["how"]]
 	var hl := UiTheme.label(how.strip_edges(), 18, UiTheme.SAND, "regular")
 	hl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	body.add_child(hl)

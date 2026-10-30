@@ -119,13 +119,13 @@ static func _symbol(e: Dictionary) -> String:
 	return str(e["runs"])
 
 
-static func _how_out(e: Dictionary, bowler_name: String) -> String:
+static func _how_out(e: Dictionary, _bowler_name: String) -> String:
+	# No names on screen: how, and where for catches.
 	if e["kind"] == BallOutcome.BOWLED:
-		return "b %s" % bowler_name
+		return "bowled"
 	if e["kind"] == BallOutcome.CAUGHT:
-		if e["fielder"] == bowler_name:
-			return "c & b %s" % bowler_name
-		return "c %s b %s" % [e["fielder"], bowler_name]
+		var pos := String(e.get("fielder_position", ""))
+		return "caught at %s" % pos if pos != "" else "caught"
 	return "out"
 
 

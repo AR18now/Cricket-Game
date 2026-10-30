@@ -81,14 +81,14 @@ func setup(w: WorldView, t: GameTuning, v: VenueConfig) -> void:
 
 func bowler_name(id: String) -> String:
 	var b: BowlerProfile = bowlers.get(id)
-	return b.display_name if b else id
+	return b.type_label() if b else id
 
 
 func start_match(r: MatchRules, seed_value: int, tutorial: bool = false) -> void:
 	rules = r
 	state = MatchState.new(r, seed_value)
 	for id in bowlers.keys():
-		state.bowler_names[id] = bowlers[id].display_name
+		state.bowler_names[id] = bowlers[id].type_label()
 	state.card = Scorecard.build(r, [], state.bowler_names)
 	commentary = Commentary.new(seed_value)
 	tutorial_level = 0 if tutorial else -1

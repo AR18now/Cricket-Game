@@ -19,7 +19,7 @@ func build(state: MatchState, final: bool, headline: String = "") -> void:
 		body.add_child(sub)
 	else:
 		title("Scorecard", 34)
-	var head := UiTheme.label("%s   %d/%d  (%s ov)%s" % [r.batting_team, card.runs, card.wickets, card.overs_text(),
+	var head := UiTheme.label("Your innings   %d/%d  (%s ov)%s" % [card.runs, card.wickets, card.overs_text(),
 		("     Challenge target: %d" % r.target) if r.target > 0 else ""], 24)
 	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	body.add_child(head)

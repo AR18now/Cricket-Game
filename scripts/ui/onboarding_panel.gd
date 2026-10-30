@@ -1,28 +1,21 @@
 class_name OnboardingPanel
 extends OverlayPanel
-## Offered only after the first challenge: display name + kit colour, with defaults + Skip.
+## Offered only after the first challenge: kit colour, with a default + Skip. (No names.)
 
 signal done(name: String, kit: int)
 
 const KITS := [Color(0.02, 0.4, 0.25), Color(0.8, 0.4, 0.25), Color(0.2, 0.36, 0.7), Color(0.55, 0.2, 0.38), Color(0.12, 0.12, 0.14)]
 const KIT_NAMES := ["Emerald", "Terracotta", "Indigo", "Plum", "Charcoal"]
 
-var name_edit: LineEdit
 var kit := 0
 
 
 func build(current: String, current_kit: int) -> void:
 	kit = current_kit
-	title("Your cricketer", 38)
+	title("Pick your kit", 38)
 	var hint := UiTheme.label("Optional - stays on this device only.", 18, UiTheme.SAND, "regular")
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	body.add_child(hint)
-	name_edit = LineEdit.new()
-	name_edit.text = current
-	name_edit.max_length = 16
-	name_edit.placeholder_text = "Display name"
-	name_edit.custom_minimum_size = Vector2(380, 54)
-	body.add_child(name_edit)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 10)
@@ -50,6 +43,5 @@ func build(current: String, current_kit: int) -> void:
 	br.add_child(skip)
 	var ok := UiTheme.button("Save", 24, 180)
 	ok.pressed.connect(func():
-		var n := name_edit.text.strip_edges()
-		done.emit(n if n != "" else current, kit))
+		done.emit(current, kit))
 	br.add_child(ok)

@@ -6,7 +6,7 @@ Status legend: ✅ done · 🟡 in progress · ⬜ not started · 👤 needs own
 
 - 👤 Final game title (current "Tap Tap Cricket" is provisional; needs trademark/store search)
 - 👤 Publisher name and support contact email/URL
-- 👤 Confirm fictional team names (Pindi Falcons, Karachi Comets, Lahore Lanterns) after a public-branding check
+- ✅ No team, player, bowler or commentator names are shown in the game
 - ✅ Icons for both stores (adaptive + themed Android, 1024 App Store without alpha, 512 Play) and Play feature graphic — from the game's own vector icon; replace if you want a designer icon
 
 ## Build & platform

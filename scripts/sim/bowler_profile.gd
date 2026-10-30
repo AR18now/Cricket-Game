@@ -23,3 +23,10 @@ extends Resource
 @export var hair_color := Color(0.1, 0.08, 0.07)
 @export var cue_line := ""
 @export_multiline var description := ""
+
+const TYPE_LABELS := {"gentle": "Easy bowler", "tutorial": "Easy bowler", "medium": "Medium pace", "pace": "Fast bowler", "spin": "Spin bowler"}
+
+
+## What the player sees instead of a name: the kind of bowler.
+func type_label() -> String:
+	return TYPE_LABELS.get(style, "Bowler")

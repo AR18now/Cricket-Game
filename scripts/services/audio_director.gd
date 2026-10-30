@@ -185,7 +185,7 @@ func set_crowd_intensity(k: float) -> void:
 
 
 ## Spoken line: plays a reviewed clip if one exists, otherwise caption only.
-func say(line: Dictionary, speaker: String = "Bilal") -> void:
+func say(line: Dictionary, speaker: String = "") -> void:
 	if line.is_empty():
 		return
 	var clip_key := voice_clip_for(line)

@@ -121,6 +121,13 @@ store text, privacy policy, screenshots). App/bundle id `com.taptapcricket.game`
 (changeable until the first Play upload). Earlier entries above keep the old working
 title "Pocket Boundary" as history.
 
+## Owner feedback round 12 (implemented)
+
+| Request | Done |
+| --- | --- |
+| No player, bowler, team or commentator names anywhere | Menu says "Welcome!" / "Welcome back!"; the batter is "You"; bowlers are shown by type with a coloured badge (Easy bowler / Medium pace / Fast bowler / Spin bowler); fielders by position ("Fielded at long-off", "Caught at deep midwicket"); how-out is "bowled" / "caught at ..."; no name tags over players; captions have no speaker; team names removed; the first-run name question is gone (kit colour only) |
+| Better UI design and theme | Soft shadows under all panels and buttons, smoother corners, clearer pressed states, outlined score and banner text, bowler-type colour badge |
+
 ## What exists now (evidence)
 
 - Deterministic simulation: analytic delivery path (bounce, deviation), timing → contact at the

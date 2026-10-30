@@ -435,10 +435,10 @@ func _render_batters(t: float) -> void:
 	var base := STRIKER_BASE
 	var pose := Poses.bat_stance(t, true)
 	var root_shift := 0.0
-	striker.name_tag = striker_label if show_tags and t < -profile.run_up_time + 0.8 else ""
+	striker.name_tag = ""   # no names on screen
 	striker.tag_strong = true
 	non_striker.visible = two_batters
-	non_striker.name_tag = non_striker_label if show_tags and two_batters and t < -profile.run_up_time + 0.8 else ""
+	non_striker.name_tag = ""
 	non_striker.tag_strong = false
 	if t > -0.5:
 		pose = Poses.blend(Poses.bat_stance(t, true), Poses.bat_backlift(t), Poses.ease_io((t + 0.5) / 0.4))

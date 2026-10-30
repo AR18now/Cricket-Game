@@ -69,7 +69,7 @@ func _ready() -> void:
 		audio.play("jingle", "SFX", -6.0, 0.0))
 	controller.match_over.connect(_on_match_over)
 	controller.tutorial_step.connect(_on_tutorial_step)
-	controller.commentary_line.connect(func(line): audio.say(line, "Bilal"))
+	controller.commentary_line.connect(func(line): audio.say(line, ""))
 	controller.ball_settled.connect(_on_ball_settled)
 	controller.milestone_reached.connect(func(_m, _b):
 		audio.play("sting_milestone", "Music", -2.0, 0.0)
@@ -361,7 +361,7 @@ func _show_rule_card(r: MatchRules) -> void:
 
 
 func _player_name() -> String:
-	return String(save.data["profile"]["display_name"])
+	return "You"   # no names on screen
 
 
 # ------------------------------------------------------------------ overlays
