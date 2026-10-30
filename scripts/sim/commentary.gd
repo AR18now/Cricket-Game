@@ -6,39 +6,21 @@ extends RefCounted
 ## Mirrors VOICE_SCRIPT.csv (clip paths are attached there once recorded/reviewed).
 
 const LINES := [
-	# id, event, condition, text
-	["intro_1", "first_ball", "", "Ready? Eyes on the ball!"],
-	["six_1", "six", "", "What a shot! That's six!"],
-	["six_2", "six", "", "That clears the rope!"],
-	["six_3", "six", "", "That's gone onto the rooftops!"],
-	["four_1", "four", "", "Four! Beautifully timed!"],
-	["four_2", "four", "", "Races away to the rope!"],
-	["four_3", "four", "", "Nobody's stopping that one!"],
-	["perfect_runs", "runs", "timing=perfect", "Sweetly struck!"],
-	["runs_1", "runs", "runs>=2", "Run hard, they'll get two!"],
-	["runs_2", "runs", "runs==1", "Push for one, keep it moving."],
-	["runs_3", "runs", "runs==3", "Three! Great running!"],
-	["dot_early", "dot", "timing=miss_early", "A little early that time."],
-	["dot_late", "dot", "timing=miss_late", "Just a touch late."],
-	["dot_none", "dot", "timing=none", "Left that one alone."],
-	["dot_field", "dot", "", "Well fielded, no run."],
-	["bowled_1", "bowled", "", "Oh no, the stumps are down!"],
-	["bowled_2", "bowled", "", "Bowled! Focus on the next one."],
-	["caught_1", "caught", "", "Taken! What a catch."],
-	["caught_2", "caught", "", "Up in the air and held."],
-	["edge_1", "edge", "", "That's taken the edge!"],
-	["last_ball_4", "last_ball", "needed==4", "Four needed off the last ball!"],
-	["last_ball_6", "last_ball", "needed==6", "Six needed off the last ball!"],
-	["last_ball_1", "last_ball", "needed==1", "Just one needed off the last ball!"],
-	["last_ball_n", "last_ball", "needed>=2", "Last ball - everything on it!"],
-	["win_1", "won", "", "Victory! Hero of the neighbourhood!"],
-	["lost_1", "lost", "", "Never mind - one more match!"],
-	["tied_1", "tied", "", "All square! What a contest!"],
-	["fifty_1", "fifty", "", "That's fifty! Raise the bat!"],
-	["fifty_2", "fifty", "", "A brilliant half-century!"],
-	["hundred_1", "hundred", "", "A hundred! What an innings!"],
-	["hundred_2", "hundred", "", "Century! The whole street is on its feet!"],
-	["milestone_1", "milestone", "", "Another fifty! Unstoppable!"],
+	# id, event, condition, text - short calls only: what happened, nothing else.
+	["six", "six", "", "Six!"],
+	["four", "four", "", "Four!"],
+	["run_1", "runs", "runs==1", "One run"],
+	["run_2", "runs", "runs==2", "Two runs"],
+	["run_3", "runs", "runs==3", "Three runs"],
+	["dot", "dot", "", "Dot ball"],
+	["bowled", "bowled", "", "Bowled! Out!"],
+	["caught", "caught", "", "Caught out!"],
+	["fifty", "fifty", "", "Fifty!"],
+	["hundred", "hundred", "", "Hundred!"],
+	["milestone", "milestone", "", "Another fifty!"],
+	["won", "won", "", "Match won!"],
+	["lost", "lost", "", "Match lost"],
+	["tied", "tied", "", "Match tied"],
 ]
 
 var cooldown_balls := 1
@@ -114,5 +96,5 @@ static func event_for(o: BallOutcome) -> String:
 		BallOutcome.FOUR: return "four"
 		BallOutcome.BOWLED: return "bowled"
 		BallOutcome.CAUGHT: return "caught"
-		BallOutcome.RUNS: return "edge" if o.timing == ContactResult.EDGE else "runs"
+		BallOutcome.RUNS: return "runs"
 	return "dot"

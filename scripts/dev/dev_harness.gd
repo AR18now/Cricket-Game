@@ -480,6 +480,15 @@ func _smoke() -> void:
 	app._close_overlay()
 	var c = app.controller
 	var recorded_before: int = c.state.events.size()
+	# Camera follows how the phone is held ("Auto" view is the default).
+	await until_phase(MatchController.Phase.FLIGHT)
+	var want := "batter" if app.portrait else "side"
+	eq(app.world.effective_view(), want, "auto view: %s screen uses the %s view" % ["portrait" if app.portrait else "landscape", want])
+	eq(app.world._bv_on, app.portrait, "batter's-eye camera on exactly when the screen is upright")
+	await swing_at(ideal_swing())
+	await until_phase(MatchController.Phase.OUTCOME)
+	press_space()
+	recorded_before = c.state.events.size()
 	await play_ball(0.0)
 	check(c.state.events.size() == recorded_before + 1, "exactly one event recorded per delivery")
 	# Pause mid-delivery freezes the clock.

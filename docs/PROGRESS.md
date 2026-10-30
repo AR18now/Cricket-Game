@@ -97,6 +97,14 @@ _Last updated: 2026-09-25 (session 1)._
 | Inspiration from Stick Cricket, keep it simple | Took the bat-raise milestone moment and big, clear milestone splash; nothing else added - still one button |
 | Store readiness (Play + App Store) | See `STORE_LISTING.md`: App Bundle build in CI (`Android Store` preset; signed when the owner's upload key is added as GitHub secrets), version code = build number, icons for both stores (incl. adaptive + themed), iOS: 1024 icon without alpha, encryption declaration, iPhone+iPad, CI macOS job exports and compiles the Xcode project; Android back button handled; in-app Credits & licences; privacy policy; store text and screenshots |
 
+## Owner feedback round 10 (implemented)
+
+| Request | Done |
+| --- | --- |
+| Batter's view when holding the phone upright | New default **View: Auto** - portrait = batter's-eye view, landscape = side-on view; **Screen: Auto-rotate** is the new default so turning the phone switches it (also mid-match). Existing saves are migrated once (save v3). Menu can still force "Batter's eye" or "Side-on"; the in-game camera button switches to the other view. Harness smoke checks the right camera in each orientation |
+| Commentary: only the important words | Calls only: "Six!", "Four!", "One run", "Two runs", "Three runs", "Dot ball", "Bowled! Out!", "Caught out!", "Fifty!", "Hundred!", "Another fifty!", match result. All chatty lines removed (14 clips). There is no stumping in the game, so no "Stumped" call |
+| Better opening and menu sound | New opening sting (building dhol roll, harmonium chord swell, rabab flourish, ghungroo shimmer) and new 19 s menu music (bhangra-style dhol chaal with ghungroo, harmonium chords D-D-G-A-D-G-A-D, original 8-bar rabab melody with an answer phrase, seamless loop); the menu music starts after the opening finishes |
+
 ## What exists now (evidence)
 
 - Deterministic simulation: analytic delivery path (bounce, deviation), timing → contact at the

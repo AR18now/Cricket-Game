@@ -145,11 +145,6 @@ func _next_delivery() -> void:
 	_set_phase(Phase.READY)
 	var info := {"bowler": profile, "delivery": delivery, "ball": state.next_ball_index(), "tutorial": tutorial_level}
 	delivery_started.emit(info)
-	# Situation commentary (eligibility is checked against the real requirement).
-	if tutorial_level == 0 and tutorial_attempts == 0:
-		_say("first_ball", {})
-	elif rules.target > 0 and card.balls_left == 1:
-		_say("last_ball", {"needed": card.runs_needed})
 
 
 func _set_phase(p: int) -> void:

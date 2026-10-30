@@ -10,8 +10,8 @@ signal option_changed(key: String, value: String)
 
 const BOWLING := ["mixed", "pace", "spin"]
 const BOWLING_LABEL := {"mixed": "Mixed", "pace": "Fast", "spin": "Spin"}
-const VIEWS := ["batter", "side"]
-const VIEW_LABEL := {"batter": "Batter's eye", "side": "Side-on"}
+const VIEWS := ["auto", "batter", "side"]
+const VIEW_LABEL := {"auto": "Auto", "batter": "Batter's eye", "side": "Side-on"}
 const SCREENS := ["landscape", "portrait", "auto"]
 const SCREEN_LABEL := {"landscape": "Landscape", "portrait": "Portrait", "auto": "Auto-rotate"}
 
@@ -22,8 +22,8 @@ var chips := {}
 var reduced_motion := false
 var portrait := false
 var _pulse: Tween
-var _values := {"bowling": "mixed", "time_of_day": "evening", "view": "batter", "hints": "off",
-	"orientation": "landscape"}
+var _values := {"bowling": "mixed", "time_of_day": "evening", "view": "auto", "hints": "off",
+	"orientation": "auto"}
 
 
 func _init() -> void:
@@ -124,7 +124,7 @@ func _update_chips() -> void:
 		return
 	chips["bowling"].text = "Bowlers\n" + BOWLING_LABEL[_values["bowling"]]
 	chips["time_of_day"].text = "Time\n" + Atmosphere.LABELS[_values["time_of_day"]]
-	chips["view"].text = "View\n" + VIEW_LABEL[_values["view"]]
+	chips["view"].text = "View\n" + VIEW_LABEL.get(_values["view"], "Auto")
 	chips["hints"].text = "Hints\n" + ("On" if _values["hints"] == "on" else "Off")
 	chips["orientation"].text = "Screen\n" + SCREEN_LABEL.get(_values["orientation"], "Landscape")
 

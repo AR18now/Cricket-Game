@@ -125,3 +125,17 @@ func test_rewards_applied_once() -> void:
 	check(not s.apply_result_once("quick-1", inc), "duplicate ignored")
 	eq(s.data["best"]["quick_wins"], 1)
 	s.free()
+
+
+func test_v3_camera_follows_phone_orientation() -> void:
+	var old := {"version": 2, "settings": {"view": "batter", "orientation": "landscape", "music": 0.3}}
+	var m: Dictionary = SaveScript.migrate(old)
+	eq(m["version"], 3, "migrated to v3")
+	eq(m["settings"]["view"], "auto", "view becomes auto")
+	eq(m["settings"]["orientation"], "auto", "screen rotates with the phone")
+	eq(m["settings"]["music"], 0.3, "other settings kept")
+	eq(SaveScript.defaults()["settings"]["view"], "auto", "new installs: auto view")
+	eq(WorldView.resolve_view("auto", true), "batter", "upright phone: batter's eye")
+	eq(WorldView.resolve_view("auto", false), "side", "sideways phone: side-on")
+	eq(WorldView.resolve_view("batter", false), "batter", "a forced view stays forced")
+	eq(WorldView.resolve_view("side", true), "side", "a forced view stays forced")

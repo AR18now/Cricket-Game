@@ -57,7 +57,7 @@ var canvas_mod: CanvasModulate
 var floodlights: Floodlights
 var weather_layer: CanvasLayer
 var weather: WeatherOverlay
-var view_mode := "batter"
+var view_mode := "auto"   # auto (portrait = batter's eye, landscape = side-on) | batter | side
 var portrait := false
 var milestone_at := -1.0   # clock time a fifty/hundred was reached this ball (else -1)
 var batter_layer: CanvasLayer
@@ -157,12 +157,23 @@ func view_fit() -> float:
 
 
 func set_view_mode(m: String) -> void:
-	view_mode = m if m in ["batter", "side"] else "batter"
+	view_mode = m if m in ["auto", "batter", "side"] else "auto"
+
+
+## The camera actually used: "auto" follows how the phone is held.
+static func resolve_view(mode: String, is_portrait: bool) -> String:
+	if mode == "auto":
+		return "batter" if is_portrait else "side"
+	return mode
+
+
+func effective_view() -> String:
+	return WorldView.resolve_view(view_mode, portrait)
 
 
 ## Batter's-eye view covers the delivery; the side camera takes the ball into the field.
 func batter_view_active(t: float) -> bool:
-	if view_mode != "batter" or menu_mode or delivery == null:
+	if effective_view() != "batter" or menu_mode or delivery == null:
 		return false
 	if resolved == null:
 		return true

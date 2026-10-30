@@ -507,40 +507,149 @@ def milestone_fanfare():
     return _street(out)
 
 
-def music_loop(bpm=96, bars=4):
-    beat = 60.0 / bpm
-    L = n(beat * 4 * bars)
-    out = [0.0] * L
-    # 8-step groove per bar (dhum . tak dhum | tak . dhum tak) — an original pattern.
-    pat = ["D", "", "T", "D", "T", "", "D", "T"]
-    for b in range(bars):
-        for s, hit in enumerate(pat):
-            at = (b * 4 + s * 0.5) * beat
-            if hit == "D":
-                place(out, dhol_dhum(0.9), at)
-            elif hit == "T":
-                place(out, dhol_tak(b * 10 + s), at, 0.7)
-            place(out, [x * 0.12 for x in dhol_tak(99 + s, 0.4)], at + beat * 0.25)
-    # Warm drone pad (Sa-Pa) with slow swell.
+def pluck(f, dur, amp=1.0, bright=0.55, seed=1):
+    """Rabab-like plucked string (Karplus-Strong) with a little bridge buzz."""
+    r = random.Random(seed)
+    N = max(2, int(SR / f))
+    buf = [r.uniform(-1, 1) for _ in range(N)]
+    for _ in range(int(3 * (1 - bright)) + 1):   # darker attack = smoother noise
+        buf = [(buf[i] + buf[i - 1]) * 0.5 for i in range(N)]
+    out = []
+    idx = 0
+    damp = 0.996 - 0.002 * (f / 600.0)
+    for i in range(n(dur)):
+        a0 = buf[idx]
+        a1 = buf[(idx + 1) % N]
+        v = damp * 0.5 * (a0 + a1)
+        buf[idx] = v
+        idx = (idx + 1) % N
+        e = min(1.0, (n(dur) - i) / n(0.04))
+        out.append(math.tanh(1.4 * a0) * amp * e)
+    return out
+
+
+_REED = None
+
+
+def _reed_table():
+    global _REED
+    if _REED is None:
+        size = 2048
+        _REED = [sum(math.sin(2 * math.pi * k * i / size) / (k ** 1.15) * (0.6 if k % 2 == 0 else 1.0) for k in range(1, 12)) for i in range(size)]
+        pk = max(abs(v) for v in _REED)
+        _REED = [v / pk for v in _REED]
+    return _REED
+
+
+def harmonium(freqs, dur, amp=0.3, attack=0.12):
+    """Warm reed chord (harmonium-like): wavetable reeds, two slightly detuned sets,
+    bellows swell and a soft low-pass."""
+    tab = _reed_table()
+    size = len(tab)
+    lp = Biquad("lp", 1700, 0.6)
+    phs = [0.0] * (len(freqs) * 2)
+    out = []
+    L = n(dur)
     for i in range(L):
         t = i / SR
-        pad_v = 0.08 * (math.sin(2 * math.pi * 146.8 * t) + 0.6 * math.sin(2 * math.pi * 220.0 * t) + 0.3 * math.sin(2 * math.pi * 293.7 * t))
-        out[i] += pad_v * (0.7 + 0.3 * math.sin(2 * math.pi * t / (L / SR)))
-    # Simple pentatonic motif on a plucked tone.
-    notes = [293.7, 329.6, 392.0, 440.0, 392.0, 329.6, 293.7, 220.0]
-    for k, f in enumerate(notes * bars):
-        if k % 2 == 0 or k % 8 == 5:
-            place(out, tone(f, 0.4, 0.12, 0.18, 0.3), k * beat * 0.5 + beat * 0.02)
+        bellows = 0.85 + 0.15 * math.sin(2 * math.pi * 4.6 * t)
+        env = min(1.0, t / attack) * min(1.0, (L - i) / n(0.15))
+        v = 0.0
+        for k, f in enumerate(freqs):
+            for j, det in enumerate((1.0, 1.0045)):
+                q = k * 2 + j
+                phs[q] = (phs[q] + f * det * size / SR) % size
+                v += tab[int(phs[q])]
+        out.append(lp(v / (len(freqs) * 2)) * env * bellows * amp)
     return out
+
+
+def shaker(seed, amp=0.25):
+    """Ghungroo / chikka: a short bright jingle of tiny bells."""
+    r = random.Random(seed)
+    hp = Biquad("hp", 5200)
+    return [hp(r.uniform(-1, 1)) * env_exp(i, 0.018) * amp for i in range(n(0.07))]
+
+
+# Note names for the music (D major / Bilawal).
+Dn3, A3n, D4n, E4n, Fs4, G4n, A4n, B4n, Cs5, D5n, E5n = 146.8, 220.0, 293.7, 329.6, 370.0, 392.0, 440.0, 493.9, 554.4, 587.3, 659.3
+
+
+def music_loop(bpm=100, bars=8):
+    """Menu music: dhol chaal + ghungroo, harmonium chords and an original rabab melody
+    (8 bars: a phrase and its answer), seamless loop."""
+    beat = 60.0 / bpm
+    L = n(beat * 4 * bars)
+    tail = n(1.6)
+    out = [0.0] * (L + tail)   # notes ring past the end and are folded back to the start
+    # Dhol: an original bhangra-style chaal, with a lift every fourth bar.
+    pat = ["D", "", "T", "D", "", "T", "D", "T"]
+    for b in range(bars):
+        for st, hit in enumerate(pat):
+            at = (b * 4 + st * 0.5) * beat + (0.018 if st % 2 else 0.0)   # light swing
+            if hit == "D":
+                place(out, dhol_dhum(0.95), at)
+            elif hit == "T":
+                place(out, dhol_tak(b * 10 + st, 0.75), at)
+            place(out, shaker(300 + b * 8 + st, 0.3 if st % 2 == 0 else 0.18), at)
+        if b % 4 == 3:
+            for k in range(4):
+                place(out, dhol_tak(700 + b + k, 0.55), (b * 4 + 3 + k * 0.25) * beat)
+    # Harmonium chords, one per bar.
+    chords = {"D": [D4n, Fs4, A4n], "G": [G4n, B4n, D5n], "A": [A4n, Cs5, E5n]}
+    prog = ["D", "D", "G", "A", "D", "G", "A", "D"]
+    for b, c in enumerate(prog[:bars]):
+        place(out, harmonium(chords[c], beat * 4 + 0.05, 0.22), b * 4 * beat)
+        place(out, harmonium([Dn3 if c == "D" else (98.0 if c == "G" else 110.0)], beat * 4 + 0.05, 0.14, 0.05), b * 4 * beat)
+    # Rabab melody: [(note, eighths)] - original hook and answer.
+    mel = [(A4n, 1), (Fs4, 1), (A4n, 1), (B4n, 1), (A4n, 2), (Fs4, 1), (E4n, 1),
+           (D4n, 1), (E4n, 1), (Fs4, 1), (A4n, 1), (B4n, 1), (A4n, 1), (Fs4, 2),
+           (A4n, 1), (B4n, 1), (D5n, 1), (B4n, 1), (A4n, 1), (Fs4, 1), (E4n, 2),
+           (Fs4, 1), (E4n, 1), (D4n, 1), (E4n, 1), (D4n, 4),
+           (D5n, 1), (Cs5, 1), (B4n, 1), (A4n, 1), (B4n, 2), (A4n, 1), (Fs4, 1),
+           (A4n, 1), (B4n, 1), (D5n, 1), (E5n, 1), (D5n, 2), (B4n, 2),
+           (A4n, 1), (B4n, 1), (A4n, 1), (Fs4, 1), (E4n, 1), (Fs4, 1), (E4n, 2),
+           (D4n, 2), (A3n, 1), (D4n, 1), (D4n, 4)]
+    at = 0.0
+    for k, (f, ln) in enumerate(mel):
+        d = ln * beat * 0.5
+        if at >= bars * 4 * beat - 0.01:
+            break
+        place(out, pluck(f, min(d + 0.35, 1.2), 0.42, 0.6, 900 + k), at)
+        if ln >= 2:   # a soft octave answer on long notes
+            place(out, pluck(f * 2, 0.5, 0.12, 0.7, 1900 + k), at + beat * 0.5)
+        at += d
+    # Seamless loop: fold the ringing tail back onto the start.
+    for i in range(tail):
+        out[i] += out[L + i]
+    out = out[:L]
+    pk = max(abs(v) for v in out)
+    return [math.tanh(1.7 * v / pk) for v in out]   # gentle glue/loudness
 
 
 def sting(kind):
     out = [0.0] * n(2.0)
     if kind == "open":
-        for k, at in enumerate([0, 0.18, 0.36, 0.5, 0.62]):
-            place(out, dhol_dhum(1.0) if k % 2 == 0 else dhol_tak(k), at)
-        for k, f in enumerate([293.7, 392.0, 440.0, 587.3]):
-            place(out, tone(f, 0.8, 0.25, 0.25, 0.4), 0.7 + k * 0.12)
+        # Opening: a building dhol roll, a big dhum with a harmonium chord swell, a rising
+        # rabab flourish and a shimmer of ghungroo bells.
+        out = [0.0] * n(2.8)
+        at, gap, k = 0.0, 0.14, 0
+        while at < 0.7:
+            place(out, dhol_tak(800 + k, 0.35 + 0.5 * at), at)
+            place(out, shaker(820 + k, 0.2), at)
+            at += gap
+            gap = max(0.05, gap * 0.85)
+            k += 1
+        place(out, dhol_dhum(1.2), 0.72)
+        place(out, harmonium([D4n, Fs4, A4n, D5n], 1.9, 0.35, 0.08), 0.72)
+        place(out, harmonium([Dn3], 1.9, 0.2, 0.05), 0.72)
+        for k2, f in enumerate([D4n, Fs4, A4n, D5n, Fs4 * 2]):
+            place(out, pluck(f, 1.2, 0.5, 0.65, 840 + k2), 0.76 + k2 * 0.09)
+        for k3 in range(10):
+            place(out, shaker(860 + k3, 0.22 * (1 - k3 / 12)), 1.25 + k3 * 0.06)
+        place(out, dhol_dhum(0.9), 1.6)
+        pk = max(abs(v) for v in out)
+        return [math.tanh(1.8 * v / pk) for v in out]
     elif kind == "boundary":
         for k, at in enumerate([0, 0.12, 0.24]):
             place(out, dhol_tak(k + 20, 0.8), at)

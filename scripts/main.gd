@@ -62,7 +62,8 @@ func _ready() -> void:
 		if overlay == null and (screen == Screen.MATCH or screen == Screen.TUTORIAL):
 			controller.swing_input(Time.get_ticks_usec()))
 	hud.view_pressed.connect(func():
-		save.set_setting("view", "side" if String(save.data["settings"]["view"]) == "batter" else "batter"))
+		# In-game camera button: switch to the other view (this overrides "Auto").
+		save.set_setting("view", "side" if world.effective_view() == "batter" else "batter"))
 	hud.truck.horn.connect(func():
 		audio.play("truck_horn", "SFX", -3.0, 0.0)
 		audio.play("jingle", "SFX", -6.0, 0.0))
@@ -232,6 +233,9 @@ func _end_splash() -> void:
 	show_menu()
 
 
+var _opening_played := false
+
+
 func show_menu() -> void:
 	screen = Screen.MENU
 	controller.phase = MatchController.Phase.IDLE
@@ -246,7 +250,12 @@ func show_menu() -> void:
 		_fade_in()
 	world.menu_mode = true
 	audio.start_ambience(world.atm.ambience)
-	audio.start_music()
+	if _opening_played:
+		audio.start_music()
+	else:
+		# First menu after the splash: let the opening fanfare finish, then the music.
+		_opening_played = true
+		get_tree().create_timer(1.6).timeout.connect(func(): audio.start_music())
 	audio.set_crowd_intensity(0.2)
 	menu.play_btn.call_deferred("grab_focus")
 

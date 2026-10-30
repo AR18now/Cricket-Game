@@ -5,7 +5,7 @@ extends Node
 
 signal changed
 
-const SCHEMA_VERSION := 2
+const SCHEMA_VERSION := 3
 const MAX_APPLIED := 64
 
 var dir_path := "user://"
@@ -30,8 +30,8 @@ static func defaults() -> Dictionary:
 		"version": SCHEMA_VERSION,
 		"settings": {"master": 1.0, "music": 0.6, "sfx": 1.0, "voice": 1.0, "muted": false,
 			"captions": true, "reduced_motion": false, "haptics": true,
-			"timing_guide": true, "bowling": "mixed", "time_of_day": "evening", "view": "batter", "hints": false,
-			"orientation": "landscape"},
+			"timing_guide": true, "bowling": "mixed", "time_of_day": "evening", "view": "auto", "hints": false,
+			"orientation": "auto"},
 		"profile": {"display_name": "Ayaan", "kit": 0, "onboarded": false},
 		"tutorial_done": false,
 		"stance_unlocked": false,
@@ -103,6 +103,13 @@ static func migrate(d: Dictionary) -> Dictionary:
 			d["tutorial_done"] = bool(d["tutorial"].get("done", false))
 			d.erase("tutorial")
 		v = 2
+	if v < 3:
+		# v3: the camera follows how the phone is held (portrait = batter's eye,
+		# landscape = side-on) and the screen rotates with the phone.
+		if d.has("settings") and d["settings"] is Dictionary:
+			d["settings"]["view"] = "auto"
+			d["settings"]["orientation"] = "auto"
+		v = 3
 	d["version"] = v
 	return d
 
