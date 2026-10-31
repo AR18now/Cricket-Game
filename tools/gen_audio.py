@@ -535,7 +535,10 @@ def duck_out():
     out = [0.0] * n(3.9)
     for k, (at, f) in enumerate([(0.0, 540.0), (0.22, 580.0), (0.46, 500.0)]):
         place(out, quack(f, 0.17, 30 + k), at)
-    place(out, sad_trombone(), 0.85, 0.8)
+    tb = sad_trombone()
+    tpk = max(abs(v) for v in tb)
+    qpk = max(abs(v) for v in out)
+    place(out, [v * 0.5 * qpk / tpk for v in tb], 0.85)   # about as loud as the quacks
     pk = max(abs(v) for v in out)
     return [math.tanh(1.6 * v / pk) for v in out]
 
