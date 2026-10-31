@@ -838,5 +838,7 @@ func _duck_check() -> void:
 		await shot("d_%s_a" % ("golden" if golden else "duck"))
 		await wait(0.9)
 		await shot("d_%s_b" % ("golden" if golden else "duck"))
+		await wait(1.0)
+		await shot("d_%s_c" % ("golden" if golden else "duck"))
 		check(c.phase == MatchController.Phase.OUTCOME, "the game waits while the duck is on")
 		await wait(3.5)
