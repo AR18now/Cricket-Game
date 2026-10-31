@@ -48,6 +48,11 @@ func _ready() -> void:
 	controller.tutorial_step.connect(_on_tutorial_step)
 	controller.commentary_line.connect(func(line): audio.say(line, ""))
 	controller.ball_settled.connect(_on_ball_settled)
+	controller.duck_out.connect(func(_golden):
+		# Quack, quack, quack + sad trombone, timed with the duck's beak.
+		get_tree().create_timer(DuckCelebration.START).timeout.connect(func(): audio.play("duck_out", "Music", -1.0, 0.0))
+		if bool(save.data["settings"]["haptics"]):
+			Input.vibrate_handheld(60))
 	controller.milestone_reached.connect(func(_m, _b):
 		audio.play("sting_milestone", "Music", -2.0, 0.0)
 		audio.play("cheer_big", "Crowd", 0.0, 0.0)
@@ -486,7 +491,8 @@ func _on_match_over(state: MatchState) -> void:
 	var rid := "%s-%d" % [current_mode, state.seed]
 	var mode := current_mode
 	save.apply_result_once(rid, func(d: Dictionary): _apply_progress(d, mode, card))
-	audio.play("sting_win" if card.result == "won" else "sting_lose", "Music", -3.0, 0.0)
+	if not controller.duck:   # the duck brought its own sound
+		audio.play("sting_win" if card.result == "won" else "sting_lose", "Music", -3.0, 0.0)
 	await get_tree().create_timer(1.0).timeout
 	if mode == "classic":
 		var prev_best: int = int(hud.best_runs)

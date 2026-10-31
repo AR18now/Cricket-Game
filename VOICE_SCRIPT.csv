@@ -7,6 +7,8 @@ run_3,runs,runs==3,Three runs,assets/audio/vo_run_3.wav,0.80,eSpeak NG 1.51 synt
 dot,dot,,Dot ball,assets/audio/vo_dot.wav,0.72,eSpeak NG 1.51 synthetic placeholder (tools/gen_voice.py),PLACEHOLDER robotic TTS - replace with a reviewed recording
 bowled,bowled,,Bowled! Out!,assets/audio/vo_bowled.wav,1.25,eSpeak NG 1.51 synthetic placeholder (tools/gen_voice.py),PLACEHOLDER robotic TTS - replace with a reviewed recording
 caught,caught,,Caught out!,assets/audio/vo_caught.wav,0.71,eSpeak NG 1.51 synthetic placeholder (tools/gen_voice.py),PLACEHOLDER robotic TTS - replace with a reviewed recording
+duck,duck,,Out for a duck!,assets/audio/vo_duck.wav,0.89,eSpeak NG 1.51 synthetic placeholder (tools/gen_voice.py),PLACEHOLDER robotic TTS - replace with a reviewed recording
+golden_duck,golden_duck,,Golden duck!,assets/audio/vo_golden_duck.wav,0.86,eSpeak NG 1.51 synthetic placeholder (tools/gen_voice.py),PLACEHOLDER robotic TTS - replace with a reviewed recording
 fifty,fifty,,Fifty!,assets/audio/vo_fifty.wav,0.58,eSpeak NG 1.51 synthetic placeholder (tools/gen_voice.py),PLACEHOLDER robotic TTS - replace with a reviewed recording
 hundred,hundred,,Hundred!,assets/audio/vo_hundred.wav,0.65,eSpeak NG 1.51 synthetic placeholder (tools/gen_voice.py),PLACEHOLDER robotic TTS - replace with a reviewed recording
 milestone,milestone,,Another fifty!,assets/audio/vo_milestone.wav,0.94,eSpeak NG 1.51 synthetic placeholder (tools/gen_voice.py),PLACEHOLDER robotic TTS - replace with a reviewed recording

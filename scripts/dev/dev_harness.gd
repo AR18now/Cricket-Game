@@ -62,6 +62,8 @@ func _go() -> void:
 			await _perf()
 		"themes":
 			await _themes_tour()
+		"duck":
+			await _duck_check()
 		"milestone":
 			await _milestone_check()
 		"store":
@@ -804,3 +806,37 @@ func _themes_tour() -> void:
 		await wait(0.3)
 		await shot("t_%s_2_game" % id)
 	save.set_setting("theme", "emerald")
+
+
+## Out for 0: first ball = golden duck; after a dot ball = duck. Checks the duck shows,
+## the game waits for it, and captures it.
+func _duck_check() -> void:
+	await wait(1.6)
+	var c = app.controller
+	for golden in [true, false]:
+		app.start_mode("classic")
+		await wait(0.2)
+		app._close_overlay()
+		if not golden:
+			var o := BallOutcome.new()
+			o.kind = BallOutcome.DOT
+			c.state.record(920000, o, "harness")
+		var got := [null]
+		var conn := func(g): got[0] = g
+		c.duck_out.connect(conn)
+		for i in 6:
+			await until_phase(MatchController.Phase.FLIGHT)
+			await swing_at(ideal_swing() - 0.40)   # far too early: bowled
+			await until_phase(MatchController.Phase.OUTCOME)
+			if got[0] != null or c.state.is_complete():
+				break
+			press_space()
+		c.duck_out.disconnect(conn)
+		check(got[0] == golden, "%s duck when out for 0 (got %s)" % ["golden" if golden else "plain", str(got[0])])
+		check(app.hud.duck_fx.visible, "the duck appears")
+		await wait(0.5)
+		await shot("d_%s_a" % ("golden" if golden else "duck"))
+		await wait(0.9)
+		await shot("d_%s_b" % ("golden" if golden else "duck"))
+		check(c.phase == MatchController.Phase.OUTCOME, "the game waits while the duck is on")
+		await wait(3.5)

@@ -15,6 +15,8 @@ const LINES := [
 	["dot", "dot", "", "Dot ball"],
 	["bowled", "bowled", "", "Bowled! Out!"],
 	["caught", "caught", "", "Caught out!"],
+	["duck", "duck", "", "Out for a duck!"],
+	["golden_duck", "golden_duck", "", "Golden duck!"],
 	["fifty", "fifty", "", "Fifty!"],
 	["hundred", "hundred", "", "Hundred!"],
 	["milestone", "milestone", "", "Another fifty!"],

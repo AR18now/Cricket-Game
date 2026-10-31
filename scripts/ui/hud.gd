@@ -39,6 +39,7 @@ var minimap: Minimap
 var guide: GuideOverlay
 var truck: TruckCelebration
 var milestone_fx: MilestoneCelebration
+var duck_fx: DuckCelebration
 var replay_btn: Button
 var replay_tag: Label
 var debug_label: Label
@@ -160,6 +161,9 @@ func build(c: MatchController, w: WorldView) -> void:
 	truck.stop()
 	milestone_fx = MilestoneCelebration.new()
 	add_child(milestone_fx)
+	duck_fx = DuckCelebration.new()
+	add_child(duck_fx)
+	controller.duck_out.connect(_on_duck)
 	confetti = Confetti.new()
 	add_child(confetti)
 	controller.milestone_reached.connect(_on_milestone)
@@ -504,6 +508,13 @@ func _float_text(text: String, at: Vector2, col: Color, fs: int) -> void:
 	tw.tween_callback(l.queue_free)
 
 
+## Out for 0: the duck takes the stage instead of the plain "BOWLED/CAUGHT" banner.
+func _on_duck(golden: bool) -> void:
+	banner.visible = false
+	duck_fx.reduced_motion = reduced_motion
+	duck_fx.play(golden)
+
+
 ## Fifty / hundred: the celebration screen plus three confetti bursts.
 func _on_milestone(m: int, batter: Dictionary) -> void:
 	banner.visible = false
@@ -552,4 +563,5 @@ func hide_transient() -> void:
 	hint_label.text = ""
 	truck.stop()
 	milestone_fx.stop()
+	duck_fx.stop()
 	confetti.clear()

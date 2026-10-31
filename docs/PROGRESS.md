@@ -135,6 +135,14 @@ title "Pocket Boundary" as history.
 | Remove landscape entirely, and the side-on view | Portrait-only on phones (project orientation portrait; iPad full screen), a tall window on Windows; the camera is always behind the batter - during the delivery, after the hit (fielders now chase, pick up, throw and catch in this view), at 50/100 (bat raised) and on the menu. Screen setting and the in-game camera button removed |
 | Option to change themes | Four colour themes - Emerald, Royal Blue, Sunset, Midnight - from a Theme pill on the menu or Settings; the whole interface (menu, HUD, panels, buttons, overlays) re-colours instantly and the choice is saved |
 
+## Owner idea: the duck (implemented)
+
+Out for 0 -> a cartoon duck waddles on, quacks three times (beak in time with the
+sound), droops and sheds a tear under a big "DUCK!" ("Out for 0"); out first ball ->
+"GOLDEN DUCK!" with a gold, crowned duck. Sound: three quacks then a sad trombone
+("wah wah wah waaah"); commentary "Out for a duck!" / "Golden duck!"; the result card
+waits for it (2.8 s, tap to skip after 1.2 s). Harness `duck` checks both kinds.
+
 ## What exists now (evidence)
 
 - Deterministic simulation: analytic delivery path (bounce, deviation), timing → contact at the

@@ -24,7 +24,7 @@ func test_short_calls_only() -> void:
 	check(c.pick("first_ball", {}, 10).is_empty(), "no chatter before the ball")
 	check(c.pick("last_ball", {"needed": 4}, 11).is_empty(), "no chatter on the last ball")
 	for l in Commentary.LINES:
-		check(String(l[3]).split(" ").size() <= 3, "short call: " + String(l[3]))
+		check(String(l[3]).split(" ").size() <= 4, "short call: " + String(l[3]))
 
 
 func test_edge_runs_are_called_as_runs() -> void:

@@ -485,6 +485,61 @@ def dhol_tak(seed, amp=0.6):
     return [(bp(r.uniform(-1, 1)) * 2 + math.sin(2 * math.pi * 420 * i / SR) * 0.5) * env_exp(i, 0.03) * amp for i in range(n(0.12))]
 
 
+def quack(f0=520.0, dur=0.17, seed=1):
+    """A cartoon duck quack: a nasal buzz whose pitch drops, through two formants."""
+    r = random.Random(seed)
+    f1, f2 = Biquad("bp", 1150, 3.0), Biquad("bp", 2500, 4.0)
+    hp = Biquad("hp", 300)
+    out = []
+    ph = 0.0
+    L = n(dur)
+    for i in range(L):
+        u = i / L
+        f = f0 * (1.0 - 0.28 * u) * (1 + 0.02 * math.sin(2 * math.pi * 35 * i / SR))
+        ph += f / SR
+        saw = (ph % 1.0) * 2.0 - 1.0
+        x = saw + r.uniform(-1, 1) * 0.15
+        e = min(1.0, u / 0.08) * (1.0 - u) ** 0.6
+        out.append(hp(f1(x) * 1.2 + f2(x) * 0.7) * e)
+    return out
+
+
+def sad_trombone():
+    """Muted trombone sliding down - "wah wah wah waaah" - with a plunger 'wah' per note."""
+    notes = [(311.1, 0.42), (293.7, 0.42), (277.2, 0.42), (261.6, 1.3)]
+    out = [0.0] * n(2.9)
+    at = 0.0
+    for k, (f, d) in enumerate(notes):
+        L = n(d)
+        lp = Biquad("lp", 600)
+        ph = 0.0
+        seg = []
+        for i in range(L):
+            t = i / SR
+            u = i / L
+            vib = 1 + (0.012 * math.sin(2 * math.pi * 6.0 * t) * min(1.0, t / 0.3) if k == 3 else 0.0)
+            ph += 2 * math.pi * f * vib * (1.0 - 0.015 * u) / SR
+            w = sum(math.sin(h * ph) / h ** 0.9 for h in range(1, 10))
+            # plunger mute: the filter opens then closes ("wah")
+            cutoff = 450 + 1500 * math.sin(math.pi * min(1.0, u * (1.6 if k < 3 else 0.9)))
+            lp.__init__("lp", max(200.0, cutoff), 0.9)
+            e = min(1.0, t / 0.03) * min(1.0, (L - i) / n(0.06))
+            seg.append(lp(math.tanh(1.5 * w)) * e)
+        place(out, seg, at)
+        at += d
+    return out
+
+
+def duck_out():
+    """Out for a duck: quack, quack, quack - then the sad trombone."""
+    out = [0.0] * n(3.9)
+    for k, (at, f) in enumerate([(0.0, 540.0), (0.22, 580.0), (0.46, 500.0)]):
+        place(out, quack(f, 0.17, 30 + k), at)
+    place(out, sad_trombone(), 0.85, 0.8)
+    pk = max(abs(v) for v in out)
+    return [math.tanh(1.6 * v / pk) for v in out]
+
+
 def milestone_fanfare():
     """Fifty / hundred: a dhol roll that speeds up into a horn fanfare, then a held,
     fluttering horn chord over dhol beats (original)."""
@@ -688,6 +743,7 @@ if __name__ == "__main__":
     write("amb_rain", ambience_rain())
     write("amb_night", ambience_night())
     write("sting_milestone", milestone_fanfare())
+    write("duck_out", duck_out())
     for k, h in enumerate(truck_horns(), 1):
         write("truck_horn_%d" % k, h)
     write("jingle", jingle())
