@@ -10,14 +10,14 @@ func _init() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	var dim := ColorRect.new()
-	dim.color = Color(0.01, 0.06, 0.05, 0.62)
+	dim.color = UiTheme.shade(0.62)
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(dim)
 	var center := CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(center)
 	panel = PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", UiTheme.panel_box(Color(0.02, 0.16, 0.12, 0.97), 22, UiTheme.GOLD.darkened(0.2), 2))
+	panel.add_theme_stylebox_override("panel", UiTheme.panel_box(UiTheme.panel_bg(0.97), 22, UiTheme.GOLD.darkened(0.2), 2))
 	center.add_child(panel)
 	var margin := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]:

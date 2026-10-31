@@ -71,7 +71,7 @@ func build(c: MatchController, w: WorldView) -> void:
 	# --- Score pill (top centre)
 	score_panel = PanelContainer.new()
 	score_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	score_panel.add_theme_stylebox_override("panel", UiTheme.panel_box(Color(0.02, 0.15, 0.12, 0.82), 24, UiTheme.GOLD.darkened(0.3), 2))
+	score_panel.add_theme_stylebox_override("panel", UiTheme.panel_box(UiTheme.panel_bg(0.82), 24, UiTheme.GOLD.darkened(0.3), 2))
 	add_child(score_panel)
 	var sv := VBoxContainer.new()
 	sv.add_theme_constant_override("separation", 2)
@@ -93,7 +93,7 @@ func build(c: MatchController, w: WorldView) -> void:
 	# --- Bowler card (top left)
 	bowler_panel = PanelContainer.new()
 	bowler_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bowler_panel.add_theme_stylebox_override("panel", UiTheme.panel_box(Color(0.02, 0.15, 0.12, 0.8), 18, UiTheme.GOLD.darkened(0.45), 1))
+	bowler_panel.add_theme_stylebox_override("panel", UiTheme.panel_box(UiTheme.panel_bg(0.8), 18, UiTheme.GOLD.darkened(0.45), 1))
 	add_child(bowler_panel)
 	var brow := HBoxContainer.new()
 	brow.add_theme_constant_override("separation", 10)
@@ -115,9 +115,6 @@ func build(c: MatchController, w: WorldView) -> void:
 	card_btn = IconButton.make("card", "Scorecard", 60)
 	card_btn.pressed.connect(func(): card_pressed.emit())
 	buttons.add_child(card_btn)
-	var view_btn := IconButton.make("camera", "Switch camera view", 60)
-	view_btn.pressed.connect(func(): view_pressed.emit())
-	buttons.add_child(view_btn)
 	mute_btn = IconButton.make("sound_on", "Mute / unmute", 60)
 	mute_btn.pressed.connect(func(): mute_pressed.emit())
 	buttons.add_child(mute_btn)
@@ -143,7 +140,7 @@ func build(c: MatchController, w: WorldView) -> void:
 	banner = PanelContainer.new()
 	banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	banner.visible = false
-	banner.add_theme_stylebox_override("panel", UiTheme.panel_box(Color(0.02, 0.15, 0.12, 0.88), 20, UiTheme.GOLD, 3))
+	banner.add_theme_stylebox_override("panel", UiTheme.panel_box(UiTheme.panel_bg(0.88), 20, UiTheme.GOLD, 3))
 	add_child(banner)
 	var bbox := VBoxContainer.new()
 	bbox.add_theme_constant_override("separation", 0)

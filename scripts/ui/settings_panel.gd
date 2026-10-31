@@ -33,15 +33,15 @@ func build() -> void:
 		var key2: String = s[1]
 		cb.toggled.connect(func(v): save.set_setting(key2, v))
 		grid.add_child(cb)
-	grid.add_child(UiTheme.label("Screen", 22))
-	var scr := Button.new()
-	scr.text = MainMenu.SCREEN_LABEL.get(String(save.data["settings"].get("orientation", "landscape")), "Landscape")
-	scr.pressed.connect(func():
-		var cur := MainMenu.SCREENS.find(String(save.data["settings"].get("orientation", "landscape")))
-		var next: String = MainMenu.SCREENS[(cur + 1) % MainMenu.SCREENS.size()]
-		save.set_setting("orientation", next)
-		scr.text = MainMenu.SCREEN_LABEL[next])
-	grid.add_child(scr)
+	grid.add_child(UiTheme.label("Theme", 22))
+	var th := Button.new()
+	th.text = UiTheme.theme_label(String(save.data["settings"].get("theme", "emerald")))
+	th.pressed.connect(func():
+		var cur := UiTheme.THEME_IDS.find(String(save.data["settings"].get("theme", "emerald")))
+		var next: String = UiTheme.THEME_IDS[(cur + 1) % UiTheme.THEME_IDS.size()]
+		save.set_setting("theme", next)
+		th.text = UiTheme.theme_label(next))
+	grid.add_child(th)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 12)

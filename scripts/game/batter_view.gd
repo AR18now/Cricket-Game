@@ -309,11 +309,17 @@ func _actors() -> void:
 		_fig_key = fkey
 		_fig_t = t
 		fig_layer.queue_redraw()
+	# After the hit the fielders come alive: chase, pick up, throw, catch.
+	var shot := w.resolved.shot if w.resolved != null else null
+	var live := shot != null and w.resolved.contact.is_contact() and t >= w.resolved.contact.t_contact
+	fig_layer.visible = not live
+	if live:
+		_live_fielders(items, t - w.resolved.contact.t_contact, shot)
 	if w.two_batters:
 		var ns := Vector3(WorldView.NON_STRIKER_BASE.x + 1.2 * Poses.ease_io((t + 0.6) / 1.0), WorldView.NON_STRIKER_BASE.y, 0)
 		items.append([depth_of(ns), _figure.bind(ns, w.batting_kit, {"front": true, "t": t, "helmet": true, "bat": true, "pads": true, "trousers": WorldView.trouser_colour(w.batting_kit)})])
 	items.append([depth_of(Vector3(Delivery.BOWLING_STUMPS_X, 0, 0)), _stumps.bind(Vector3(Delivery.BOWLING_STUMPS_X, 0, 0), -1.0)])
-	if w.delivery != null and w.profile != null:
+	if w.delivery != null and w.profile != null and not w.menu_mode:
 		var root := w._run_up_root(t)
 		var bp := Vector3(root.x, root.y, 0)
 		items.append([depth_of(bp), _bowler.bind(bp, t)])
@@ -325,6 +331,38 @@ func _actors() -> void:
 	if w.resolved != null and w.resolved.outcome.kind == BallOutcome.BOWLED and t >= w.delivery.stumps_time():
 		bowled_t = t - w.delivery.stumps_time()
 	_stumps(Vector3(0, 0, 0), bowled_t)
+
+
+## Fielders during a shot, using the same chase plan the simulation resolved.
+func _live_fielders(items: Array, ts: float, shot: ShotResult) -> void:
+	for i in range(2, w.specs.size()):
+		var s: FielderSpec = w.specs[i]
+		if CAM.x - s.pos.x < 3.0:
+			continue
+		var p2: Vector2 = w._fielder_pos(i, ts, shot)
+		var o := {"front": true, "cap": true, "crouch": 0.35}
+		if i == shot.collector and ts >= shot.t_collect:
+			var tc := ts - shot.t_collect
+			if shot.outcome == ShotResult.CAUGHT:
+				o["arm_l"] = PI * 0.92
+				o["arm_r"] = PI * 0.92
+				o["crouch"] = 0.0
+			elif tc < w.tuning.pickup_time:
+				o["crouch"] = 0.6
+			else:
+				o["windmill"] = lerpf(PI, TAU - 0.3, clampf((tc - w.tuning.pickup_time) / 0.4, 0.0, 1.0))
+				o["crouch"] = 0.1
+		elif p2.distance_to(s.pos) > 0.05 and i < shot.fielder_targets.size():
+			var target: Vector2 = shot.fielder_targets[i]["target"]
+			if p2.distance_to(target) > 0.05:
+				o["run"] = 1.0
+				o["phase"] = p2.distance_to(s.pos) * 4.0
+				o["crouch"] = 0.0
+		var fp := Vector3(p2.x, p2.y, 0)
+		items.append([depth_of(fp), _figure.bind(fp, w.fielding_kit, o)])
+	# The umpire stays put (drawn here because the cached layer is hidden).
+	var up := Vector3(WorldView.UMPIRE_POS.x, WorldView.UMPIRE_POS.y, 0)
+	items.append([depth_of(up), _figure.bind(up, Color(0.95, 0.93, 0.88), {"front": true, "hat": true, "trousers": Color(0.2, 0.2, 0.25)})])
 
 
 ## Screen-space tapered segment with soft edge and side shading (for perspective figures).
@@ -519,7 +557,9 @@ func _skeleton_opts(t: float) -> Dictionary:
 	var o := {"swing_time": w.swing_time, "swing_dur": WorldView.SWING_DUR, "contact_u": Poses.CONTACT_U,
 		"base": WorldView.STRIKER_BASE, "runup_t": w.profile.run_up_time if w.profile else 2.0}
 	var look := Vector3(-18.0, 0.0, 1.9)
-	if w.delivery != null:
+	if w.milestone_at >= 0.0:
+		o["raise_at"] = w.milestone_at
+	if w.delivery != null and not w.menu_mode:
 		o["stumps_t"] = w.delivery.stumps_time()
 		o["ideal_t"] = w.delivery.time_at_x(w.tuning.contact_x_ideal)
 		if t < 0.0:

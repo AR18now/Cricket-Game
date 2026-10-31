@@ -2,15 +2,61 @@ class_name UiTheme
 extends RefCounted
 ## Palette + Theme built in code (see docs/STYLE_GUIDE.md).
 
-const EMERALD := Color(0.03, 0.36, 0.27)
-const EMERALD_DEEP := Color(0.02, 0.17, 0.13)
-const SAND := Color(0.95, 0.87, 0.7)
 const OFF_WHITE := Color(0.98, 0.97, 0.93)
-const TERRACOTTA := Color(0.82, 0.41, 0.27)
-const GOLD := Color(0.99, 0.79, 0.33)
 const INK := Color(0.08, 0.07, 0.06)
-const PANEL := Color(0.02, 0.15, 0.12, 0.88)
 const DANGER := Color(0.86, 0.3, 0.24)
+
+## Colour themes (Settings / menu). The names below keep their original meaning:
+## EMERALD = main surface, EMERALD_DEEP = darker surface, GOLD = accent,
+## TERRACOTTA = the big call-to-action (PLAY), SAND = soft secondary text.
+const THEME_IDS := ["emerald", "royal", "sunset", "midnight"]
+const THEMES := {
+	"emerald": {"label": "Emerald", "primary": Color(0.03, 0.36, 0.27), "deep": Color(0.02, 0.17, 0.13), "panel": Color(0.02, 0.15, 0.12),
+		"accent": Color(0.99, 0.79, 0.33), "cta": Color(0.82, 0.41, 0.27), "soft": Color(0.95, 0.87, 0.7)},
+	"royal": {"label": "Royal Blue", "primary": Color(0.1, 0.25, 0.56), "deep": Color(0.04, 0.1, 0.27), "panel": Color(0.04, 0.09, 0.23),
+		"accent": Color(0.47, 0.85, 1.0), "cta": Color(0.97, 0.55, 0.16), "soft": Color(0.84, 0.91, 1.0)},
+	"sunset": {"label": "Sunset", "primary": Color(0.52, 0.15, 0.21), "deep": Color(0.25, 0.06, 0.1), "panel": Color(0.21, 0.05, 0.09),
+		"accent": Color(1.0, 0.75, 0.33), "cta": Color(0.92, 0.38, 0.21), "soft": Color(1.0, 0.87, 0.74)},
+	"midnight": {"label": "Midnight", "primary": Color(0.17, 0.18, 0.23), "deep": Color(0.08, 0.08, 0.11), "panel": Color(0.06, 0.06, 0.09),
+		"accent": Color(0.63, 0.92, 0.37), "cta": Color(0.29, 0.58, 0.97), "soft": Color(0.86, 0.89, 0.93)},
+}
+
+static var theme_id := "emerald"
+static var EMERALD := Color(0.03, 0.36, 0.27)
+static var EMERALD_DEEP := Color(0.02, 0.17, 0.13)
+static var SAND := Color(0.95, 0.87, 0.7)
+static var TERRACOTTA := Color(0.82, 0.41, 0.27)
+static var GOLD := Color(0.99, 0.79, 0.33)
+static var PANEL := Color(0.02, 0.15, 0.12, 0.88)
+static var PANEL_RGB := Color(0.02, 0.15, 0.12)
+
+
+static func apply_theme(id: String) -> void:
+	if not THEMES.has(id):
+		id = "emerald"
+	theme_id = id
+	var t: Dictionary = THEMES[id]
+	EMERALD = t["primary"]
+	EMERALD_DEEP = t["deep"]
+	PANEL_RGB = t["panel"]
+	PANEL = Color(PANEL_RGB.r, PANEL_RGB.g, PANEL_RGB.b, 0.88)
+	GOLD = t["accent"]
+	TERRACOTTA = t["cta"]
+	SAND = t["soft"]
+
+
+static func theme_label(id: String) -> String:
+	return String(THEMES.get(id, THEMES["emerald"])["label"])
+
+
+## The theme's panel colour at a given opacity (for HUD cards and overlays).
+static func panel_bg(alpha: float) -> Color:
+	return Color(PANEL_RGB.r, PANEL_RGB.g, PANEL_RGB.b, alpha)
+
+
+## A near-black tint of the theme (screen dims, fades, gradients).
+static func shade(alpha: float) -> Color:
+	return Color(PANEL_RGB.r * 0.45, PANEL_RGB.g * 0.45, PANEL_RGB.b * 0.45, alpha)
 
 static var _font_black: Font
 static var _font_bold: Font
@@ -28,7 +74,9 @@ static func font(weight: String = "bold") -> Font:
 	return _font_bold
 
 
-static func panel_box(bg: Color = PANEL, radius: int = 14, border: Color = Color(0, 0, 0, 0), bw: int = 0) -> StyleBoxFlat:
+static func panel_box(bg: Color = Color(0, 0, 0, -1), radius: int = 14, border: Color = Color(0, 0, 0, 0), bw: int = 0) -> StyleBoxFlat:
+	if bg.a < 0.0:
+		bg = PANEL
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = bg
 	sb.set_corner_radius_all(radius)

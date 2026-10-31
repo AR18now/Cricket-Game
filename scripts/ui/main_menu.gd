@@ -12,8 +12,6 @@ signal settings_pressed
 signal mute_pressed
 signal option_changed(key: String, value: String)
 
-const SCREENS := ["landscape", "portrait", "auto"]
-const SCREEN_LABEL := {"landscape": "Landscape", "portrait": "Portrait", "auto": "Auto-rotate"}
 
 var play_btn: Button
 var best_label: Label
@@ -22,7 +20,7 @@ var chips := {}
 var reduced_motion := false
 var portrait := false
 var _pulse: Tween
-var _values := {"time_of_day": "evening"}
+var _values := {"time_of_day": "evening", "theme": "emerald"}
 var _shade: MenuShade
 var _card: PanelContainer
 var _logo_top: TitleMark      # portrait: logo above the scene
@@ -52,7 +50,7 @@ func build() -> void:
 	# --- The card
 	_card = PanelContainer.new()
 	_card.name = "Card"
-	_card.add_theme_stylebox_override("panel", UiTheme.panel_box(Color(0.02, 0.14, 0.11, 0.84), 30, UiTheme.GOLD.darkened(0.25), 2))
+	_card.add_theme_stylebox_override("panel", UiTheme.panel_box(UiTheme.panel_bg(0.84), 30, UiTheme.GOLD.darkened(0.25), 2))
 	add_child(_card)
 	var m := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]:
@@ -98,14 +96,19 @@ func build() -> void:
 	play_btn.add_theme_stylebox_override("focus", sbh)
 	play_btn.pressed.connect(func(): _tap(); play_pressed.emit())
 	col.add_child(play_btn)
-	# The one optional choice: time of day / weather.
-	var tb := UiTheme.button("", 21, 260)
-	tb.custom_minimum_size = Vector2(260, 54)
-	tb.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	tb.add_theme_stylebox_override("normal", UiTheme.panel_box(Color(1, 1, 1, 0.08), 27, Color(1, 1, 1, 0.25), 1))
-	tb.pressed.connect(func(): _cycle("time_of_day"))
-	col.add_child(tb)
-	chips["time_of_day"] = tb
+	# Two optional choices: time of day / weather, and the colour theme.
+	var pills := HBoxContainer.new()
+	pills.alignment = BoxContainer.ALIGNMENT_CENTER
+	pills.add_theme_constant_override("separation", 12)
+	col.add_child(pills)
+	for key in ["time_of_day", "theme"]:
+		var tb := UiTheme.button("", 20, 230)
+		tb.custom_minimum_size = Vector2(230, 54)
+		tb.add_theme_stylebox_override("normal", UiTheme.panel_box(Color(1, 1, 1, 0.08), 27, Color(1, 1, 1, 0.25), 1))
+		var k: String = key
+		tb.pressed.connect(func(): _cycle(k))
+		pills.add_child(tb)
+		chips[key] = tb
 	# --- Top-right: sound + settings
 	_top_right = HBoxContainer.new()
 	_top_right.add_theme_constant_override("separation", 10)
@@ -136,7 +139,7 @@ func start_pulse() -> void:
 
 func _cycle(key: String) -> void:
 	_tap()
-	var list: Array = Atmosphere.IDS
+	var list: Array = Atmosphere.IDS if key == "time_of_day" else UiTheme.THEME_IDS
 	var i := list.find(_values[key])
 	_values[key] = list[(i + 1) % list.size()]
 	_update_chips()
@@ -151,7 +154,8 @@ func _cycle(key: String) -> void:
 func _update_chips() -> void:
 	if chips.is_empty():
 		return
-	chips["time_of_day"].text = "Time:  %s   >" % Atmosphere.LABELS[_values["time_of_day"]]
+	chips["time_of_day"].text = "Time: %s  >" % Atmosphere.LABELS[_values["time_of_day"]]
+	chips["theme"].text = "Theme: %s  >" % UiTheme.theme_label(_values["theme"])
 
 
 func _tap() -> void:
@@ -164,6 +168,7 @@ func refresh(save_data: Dictionary) -> void:
 	var b: Dictionary = save_data["best"]
 	var s: Dictionary = save_data["settings"]
 	_values["time_of_day"] = String(s.get("time_of_day", "evening"))
+	_values["theme"] = String(s.get("theme", "emerald"))
 	_update_chips()
 	var played := int(b["classic_played"]) > 0
 	_greet.text = "Welcome back!" if played else "Welcome!"

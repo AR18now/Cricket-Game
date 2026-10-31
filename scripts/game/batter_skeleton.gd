@@ -243,6 +243,18 @@ static func solve(t: float, o: Dictionary) -> Dictionary:
 		hands = hands.lerp(Vector3(0.05, 0.25, 0.7), dejected)
 		phi = lerpf(phi, 20.0, dejected)
 		pelvis.z += 0.04 * dejected
+	# Fifty / hundred: raise the bat high to the crowd.
+	var raise_at: float = o.get("raise_at", -1.0)
+	if raise_at >= 0.0 and t >= raise_at:
+		var k := smoother((t - raise_at) / 0.5)
+		var pump := 0.03 * sin((t - raise_at) * 4.5) * k
+		hands = hands.lerp(Vector3(0.12, 0.12, 1.72 + pump), k)
+		phi = lerpf(phi, 172.0, k)
+		tilt = lerpf(tilt, 0.1, k)
+		lean = lerpf(lean, 0.04, k)
+		twist = lerpf(twist, 0.7, k)
+		pelvis.z = lerpf(pelvis.z, 0.9, k)
+		elbow_mix = lerpf(elbow_mix, 1.0, k)
 	var root := Vector2(base.x - root_shift, base.y)
 	return _build(root, pelvis, front, back, front_yaw, back_yaw, back_heel, lean, bend, twist, hands, phi, tilt, elbow_mix, dejected, o.get("look", Vector3(-20, 0, 1.8)))
 

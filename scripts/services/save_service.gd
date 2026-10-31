@@ -5,7 +5,7 @@ extends Node
 
 signal changed
 
-const SCHEMA_VERSION := 4
+const SCHEMA_VERSION := 5
 const MAX_APPLIED := 64
 
 var dir_path := "user://"
@@ -30,8 +30,8 @@ static func defaults() -> Dictionary:
 		"version": SCHEMA_VERSION,
 		"settings": {"master": 1.0, "music": 0.6, "sfx": 1.0, "voice": 1.0, "muted": false,
 			"captions": true, "reduced_motion": false, "haptics": true,
-			"timing_guide": true, "bowling": "mixed", "time_of_day": "evening", "view": "auto", "hints": false,
-			"orientation": "auto"},
+			"timing_guide": true, "bowling": "mixed", "time_of_day": "evening", "view": "batter", "hints": false,
+			"orientation": "portrait", "theme": "emerald"},
 		"profile": {"display_name": "You", "kit": 0, "onboarded": false},
 		"tutorial_done": false,
 		"stance_unlocked": false,
@@ -116,6 +116,12 @@ static func migrate(d: Dictionary) -> Dictionary:
 			d["settings"]["bowling"] = "mixed"
 			d["settings"]["hints"] = false
 		v = 4
+	if v < 5:
+		# v5: portrait-only, always the batter's view; colour themes.
+		if d.has("settings") and d["settings"] is Dictionary:
+			d["settings"]["view"] = "batter"
+			d["settings"]["orientation"] = "portrait"
+		v = 5
 	d["version"] = v
 	return d
 

@@ -40,8 +40,8 @@ GitHub → **Actions** → the latest *Test and build* run → **Artifacts** →
 Controls: **Space / Enter / left click / tap** = swing · **Esc / P** = pause · **M** = mute ·
 **F3** = debug overlay (debug builds only).
 
-Screen: the **Screen** chip on the main menu (also in Settings) switches between
-**Landscape**, **Portrait** and **Auto-rotate**; the layout follows the screen shape.
+The game is portrait-only and always seen from behind the batter. Colour themes:
+**Theme** on the main menu (also in Settings) - Emerald, Royal Blue, Sunset, Midnight.
 
 ## Command line (any OS)
 

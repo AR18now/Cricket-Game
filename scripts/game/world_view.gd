@@ -161,36 +161,17 @@ func set_view_mode(m: String) -> void:
 
 
 ## The camera actually used: "auto" follows how the phone is held.
-static func resolve_view(mode: String, is_portrait: bool) -> String:
-	if mode == "auto":
-		return "batter" if is_portrait else "side"
-	return mode
+static func resolve_view(_mode: String, _is_portrait: bool) -> String:
+	return "batter"   # portrait game: always from behind the batter
 
 
 func effective_view() -> String:
 	return WorldView.resolve_view(view_mode, portrait)
 
 
-## Batter's-eye view covers the delivery; the side camera takes the ball into the field.
+## The game is always seen from behind the batter (also after the hit and on the menu).
 func batter_view_active(t: float) -> bool:
-	if effective_view() != "batter" or menu_mode or delivery == null:
-		return false
-	if resolved == null:
-		return true
-	if resolved.contact.is_contact():
-		var ts := t - resolved.contact.t_contact
-		if ts < 0.12:
-			return true
-		# Keep watching from behind the bat while a hit ball flies away down the ground
-		# and is still clearly on screen; then cut to the side camera.
-		if ts < 0.85 and resolved.shot != null:
-			var bp := ball_world(t)
-			if bp != Vector3.INF and BatterView.CAM.x - bp.x > 4.0:
-				var sp := batter_view.project(bp)
-				var vs := get_viewport_rect().size
-				return sp.x > vs.x * 0.08 and sp.x < vs.x * 0.92 and sp.y > vs.y * 0.3
-		return false
-	return t < delivery.stumps_time() + 0.8
+	return true
 
 
 func set_atmosphere(a: Atmosphere) -> void:
@@ -341,10 +322,13 @@ func _redraw_changed_rigs() -> void:
 func render_menu(delta: float) -> void:
 	idle_t += delta
 	menu_mode = true
-	batter_view.visible = false
-	_bv_on = false
-	sky_layer.visible = true
-	_set_side_world_shown(true)
+	# The menu shows the ground from behind the batter, waiting in his stance.
+	clock = -40.0 + fposmod(idle_t, 30.0)
+	batter_view.visible = true
+	batter_view.modulate.a = 1.0
+	_bv_on = true
+	sky_layer.visible = false
+	_set_side_world_shown(false)
 	striker.position = Proj.ground_v(STRIKER_BASE)
 	striker.facing = -1.0
 	striker.set_pose(Poses.bat_stance(idle_t))

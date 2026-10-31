@@ -60,6 +60,8 @@ func _go() -> void:
 			await _screens_tour()
 		"perf":
 			await _perf()
+		"themes":
+			await _themes_tour()
 		"milestone":
 			await _milestone_check()
 		"store":
@@ -482,9 +484,8 @@ func _smoke() -> void:
 	var recorded_before: int = c.state.events.size()
 	# Camera follows how the phone is held ("Auto" view is the default).
 	await until_phase(MatchController.Phase.FLIGHT)
-	var want := "batter" if app.portrait else "side"
-	eq(app.world.effective_view(), want, "auto view: %s screen uses the %s view" % ["portrait" if app.portrait else "landscape", want])
-	eq(app.world._bv_on, app.portrait, "batter's-eye camera on exactly when the screen is upright")
+	eq(app.world.effective_view(), "batter", "always the batter's view")
+	check(app.world._bv_on, "batter's-eye camera on during the delivery")
 	await swing_at(ideal_swing())
 	await until_phase(MatchController.Phase.OUTCOME)
 	press_space()
@@ -775,3 +776,31 @@ func _store_shots() -> void:
 	c.milestone_reached.disconnect(conn)
 	await wait(0.85)
 	await shot("s5_fifty")
+
+
+## Every colour theme: the menu, a delivery and the moment after a hit (fielders chasing).
+func _themes_tour() -> void:
+	await wait(1.6)
+	var save = get_node("/root/Save")
+	for id in UiTheme.THEME_IDS:
+		save.set_setting("theme", id)
+		await wait(0.4)
+		check(UiTheme.theme_id == id, "theme %s applied" % id)
+		await shot("t_%s_1_menu" % id)
+	save.set_setting("theme", "emerald")
+	await wait(0.3)
+	app.start_mode("classic")
+	await wait(0.2)
+	app._close_overlay()
+	var c = app.controller
+	await until_phase(MatchController.Phase.FLIGHT)
+	await swing_at(ideal_swing() + 0.03)
+	await until_clock(ideal_swing() + 0.9)
+	check(app.world._bv_on, "still the batter's view after the hit")
+	await shot("t_emerald_2_after_hit")
+	await until_phase(MatchController.Phase.OUTCOME)
+	for id in ["royal", "sunset", "midnight"]:
+		save.set_setting("theme", id)
+		await wait(0.3)
+		await shot("t_%s_2_game" % id)
+	save.set_setting("theme", "emerald")

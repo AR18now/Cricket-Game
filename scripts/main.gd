@@ -40,33 +40,10 @@ func _ready() -> void:
 	ui_root = Control.new()
 	ui_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	ui_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ui_root.theme = UiTheme.build()
+	UiTheme.apply_theme(String(save.data["settings"].get("theme", "emerald")))
+	_theme_applied = UiTheme.theme_id
 	ui.add_child(ui_root)
-	hud = Hud.new()
-	ui_root.add_child(hud)
-	hud.build(controller, world)
-	hud.visible = false
-	hud.pause_pressed.connect(open_pause)
-	hud.mute_pressed.connect(toggle_mute)
-	hud.card_pressed.connect(open_scorecard)
-	hud.replay_pressed.connect(func(): controller.start_replay())
-	menu = MainMenu.new()
-	ui_root.add_child(menu)
-	menu.build()
-	menu.visible = false
-	menu.play_pressed.connect(_on_play)
-	menu.settings_pressed.connect(open_settings)
-	menu.mute_pressed.connect(toggle_mute)
-	menu.option_changed.connect(func(k, v): save.set_setting(k, v))
-	hud.swing_pressed.connect(func():
-		if overlay == null and (screen == Screen.MATCH or screen == Screen.TUTORIAL):
-			controller.swing_input(Time.get_ticks_usec()))
-	hud.view_pressed.connect(func():
-		# In-game camera button: switch to the other view (this overrides "Auto").
-		save.set_setting("view", "side" if world.effective_view() == "batter" else "batter"))
-	hud.truck.horn.connect(func():
-		audio.play("truck_horn", "SFX", -3.0, 0.0)
-		audio.play("jingle", "SFX", -6.0, 0.0))
+	_build_ui()
 	controller.match_over.connect(_on_match_over)
 	controller.tutorial_step.connect(_on_tutorial_step)
 	controller.commentary_line.connect(func(line): audio.say(line, ""))
@@ -95,8 +72,56 @@ func _ready() -> void:
 				break
 
 
+## HUD + menu, built with the current colour theme (rebuilt when the theme changes).
+var _theme_applied := ""
+
+
+func _build_ui() -> void:
+	var menu_was_visible := is_instance_valid(menu) and menu.visible
+	var hud_was_visible := is_instance_valid(hud) and hud.visible
+	if is_instance_valid(hud):
+		hud.queue_free()
+	if is_instance_valid(menu):
+		menu.queue_free()
+	ui_root.theme = UiTheme.build()
+	hud = Hud.new()
+	ui_root.add_child(hud)
+	ui_root.move_child(hud, 0)
+	hud.build(controller, world)
+	hud.visible = hud_was_visible
+	if hud_was_visible and controller.state != null:
+		hud.refresh()
+	hud.pause_pressed.connect(open_pause)
+	hud.mute_pressed.connect(toggle_mute)
+	hud.card_pressed.connect(open_scorecard)
+	hud.replay_pressed.connect(func(): controller.start_replay())
+	hud.swing_pressed.connect(func():
+		if overlay == null and (screen == Screen.MATCH or screen == Screen.TUTORIAL):
+			controller.swing_input(Time.get_ticks_usec()))
+	hud.truck.horn.connect(func():
+		audio.play("truck_horn", "SFX", -3.0, 0.0)
+		audio.play("jingle", "SFX", -6.0, 0.0))
+	menu = MainMenu.new()
+	ui_root.add_child(menu)
+	ui_root.move_child(menu, 1)
+	menu.build()
+	menu.visible = menu_was_visible
+	menu.play_pressed.connect(_on_play)
+	menu.settings_pressed.connect(open_settings)
+	menu.mute_pressed.connect(toggle_mute)
+	menu.option_changed.connect(func(k, v): save.set_setting(k, v))
+	if menu.visible:
+		menu.refresh(save.data)
+
+
 func _apply_settings() -> void:
 	var s: Dictionary = save.data["settings"]
+	var theme := String(s.get("theme", "emerald"))
+	if theme != _theme_applied:
+		UiTheme.apply_theme(theme)
+		_theme_applied = UiTheme.theme_id
+		_build_ui()
+		_on_resized()
 	world.reduced_motion = bool(s["reduced_motion"])
 	hud.truck.reduced_motion = world.reduced_motion
 	controller.reduced_motion = world.reduced_motion
@@ -128,8 +153,7 @@ var portrait := false
 ## Landscape / portrait / auto-rotate. Phones lock (or free) the screen rotation; on a
 ## desktop the window is reshaped. The layout itself follows the actual window shape.
 func _apply_orientation(mode: String) -> void:
-	if mode not in ORIENTATIONS:
-		mode = "landscape"
+	mode = "portrait"   # the game is portrait-only
 	if mode == _orientation:
 		return
 	_orientation = mode
@@ -307,7 +331,7 @@ func _fade_in() -> void:
 	if world.reduced_motion:
 		return
 	var f := ColorRect.new()
-	f.color = Color(0.01, 0.06, 0.05, 1.0)
+	f.color = UiTheme.shade(1.0)
 	f.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	f.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	ui_root.add_child(f)

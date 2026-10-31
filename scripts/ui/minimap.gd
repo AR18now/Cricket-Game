@@ -30,7 +30,7 @@ func _draw() -> void:
 	if world == null or world.venue == null:
 		return
 	var v := world.venue
-	draw_style_box(UiTheme.panel_box(Color(0.02, 0.15, 0.12, 0.72), 12), Rect2(Vector2.ZERO, size))
+	draw_style_box(UiTheme.panel_box(UiTheme.panel_bg(0.72), 12), Rect2(Vector2.ZERO, size))
 	var pts := PackedVector2Array()
 	for i in 48:
 		var a := TAU * i / 48.0

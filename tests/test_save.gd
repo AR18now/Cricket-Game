@@ -127,16 +127,26 @@ func test_rewards_applied_once() -> void:
 	s.free()
 
 
-func test_v3_camera_follows_phone_orientation() -> void:
-	var old := {"version": 2, "settings": {"view": "batter", "orientation": "landscape", "music": 0.3, "hints": true, "bowling": "spin"}}
+func test_portrait_only_batters_view_and_themes() -> void:
+	var old := {"version": 2, "settings": {"view": "side", "orientation": "landscape", "music": 0.3, "hints": true, "bowling": "spin"}}
 	var m: Dictionary = SaveScript.migrate(old)
 	eq(m["version"], SaveScript.SCHEMA_VERSION, "migrated to the latest version")
+	eq(m["settings"]["view"], "batter", "always the batter's view")
+	eq(m["settings"]["orientation"], "portrait", "portrait only")
 	eq(m["settings"]["hints"], false, "hints off (now in Settings)")
-	eq(m["settings"]["view"], "auto", "view becomes auto")
-	eq(m["settings"]["orientation"], "auto", "screen rotates with the phone")
 	eq(m["settings"]["music"], 0.3, "other settings kept")
-	eq(SaveScript.defaults()["settings"]["view"], "auto", "new installs: auto view")
-	eq(WorldView.resolve_view("auto", true), "batter", "upright phone: batter's eye")
-	eq(WorldView.resolve_view("auto", false), "side", "sideways phone: side-on")
-	eq(WorldView.resolve_view("batter", false), "batter", "a forced view stays forced")
-	eq(WorldView.resolve_view("side", true), "side", "a forced view stays forced")
+	eq(SaveScript.defaults()["settings"]["theme"], "emerald", "default theme")
+	for mode in ["auto", "batter", "side"]:
+		for p in [true, false]:
+			eq(WorldView.resolve_view(mode, p), "batter", "batter's view whatever the setting")
+
+
+func test_colour_themes() -> void:
+	for id in UiTheme.THEME_IDS:
+		UiTheme.apply_theme(id)
+		eq(UiTheme.theme_id, id, "theme applied")
+		check(UiTheme.theme_label(id) != "", "theme has a name")
+		check(UiTheme.GOLD.v > 0.6, "accent is bright enough to read on dark panels")
+		check(UiTheme.PANEL_RGB.v < 0.3, "panels are dark so white text stays readable")
+	UiTheme.apply_theme("not-a-theme")
+	eq(UiTheme.theme_id, "emerald", "unknown theme falls back to the default")

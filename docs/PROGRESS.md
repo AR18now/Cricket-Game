@@ -128,6 +128,13 @@ title "Pocket Boundary" as history.
 | No player, bowler, team or commentator names anywhere | Menu says "Welcome!" / "Welcome back!"; the batter is "You"; bowlers are shown by type with a coloured badge (Easy bowler / Medium pace / Fast bowler / Spin bowler); fielders by position ("Fielded at long-off", "Caught at deep midwicket"); how-out is "bowled" / "caught at ..."; no name tags over players; captions have no speaker; team names removed; the first-run name question is gone (kit colour only) |
 | Better UI design and theme | Soft shadows under all panels and buttons, smoother corners, clearer pressed states, outlined score and banner text, bowler-type colour badge |
 
+## Owner feedback round 13 (implemented)
+
+| Request | Done |
+| --- | --- |
+| Remove landscape entirely, and the side-on view | Portrait-only on phones (project orientation portrait; iPad full screen), a tall window on Windows; the camera is always behind the batter - during the delivery, after the hit (fielders now chase, pick up, throw and catch in this view), at 50/100 (bat raised) and on the menu. Screen setting and the in-game camera button removed |
+| Option to change themes | Four colour themes - Emerald, Royal Blue, Sunset, Midnight - from a Theme pill on the menu or Settings; the whole interface (menu, HUD, panels, buttons, overlays) re-colours instantly and the choice is saved |
+
 ## What exists now (evidence)
 
 - Deterministic simulation: analytic delivery path (bounce, deviation), timing → contact at the
