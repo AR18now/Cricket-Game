@@ -153,7 +153,7 @@ func set_portrait(p: bool) -> void:
 func view_fit() -> float:
 	if not portrait:
 		return 1.0
-	return clampf(get_viewport_rect().size.x / 1280.0 * 1.3, 0.4, 1.0)
+	return clampf(get_viewport_rect().size.x / 1280.0 * 1.6, 0.4, 1.0)   # the wide view only follows the hit ball
 
 
 func set_view_mode(m: String) -> void:
@@ -169,8 +169,13 @@ func effective_view() -> String:
 	return WorldView.resolve_view(view_mode, portrait)
 
 
-## The game is always seen from behind the batter (also after the hit and on the menu).
+## You bat from behind the batter (portrait). Once the ball is hit, the wide ground camera
+## takes over so you can see where it goes; misses and bowled stay behind the batter.
 func batter_view_active(t: float) -> bool:
+	if menu_mode or delivery == null or resolved == null:
+		return true
+	if resolved.contact.is_contact():
+		return t - resolved.contact.t_contact < 0.15
 	return true
 
 

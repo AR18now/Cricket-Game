@@ -262,7 +262,7 @@ func _capture_tour() -> void:
 		var off: float = [0.0, 30.0, NAN, -200.0][i % 4]
 		await play_ball(off)
 		press_space()
-	await wait(2.5)
+	await wait(4.5)
 	await shot("13_result")
 	check(app.screen == app.Screen.RESULT, "endless ends on a wicket and shows the result")
 
@@ -451,7 +451,7 @@ func _restart_check() -> void:
 			break
 		press_space()
 		await frames(3)
-	await wait(2.5)
+	await wait(4.5)   # out for 0 here = a duck, which plays before the result card
 	check(app.screen == app.Screen.RESULT, "out in classic shows the result screen")
 	var ov = app.overlay
 	if ov != null and ov.has_signal("play_again"):
@@ -526,7 +526,7 @@ func _smoke() -> void:
 			break
 		press_space()
 		await frames(2)
-	await wait(2.5)
+	await wait(4.5)   # out for 0 here = a duck, which plays before the result card
 	check(app.screen == app.Screen.RESULT, "out in classic shows the result screen")
 	var ov = app.overlay
 	if ov != null and ov.has_signal("play_again"):
@@ -635,7 +635,7 @@ func _screens_tour() -> void:
 			break
 		press_space()
 		await frames(2)
-	await wait(2.5)
+	await wait(4.5)
 	await shot("u05_result")
 	app.show_menu()
 	await wait(0.6)
@@ -798,7 +798,7 @@ func _themes_tour() -> void:
 	await until_phase(MatchController.Phase.FLIGHT)
 	await swing_at(ideal_swing() + 0.03)
 	await until_clock(ideal_swing() + 0.9)
-	check(app.world._bv_on, "still the batter's view after the hit")
+	check(not app.world._bv_on, "after the hit the wide ground camera shows where the ball goes")
 	await shot("t_emerald_2_after_hit")
 	await until_phase(MatchController.Phase.OUTCOME)
 	for id in ["royal", "sunset", "midnight"]:

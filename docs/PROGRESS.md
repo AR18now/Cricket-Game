@@ -143,6 +143,13 @@ sound), droops and sheds a tear under a big "DUCK!" ("Out for 0"); out first bal
 ("wah wah wah waaah"); commentary "Out for a duck!" / "Golden duck!"; the result card
 waits for it (2.8 s, tap to skip after 1.2 s). Harness `duck` checks both kinds.
 
+## Owner feedback: wide view after the hit (implemented)
+
+Batting stays behind the batter (portrait). Once the ball is hit (0.15 s after contact)
+the wide ground camera takes over - in portrait, zoomed to keep the action large - so
+you see where the ball goes, the fielders chase and the runs; 50/100 celebrations show
+there too. Misses and bowled stay behind the batter.
+
 ## What exists now (evidence)
 
 - Deterministic simulation: analytic delivery path (bounce, deviation), timing → contact at the
