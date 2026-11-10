@@ -150,6 +150,14 @@ the wide ground camera takes over - in portrait, zoomed to keep the action large
 you see where the ball goes, the fielders chase and the runs; 50/100 celebrations show
 there too. Misses and bowled stay behind the batter.
 
+## Owner feedback: running, difficulty, music (implemented)
+
+| Request | Done |
+| --- | --- |
+| Show the batsman running after a hit | A partner now stands at the bowler's end; when a shot is run, both run between the wickets and the wide camera frames the ball and the whole pitch together (harness `runs` checks the batter moves and stays on screen) |
+| Harder as you go | Levels 1-8: up every 12 balls or 25 runs; each level faster (up to +40%, ~140 km/h for the fastest bowler), more swing/spin, wider line, more slower balls; gentle start shortened to 12 balls; "LEVEL n - faster bowling!" toast + sound; level shown on the bowler card. Tests: level rules, top level faster yet every ball still hittable |
+| Better start/menu music | New bright acoustic-pop loop (strummed guitar, bass, kick + claps, shaker, marimba hook over G-D-Em-C) and a matching opening sting |
+
 ## What exists now (evidence)
 
 - Deterministic simulation: analytic delivery path (bounce, deviation), timing → contact at the

@@ -164,6 +164,7 @@ func build(c: MatchController, w: WorldView) -> void:
 	duck_fx = DuckCelebration.new()
 	add_child(duck_fx)
 	controller.duck_out.connect(_on_duck)
+	controller.level_up.connect(_on_level_up)
 	confetti = Confetti.new()
 	add_child(confetti)
 	controller.milestone_reached.connect(_on_milestone)
@@ -350,6 +351,8 @@ func refresh() -> void:
 		bowler_badge.add_theme_stylebox_override("panel", UiTheme.panel_box(UiTheme.BOWLER_COLORS.get(p.style, UiTheme.GOLD), 6))
 		if controller.delivery != null:
 			speed_label.text = "%d km/h" % controller.delivery.speed_kmh()
+			if controller.state != null and controller.state.rules.progressive:
+				speed_label.text += "  -  Level %d" % controller.state.level()
 	for ch in over_row.get_children():
 		ch.queue_free()
 	var syms: Array = card.this_over if card.legal_balls % 6 != 0 or controller.phase == MatchController.Phase.OUTCOME else []
@@ -397,7 +400,11 @@ func _on_delivery(info: Dictionary) -> void:
 	refresh()
 	var p: BowlerProfile = info["bowler"]
 	if _last_bowler != "" and p.id != _last_bowler and controller.tutorial_level < 0:
-		show_toast("New bowler: %s - %s" % [p.type_label(), p.cue_line])
+		var msg := "New bowler: %s - %s" % [p.type_label(), p.cue_line]
+		if _level_msg != "":
+			msg = _level_msg + "\n" + msg   # a level-up and a new bowler come together
+		show_toast(msg)
+	_level_msg = ""
 	_last_bowler = p.id
 	var first_time := not bool(_setting("tutorial_seen", false))
 	var n: int = controller.state.events.size() if controller.state else 0
@@ -506,6 +513,17 @@ func _float_text(text: String, at: Vector2, col: Color, fs: int) -> void:
 		tw.parallel().tween_property(l, "position:y", l.position.y - 90.0, 1.0).set_ease(Tween.EASE_OUT)
 	tw.tween_property(l, "modulate:a", 0.0, 0.35)
 	tw.tween_callback(l.queue_free)
+
+
+## The bowling just got harder.
+var _level_msg := ""
+
+
+func _on_level_up(lv: int) -> void:
+	_level_msg = "LEVEL %d  -  faster bowling!" % lv
+	show_toast(_level_msg)
+	_pop(toast, 1.3)
+	_pop(bowler_panel, 1.2)
 
 
 ## Out for 0: the duck takes the stage instead of the plain "BOWLED/CAUGHT" banner.

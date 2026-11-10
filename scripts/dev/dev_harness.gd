@@ -64,6 +64,8 @@ func _go() -> void:
 			await _themes_tour()
 		"duck":
 			await _duck_check()
+		"runs":
+			await _runs_check()
 		"milestone":
 			await _milestone_check()
 		"store":
@@ -842,3 +844,58 @@ func _duck_check() -> void:
 		await shot("d_%s_c" % ("golden" if golden else "duck"))
 		check(c.phase == MatchController.Phase.OUTCOME, "the game waits while the duck is on")
 		await wait(3.5)
+
+
+## A shot that is run (not a boundary): the wide camera keeps the runners in view.
+## Then 12 balls in, the level goes up and the player is told.
+func _runs_check() -> void:
+	await wait(1.6)
+	var c = app.controller
+	app.start_mode("classic")
+	await wait(0.2)
+	app._close_overlay()
+	var got_runs := false
+	for i in 16:
+		await until_phase(MatchController.Phase.FLIGHT)
+		var off: float = [0.035, 0.045, 0.03, 0.05][i % 4]
+		await swing_at(ideal_swing() + off)
+		var t_hit: float = ideal_swing() + 0.1
+		await until_clock(t_hit + 0.6)
+		var x0: float = app.world.striker.position.x
+		await until_clock(t_hit + 1.6)
+		var x1: float = app.world.striker.position.x
+		var bv_off: bool = not app.world._bv_on
+		var vp := get_viewport().get_visible_rect().size
+		var sp: Vector2 = app.world.get_viewport().get_canvas_transform() * app.world.striker.global_position
+		await shot("r_ball_%d" % i)
+		await until_phase(MatchController.Phase.OUTCOME)
+		var o: BallOutcome = c.resolver.outcome
+		if o.kind == BallOutcome.RUNS and c.resolver.shot.run_times.size() > 0:
+			got_runs = true
+			_log("run ball %d: x %.0f -> %.0f, screen %s" % [i, x0, x1, str(sp)])
+			check(bv_off, "wide view after the hit")
+			check(absf(x1 - x0) > 20.0, "the batter is running between the wickets")
+			check(sp.x > 0 and sp.x < vp.x and sp.y > 0 and sp.y < vp.y, "the running batter is on screen")
+			break
+		if c.state.is_complete():
+			break
+		press_space()
+	check(got_runs, "found a shot that was run")
+	# Level up after 12 balls.
+	app.start_mode("classic")
+	await wait(0.2)
+	app._close_overlay()
+	var lv := [0]
+	var conn := func(l): lv[0] = l
+	c.level_up.connect(conn)
+	for k in 12:
+		var o2 := BallOutcome.new()
+		o2.kind = BallOutcome.DOT
+		c.state.record(930000 + k, o2, "harness")
+	await play_ball(0.0)
+	await until_phase(MatchController.Phase.RUNUP)
+	c.level_up.disconnect(conn)
+	check(lv[0] == 2, "level 2 after 12 balls (got %d)" % lv[0])
+	_log("toast visible=%s text=%s" % [str(app.hud.toast.visible), app.hud.toast_label.text])
+	check(app.hud.toast.visible and app.hud.toast_label.text.begins_with("LEVEL 2"), "the player sees LEVEL 2")
+	await shot("r3_level_up")

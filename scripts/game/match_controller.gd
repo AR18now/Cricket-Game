@@ -14,6 +14,8 @@ signal ball_settled(outcome: BallOutcome, card: Scorecard)
 signal milestone_reached(runs: int, batter: Dictionary)
 ## Out without scoring (a "duck"); golden = out first ball.
 signal duck_out(golden: bool)
+## The bowling got harder (level 2, 3, ...).
+signal level_up(level: int)
 signal match_over(state: MatchState)
 signal tutorial_step(level: int, success: bool)
 signal commentary_line(line: Dictionary)
@@ -65,6 +67,7 @@ var replays_shown := 0
 var _hold_real := 0.0
 var milestone := 0   # 50, 100... reached on the ball just settled, else 0
 var duck := false    # out for 0 on the ball just settled
+var _level := 1
 var _hitstop_left := 0.0
 var _mute_audio := false
 var reduced_motion := false
@@ -95,9 +98,10 @@ func start_match(r: MatchRules, seed_value: int, tutorial: bool = false) -> void
 		state.bowler_names[id] = bowlers[id].type_label()
 	state.card = Scorecard.build(r, [], state.bowler_names)
 	commentary = Commentary.new(seed_value)
+	_level = 1
 	tutorial_level = 0 if tutorial else -1
 	tutorial_attempts = 0
-	world.two_batters = r.two_batters
+	world.two_batters = true   # a partner at the other end, so the runs are seen being run
 	# Clear BOTH pause flags: the result screen pauses the clock, and a new match must
 	# always start running (bug: "Play again" left the clock frozen on "Wait for it...").
 	set_paused(false)
@@ -124,6 +128,10 @@ func _next_delivery() -> void:
 	else:
 		profile = bowlers[state.current_bowler_id()]
 		delivery = DeliveryGenerator.generate(profile, seed_value, tuning, state.difficulty(), state.ease_in())
+		var lv := state.level()
+		if lv > _level:
+			level_up.emit(lv)
+		_level = lv
 	var names := [profile.display_name, keeper_name]
 	names.append_array(fielding_names)
 	fielders = FielderSpec.from_layout(venue.field_layout, names, tuning)

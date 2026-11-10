@@ -55,6 +55,7 @@ static func classic(player_name: String = "You", bowling: String = "mixed", seed
 	r.two_batters = false
 	r.batters = [player_name]
 	r.progressive = true
+	r.ease_balls = 12   # a short gentle start, then the levels take over
 	match bowling:
 		"pace":
 			r.bowlers_by_over = ["hamza"]

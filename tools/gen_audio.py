@@ -633,81 +633,112 @@ def shaker(seed, amp=0.25):
 Dn3, A3n, D4n, E4n, Fs4, G4n, A4n, B4n, Cs5, D5n, E5n = 146.8, 220.0, 293.7, 329.6, 370.0, 392.0, 440.0, 493.9, 554.4, 587.3, 659.3
 
 
-def music_loop(bpm=100, bars=8):
-    """Menu music: dhol chaal + ghungroo, harmonium chords and an original rabab melody
-    (8 bars: a phrase and its answer), seamless loop."""
+def kick(amp=1.0):
+    out = []
+    ph = 0.0
+    for i in range(n(0.28)):
+        t = i / SR
+        f = 48 + 110 * math.exp(-t * 32)
+        ph += 2 * math.pi * f / SR
+        out.append(math.sin(ph) * math.exp(-t * 11) * amp)
+    return out
+
+
+def clap(seed, amp=0.6):
+    r = random.Random(seed)
+    bp = Biquad("bp", 1500, 0.9)
+    out = []
+    for i in range(n(0.18)):
+        t = i / SR
+        # three quick bursts then a tail, like a real hand clap
+        burst = sum(math.exp(-max(0.0, t - d) * 140) * (1.0 if t >= d else 0.0) for d in (0.0, 0.011, 0.022))
+        out.append(bp(r.uniform(-1, 1)) * (0.5 * burst + math.exp(-t * 18)) * amp)
+    return out
+
+
+def marimba(f, dur=0.5, amp=0.5):
+    out = []
+    for i in range(n(dur)):
+        t = i / SR
+        v = math.sin(2 * math.pi * f * t) * math.exp(-t * 7) + 0.35 * math.sin(2 * math.pi * f * 4.0 * t) * math.exp(-t * 26)
+        out.append(v * min(1.0, t / 0.002) * amp)
+    return out
+
+
+def strum(freqs, at, out, amp=0.18, down=True, seed=1, dur=0.9):
+    order = freqs if down else list(reversed(freqs))
+    for k, f in enumerate(order):
+        place(out, pluck(f, dur, amp, 0.7, seed + k), at + k * 0.012)
+
+
+def music_loop(bpm=112, bars=8):
+    """Menu music: bright acoustic pop - strummed guitar, bouncy bass, kick + claps,
+    shaker and an original marimba hook over G - D - Em - C (twice). Seamless loop."""
     beat = 60.0 / bpm
     L = n(beat * 4 * bars)
-    tail = n(1.6)
-    out = [0.0] * (L + tail)   # notes ring past the end and are folded back to the start
-    # Dhol: an original bhangra-style chaal, with a lift every fourth bar.
-    pat = ["D", "", "T", "D", "", "T", "D", "T"]
+    tail = n(1.2)
+    out = [0.0] * (L + tail)
+    G2, D2, E2, C2 = 98.0, 73.4, 82.4, 65.4
+    chords = {
+        "G": ([196.0, 246.9, 293.7, 392.0], G2),
+        "D": ([146.8, 220.0, 293.7, 370.0], D2),
+        "Em": ([164.8, 246.9, 329.6, 392.0], E2),
+        "C": ([130.8, 196.0, 261.6, 329.6], C2),
+    }
+    prog = ["G", "D", "Em", "C"] * 2
+    # Strum pattern in eighths: D . D U . U D U
+    pattern = [(0, True), (2, True), (3, False), (5, False), (6, True), (7, False)]
     for b in range(bars):
-        for st, hit in enumerate(pat):
-            at = (b * 4 + st * 0.5) * beat + (0.018 if st % 2 else 0.0)   # light swing
-            if hit == "D":
-                place(out, dhol_dhum(0.95), at)
-            elif hit == "T":
-                place(out, dhol_tak(b * 10 + st, 0.75), at)
-            place(out, shaker(300 + b * 8 + st, 0.3 if st % 2 == 0 else 0.18), at)
-        if b % 4 == 3:
-            for k in range(4):
-                place(out, dhol_tak(700 + b + k, 0.55), (b * 4 + 3 + k * 0.25) * beat)
-    # Harmonium chords, one per bar.
-    chords = {"D": [D4n, Fs4, A4n], "G": [G4n, B4n, D5n], "A": [A4n, Cs5, E5n]}
-    prog = ["D", "D", "G", "A", "D", "G", "A", "D"]
-    for b, c in enumerate(prog[:bars]):
-        place(out, harmonium(chords[c], beat * 4 + 0.05, 0.22), b * 4 * beat)
-        place(out, harmonium([Dn3 if c == "D" else (98.0 if c == "G" else 110.0)], beat * 4 + 0.05, 0.14, 0.05), b * 4 * beat)
-    # Rabab melody: [(note, eighths)] - original hook and answer.
-    mel = [(A4n, 1), (Fs4, 1), (A4n, 1), (B4n, 1), (A4n, 2), (Fs4, 1), (E4n, 1),
-           (D4n, 1), (E4n, 1), (Fs4, 1), (A4n, 1), (B4n, 1), (A4n, 1), (Fs4, 2),
-           (A4n, 1), (B4n, 1), (D5n, 1), (B4n, 1), (A4n, 1), (Fs4, 1), (E4n, 2),
-           (Fs4, 1), (E4n, 1), (D4n, 1), (E4n, 1), (D4n, 4),
-           (D5n, 1), (Cs5, 1), (B4n, 1), (A4n, 1), (B4n, 2), (A4n, 1), (Fs4, 1),
-           (A4n, 1), (B4n, 1), (D5n, 1), (E5n, 1), (D5n, 2), (B4n, 2),
-           (A4n, 1), (B4n, 1), (A4n, 1), (Fs4, 1), (E4n, 1), (Fs4, 1), (E4n, 2),
-           (D4n, 2), (A3n, 1), (D4n, 1), (D4n, 4)]
+        notes, root = chords[prog[b]]
+        t0 = b * 4 * beat
+        for e, down in pattern:
+            strum(notes, t0 + e * beat * 0.5, out, 0.16 if down else 0.11, down, 2000 + b * 10 + e)
+        # Bass: root on 1 and 3, a passing octave on the "and" of 4
+        place(out, pluck(root, 0.7, 0.55, 0.4, 3000 + b), t0)
+        place(out, pluck(root, 0.6, 0.45, 0.4, 3100 + b), t0 + 2 * beat)
+        place(out, pluck(root * 2, 0.3, 0.3, 0.5, 3200 + b), t0 + 3.5 * beat)
+        # Drums: kick on 1 and 3, claps on 2 and 4, shaker eighths
+        for q in range(4):
+            if q % 2 == 0:
+                place(out, kick(0.9), t0 + q * beat)
+            else:
+                place(out, clap(4000 + b * 4 + q, 0.55), t0 + q * beat)
+        for e in range(8):
+            place(out, shaker(4100 + b * 8 + e, 0.22 if e % 2 else 0.12), t0 + e * beat * 0.5)
+    # Marimba hook (original), one phrase per 4 bars with a different ending
+    B4, D5, E5, Fs5, G5, A5 = 493.9, 587.3, 659.3, 740.0, 784.0, 880.0
+    hook_a = [(B4, 0.5), (D5, 0.5), (G5, 1.0), (Fs5, 0.5), (E5, 0.5), (D5, 1.0),
+              (E5, 0.5), (G5, 0.5), (A5, 1.0), (G5, 0.5), (E5, 0.5), (D5, 2.0)]
+    hook_b = [(B4, 0.5), (D5, 0.5), (G5, 1.0), (Fs5, 0.5), (E5, 0.5), (D5, 1.0),
+              (E5, 0.5), (D5, 0.5), (B4, 1.0), (D5, 0.5), (B4, 0.5), (G5 / 2 * 2, 2.0)]
     at = 0.0
-    for k, (f, ln) in enumerate(mel):
-        d = ln * beat * 0.5
-        if at >= bars * 4 * beat - 0.01:
-            break
-        place(out, pluck(f, min(d + 0.35, 1.2), 0.42, 0.6, 900 + k), at)
-        if ln >= 2:   # a soft octave answer on long notes
-            place(out, pluck(f * 2, 0.5, 0.12, 0.7, 1900 + k), at + beat * 0.5)
-        at += d
-    # Seamless loop: fold the ringing tail back onto the start.
+    for phrase in (hook_a, hook_b):
+        start = at
+        for f, beats in phrase:
+            place(out, marimba(f, min(1.2, beats * beat + 0.3), 0.5), at)
+            at += beats * beat
+        at = start + 16 * beat
     for i in range(tail):
         out[i] += out[L + i]
     out = out[:L]
     pk = max(abs(v) for v in out)
-    return [math.tanh(1.7 * v / pk) for v in out]   # gentle glue/loudness
+    return [math.tanh(1.6 * v / pk) for v in out]
 
 
 def sting(kind):
     out = [0.0] * n(2.0)
     if kind == "open":
-        # Opening: a building dhol roll, a big dhum with a harmonium chord swell, a rising
-        # rabab flourish and a shimmer of ghungroo bells.
-        out = [0.0] * n(2.8)
-        at, gap, k = 0.0, 0.14, 0
-        while at < 0.7:
-            place(out, dhol_tak(800 + k, 0.35 + 0.5 * at), at)
-            place(out, shaker(820 + k, 0.2), at)
-            at += gap
-            gap = max(0.05, gap * 0.85)
-            k += 1
-        place(out, dhol_dhum(1.2), 0.72)
-        place(out, harmonium([D4n, Fs4, A4n, D5n], 1.9, 0.35, 0.08), 0.72)
-        place(out, harmonium([Dn3], 1.9, 0.2, 0.05), 0.72)
-        for k2, f in enumerate([D4n, Fs4, A4n, D5n, Fs4 * 2]):
-            place(out, pluck(f, 1.2, 0.5, 0.65, 840 + k2), 0.76 + k2 * 0.09)
-        for k3 in range(10):
-            place(out, shaker(860 + k3, 0.22 * (1 - k3 / 12)), 1.25 + k3 * 0.06)
-        place(out, dhol_dhum(0.9), 1.6)
+        # Opening: a quick marimba run up, a bright guitar strum and a clap.
+        out = [0.0] * n(2.4)
+        for k, f in enumerate([392.0, 493.9, 587.3, 784.0, 987.8]):
+            place(out, marimba(f, 0.9, 0.55), k * 0.075)
+        strum([196.0, 246.9, 293.7, 392.0, 493.9], 0.42, out, 0.3, True, 2600, 1.6)
+        place(out, kick(1.0), 0.42)
+        place(out, clap(2700, 0.6), 0.42)
+        place(out, marimba(784.0, 1.4, 0.45), 0.42)
+        place(out, marimba(587.3, 1.4, 0.3), 0.42)
         pk = max(abs(v) for v in out)
-        return [math.tanh(1.8 * v / pk) for v in out]
+        return [math.tanh(1.6 * v / pk) for v in out]
     elif kind == "boundary":
         for k, at in enumerate([0, 0.12, 0.24]):
             place(out, dhol_tak(k + 20, 0.8), at)

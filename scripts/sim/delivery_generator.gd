@@ -3,7 +3,7 @@ extends RefCounted
 ## Builds seeded deliveries from a bowler profile. Difficulty is bounded: it can raise
 ## pace by at most MAX_PACE_BOOST and never changes timing windows, bat reach or catching.
 
-const MAX_PACE_BOOST := 0.12
+const MAX_PACE_BOOST := 0.4   # top level: 40% quicker (fastest bowler ~140 km/h)
 
 ## Tutorial deliveries: slow, straight, good length. Level 0..2 adds modest pace.
 const TUTORIAL_SPEEDS := [13.5, 15.0, 17.5]
@@ -25,16 +25,17 @@ static func generate(profile: BowlerProfile, seed_value: int, tuning: GameTuning
 	d.release = Vector3(tuning.release_x, profile.release_y, tuning.release_height)
 	var boost := 1.0 + MAX_PACE_BOOST * clampf(difficulty, 0.0, 1.0)
 	var ease := clampf(ease_in, 0.0, 1.0)
-	if rng.chance(profile.slower_chance * clampf((ease - 0.6) / 0.4, 0.0, 1.0)):
+	var hard := clampf(difficulty, 0.0, 1.0)
+	if rng.chance(profile.slower_chance * (1.0 + hard) * clampf((ease - 0.6) / 0.4, 0.0, 1.0)):
 		d.kind = "slower"
 		d.speed = rng.range_f(profile.slower_min, profile.slower_max)
 	else:
 		d.kind = "stock"
 		d.speed = rng.range_f(profile.speed_min, profile.speed_max) * boost
 	d.speed = lerpf(minf(START_SPEED, d.speed), d.speed, ease)
-	d.line_y = rng.range_f(profile.line_min, profile.line_max) * lerpf(0.4, 1.0, ease)
+	d.line_y = rng.range_f(profile.line_min, profile.line_max) * lerpf(0.4, 1.0, ease) * (1.0 + 0.5 * hard)
 	if profile.deviation_max > 0.0:
-		d.deviation = rng.range_f(-profile.deviation_max, profile.deviation_max) * lerpf(0.35, 1.0, ease)
+		d.deviation = rng.range_f(-profile.deviation_max, profile.deviation_max) * lerpf(0.35, 1.0, ease) * (1.0 + 0.7 * hard)
 		d.kind = "spin" if profile.style == "spin" else "seam"
 	# Pick a length whose contact heights stay within bat reach; retry deterministically.
 	var ok := false

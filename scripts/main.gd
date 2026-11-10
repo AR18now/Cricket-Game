@@ -48,6 +48,7 @@ func _ready() -> void:
 	controller.tutorial_step.connect(_on_tutorial_step)
 	controller.commentary_line.connect(func(line): audio.say(line, ""))
 	controller.ball_settled.connect(_on_ball_settled)
+	controller.level_up.connect(func(_lv): audio.play("jingle", "UI", -4.0, 0.0))
 	controller.duck_out.connect(func(_golden):
 		# Quack, quack, quack + sad trombone, timed with the duck's beak.
 		get_tree().create_timer(DuckCelebration.START).timeout.connect(func(): audio.play("duck_out", "Music", -1.0, 0.0))

@@ -30,9 +30,22 @@ func current_bowler_id() -> String:
 	return list[start + (over_idx - list.size()) % (list.size() - start)]
 
 
+## Levels: up one every LEVEL_BALLS balls or every LEVEL_RUNS runs (whichever comes
+## first), to MAX_LEVEL. Each level is faster, swings/spins more and varies more.
+const LEVEL_BALLS := 12
+const LEVEL_RUNS := 25
+const MAX_LEVEL := 8
+
+
+func level() -> int:
+	if not rules.progressive:
+		return 1
+	return mini(1 + maxi(card.legal_balls / LEVEL_BALLS, card.runs / LEVEL_RUNS), MAX_LEVEL)
+
+
 func difficulty() -> float:
 	if rules.progressive:
-		return clampf(float(events.size() - rules.ease_balls) / rules.ramp_balls, 0.0, 1.0)
+		return float(level() - 1) / float(MAX_LEVEL - 1)
 	return clampf(events.size() * rules.difficulty_ramp, 0.0, 1.0)
 
 

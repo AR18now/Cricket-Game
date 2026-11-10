@@ -729,6 +729,19 @@ func update_camera(delta: float) -> void:
 				zoom = clampf(0.92 - d * 0.017, 0.36, 0.9)
 				var focus := Proj.to_screen(Vector3(bp.x, bp.y, bp.z * 0.6))
 				center = Proj.ground(-2.0, 0.0).lerp(focus, 0.72) + Vector2(0, -60)
+				var shot := resolved.shot
+				if shot != null and resolved.outcome.kind == BallOutcome.RUNS and shot.run_times.size() > 0:
+					# Runs are being run: frame the ball AND the whole pitch so both are seen.
+					var pts := [focus, Proj.ground(0.6, 0.0) + Vector2(0, -60), Proj.ground(-20.6, 0.0) + Vector2(0, -60)]
+					var lo: Vector2 = pts[0]
+					var hi: Vector2 = pts[0]
+					for p2 in pts:
+						lo = Vector2(minf(lo.x, p2.x), minf(lo.y, p2.y))
+						hi = Vector2(maxf(hi.x, p2.x), maxf(hi.y, p2.y))
+					center = (lo + hi) * 0.5
+					var vs := get_viewport_rect().size
+					var fit := view_fit()
+					zoom = clampf(minf(vs.x / (fit * (hi.x - lo.x + 260.0)), vs.y * 0.6 / (fit * (hi.y - lo.y + 240.0))), 0.3, 0.9)
 	if milestone_at >= 0.0 and clock >= milestone_at:
 		# Fifty / hundred: close on the batter raising his bat.
 		center = striker.position + Vector2(0, -200)   # batter in the lower half, card above
