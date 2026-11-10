@@ -16,7 +16,6 @@ var H := 720.0
 var _ca := cos(deg_to_rad(PITCH_DEG))
 var _sa := sin(deg_to_rad(PITCH_DEG))
 var _tufts: Array = []
-var _buildings: Array = []
 ## Static backdrop (sky, stands, ground, pitch) is cached on its own canvas item and only
 ## redrawn when the screen size or atmosphere changes; actors/ball redraw every frame.
 var static_layer: Node2D
@@ -39,6 +38,8 @@ func setup(world: WorldView) -> void:
 	static_layer.show_behind_parent = true
 	add_child(static_layer)
 	static_layer.draw.connect(_draw_static)
+	static_layer.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	static_layer.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	fig_layer = Node2D.new()
 	fig_layer.show_behind_parent = true
 	add_child(fig_layer)
@@ -51,19 +52,6 @@ func setup(world: WorldView) -> void:
 		if absf(p.y) < 2.0 and p.x > -22.5 and p.x < 2.5:
 			continue
 		_tufts.append(p)
-	# Stands / houses: far end and both sides, each {a: Vector2, b: Vector2, h, col, seed}
-	var palette := [Color(0.93, 0.86, 0.72), Color(0.87, 0.74, 0.6), Color(0.95, 0.9, 0.8), Color(0.78, 0.55, 0.42), Color(0.86, 0.8, 0.66)]
-	var x := -70.0
-	while x < 6.0:
-		var wd := r.range_f(8.0, 13.0)
-		_buildings.append({"a": Vector2(x, -44.0), "b": Vector2(x + wd, -44.0), "h": r.range_f(8.0, 13.0), "col": palette[r.range_i(0, 4)], "seed": r.next_u32()})
-		_buildings.append({"a": Vector2(x, 44.0), "b": Vector2(x + wd, 44.0), "h": r.range_f(8.0, 13.0), "col": palette[r.range_i(0, 4)], "seed": r.next_u32()})
-		x += wd
-	var y := -44.0
-	while y < 44.0:
-		var wd2 := r.range_f(8.0, 13.0)
-		_buildings.append({"a": Vector2(-62.0, y), "b": Vector2(-62.0, y + wd2), "h": r.range_f(9.0, 15.0), "col": palette[r.range_i(0, 4)], "seed": r.next_u32()})
-		y += wd2
 
 
 # ------------------------------------------------------------------ projection
@@ -121,9 +109,9 @@ func _draw_fielders() -> void:
 func _draw_static() -> void:
 	_ci = static_layer
 	_sky()
-	_stands()
 	_ground()
 	_pitch()
+	_stands()
 
 
 func _draw() -> void:
@@ -139,6 +127,19 @@ func _draw() -> void:
 		static_layer.queue_redraw()
 	_actors()
 	_ball()
+	_vignette()
+
+
+## Darkened screen edges, like a broadcast lens (four gradient quads; very cheap).
+func _vignette() -> void:
+	var e := Color(0, 0, 0, 0.28)
+	var t := Color(0, 0, 0, 0)
+	var sw := W * 0.16
+	var sh := H * 0.1
+	draw_polygon(PackedVector2Array([Vector2(0, 0), Vector2(sw, 0), Vector2(sw, H), Vector2(0, H)]), PackedColorArray([e, t, t, e]))
+	draw_polygon(PackedVector2Array([Vector2(W - sw, 0), Vector2(W, 0), Vector2(W, H), Vector2(W - sw, H)]), PackedColorArray([t, e, e, t]))
+	draw_polygon(PackedVector2Array([Vector2(0, 0), Vector2(W, 0), Vector2(W, sh), Vector2(0, sh)]), PackedColorArray([e, e, t, t]))
+	draw_polygon(PackedVector2Array([Vector2(0, H - sh), Vector2(W, H - sh), Vector2(W, H), Vector2(0, H)]), PackedColorArray([t, t, e, e]))
 
 
 func _sky() -> void:
@@ -159,79 +160,21 @@ func _sky() -> void:
 		_ci.draw_circle(sp, 28.0, atm.sun_color)
 	elif atm.moon:
 		_ci.draw_circle(Vector2(W * 0.8, horizon * 0.3), 20.0, Color(0.93, 0.93, 0.86))
+	# Soft clouds (a few overlapping translucent puffs; drawn once into the cache).
+	var rc := DetRng.new(77)
+	var cloud_c := atm.sky_bottom.lerp(Color(1, 1, 1), 0.6)
+	cloud_c.a = 0.16 + 0.12 * atm.clouds
+	for i in int(3 + atm.clouds * 6):
+		var cp := Vector2(rc.next_float() * W, horizon * rc.range_f(0.12, 0.62))
+		var cw := rc.range_f(0.12, 0.3) * W
+		for k in 6:
+			var off := Vector2(rc.range_f(-0.5, 0.5) * cw, rc.range_f(-0.08, 0.08) * cw)
+			_ci.draw_circle(cp + off, cw * rc.range_f(0.12, 0.22), cloud_c)
 
 
 func _stands() -> void:
-	# Sort far -> near by depth of the building centre.
-	var list := _buildings.duplicate()
-	list.sort_custom(func(a, b): return depth_of(Vector3((a["a"].x + a["b"].x) * 0.5, (a["a"].y + a["b"].y) * 0.5, 0)) > depth_of(Vector3((b["a"].x + b["b"].x) * 0.5, (b["a"].y + b["b"].y) * 0.5, 0)))
-	for bld in list:
-		var a: Vector2 = bld["a"]
-		var b: Vector2 = bld["b"]
-		if CAM.x - maxf(a.x, b.x) < 1.5:
-			continue
-		var h: float = bld["h"]
-		var col: Color = _lit(bld["col"])
-		var quad := PackedVector2Array([project(Vector3(a.x, a.y, 0)), project(Vector3(b.x, b.y, 0)), project(Vector3(b.x, b.y, h)), project(Vector3(a.x, a.y, h))])
-		_ci.draw_colored_polygon(quad, col)
-		_ci.draw_polyline(PackedVector2Array([quad[3], quad[2]]), _lit(col.darkened(0.3)), 3.0)
-		# Windows (glow at night/evening)
-		var r := DetRng.new(int(bld["seed"]))
-		var floors := int(h / 3.2)
-		var cols := int(a.distance_to(b) / 3.0)
-		for fl in floors:
-			for c in cols:
-				var u0 := (c + 0.3) / cols
-				var u1 := (c + 0.7) / cols
-				var z0 := 1.2 + fl * 3.2
-				var p0 := a.lerp(b, u0)
-				var p1 := a.lerp(b, u1)
-				var win := PackedVector2Array([project(Vector3(p0.x, p0.y, z0)), project(Vector3(p1.x, p1.y, z0)), project(Vector3(p1.x, p1.y, z0 + 1.5)), project(Vector3(p0.x, p0.y, z0 + 1.5))])
-				var lit := r.chance(0.45)
-				var wc := Color(1.0, 0.84, 0.5) if (lit and w.atm.window_glow) else _lit(Color(0.25, 0.22, 0.26))
-				_ci.draw_colored_polygon(win, wc)
-		# Rooftop spectators
-		var n := r.range_i(2, 6)
-		for s in n:
-			var u := r.range_f(0.1, 0.9)
-			var p := a.lerp(b, u)
-			var base := project(Vector3(p.x, p.y, h))
-			var k := scale_at(Vector3(p.x, p.y, h))
-			var shirt: Color = [GroundView.EMERALD, Color(0.95, 0.93, 0.88), GroundView.TERRACOTTA, Color(0.3, 0.45, 0.7), GroundView.GOLD.darkened(0.2)][r.range_i(0, 4)]
-			_ci.draw_rect(Rect2(base + Vector2(-0.22 * k, -0.9 * k), Vector2(0.44 * k, 0.9 * k)), _lit(shirt))
-			_ci.draw_circle(base + Vector2(0, -1.05 * k), 0.16 * k, _lit(Color(0.6, 0.42, 0.3)))
-	# Brick boundary walls on three sides
-	for seg in [[Vector2(-58, -37), Vector2(4, -37)], [Vector2(-58, 37), Vector2(4, 37)], [Vector2(-58, -37), Vector2(-58, 37)]]:
-		var a2: Vector2 = seg[0]
-		var b2: Vector2 = seg[1]
-		var steps := 12
-		for i in steps:
-			var p0 := a2.lerp(b2, float(i) / steps)
-			var p1 := a2.lerp(b2, float(i + 1) / steps)
-			if CAM.x - maxf(p0.x, p1.x) < 1.2:
-				continue
-			var q := PackedVector2Array([project(Vector3(p0.x, p0.y, 0)), project(Vector3(p1.x, p1.y, 0)), project(Vector3(p1.x, p1.y, 3.0)), project(Vector3(p0.x, p0.y, 3.0))])
-			_ci.draw_colored_polygon(q, _lit(GroundView.BRICK))
-			_ci.draw_line(q[3], q[2], _lit(GroundView.PLASTER), 3.0)
-	# Bunting across the far end
-	var prev := Vector2.ZERO
-	for i in 41:
-		var u := i / 40.0
-		var p := project(Vector3(-56.0, lerpf(-36.0, 36.0, u), 9.0 - sin(u * PI * 3.0) * 0.8))
-		if i > 0:
-			_ci.draw_line(prev, p, _lit(Color(0.2, 0.18, 0.16)), 1.5)
-			var tri := PackedVector2Array([p + Vector2(-5, 0), p + Vector2(5, 0), p + Vector2(0, 11)])
-			_ci.draw_colored_polygon(tri, _lit([GroundView.EMERALD, GroundView.GOLD, Color(0.97, 0.95, 0.9), GroundView.TERRACOTTA][i % 4]))
-		prev = p
-	if w.atm.floodlights:
-		for t in [Vector2(-44.0, -34.0), Vector2(-50.0, 34.0)]:
-			var b3 := project(Vector3(t.x, t.y, 0))
-			var top := project(Vector3(t.x, t.y, 22))
-			_ci.draw_line(b3, top, _lit(Color(0.3, 0.3, 0.34)), 6.0)
-			_ci.draw_rect(Rect2(top + Vector2(-34, -26), Vector2(68, 30)), Color(0.2, 0.2, 0.24))
-			for k2 in range(5, 0, -1):
-				_ci.draw_circle(top + Vector2(0, -10), 26.0 * k2, Color(1.0, 0.97, 0.8, 0.06))
-			_ci.draw_rect(Rect2(top + Vector2(-30, -22), Vector2(60, 22)), Color(1.0, 0.98, 0.9))
+	Stadium.draw(_ci, w.venue, project, depth_of, func(p: Vector3) -> bool: return CAM.x - p.x > 1.5, _lit,
+		{"lights_on": w.atm.floodlights})
 
 
 func _ellipse_pts(scale: float, n: int = 72) -> PackedVector2Array:
@@ -243,24 +186,46 @@ func _ellipse_pts(scale: float, n: int = 72) -> PackedVector2Array:
 	return pts
 
 
+const GRASS_TEX_MEAN := 0.85
+const GRASS_TILE_M := 5.0
+static var grass_tex: Texture2D
+static var pitch_tex: Texture2D
+
+
 func _ground() -> void:
+	if grass_tex == null:
+		grass_tex = load("res://assets/textures/grass.png")
+		pitch_tex = load("res://assets/textures/pitch.png")
 	var horizon := H * 0.5 - F * tan(deg_to_rad(PITCH_DEG))
-	_ci.draw_rect(Rect2(0, horizon - 2.0, W, H - horizon + 2.0), _lit(Color(0.72, 0.45, 0.32)))
 	var v := w.venue
-	_ci.draw_colored_polygon(_ellipse_pts(1.03), _lit(v.ground_edge_color.darkened(0.1)))
-	_ci.draw_colored_polygon(_ellipse_pts(1.0), _lit(v.ground_edge_color))
-	# Mown stripes, clipped to what is in front of the camera, then projected.
-	var front := PackedVector2Array([Vector2(-200, -200), Vector2(CAM.x - 1.0, -200), Vector2(CAM.x - 1.0, 200), Vector2(-200, 200)])
-	for st in GroundView.grass_stripes(v, 0.97):
-		for poly in Geometry2D.intersect_polygons(st["poly"], front):
-			var pp := PackedVector2Array()
-			for q in poly:
-				pp.append(project(Vector3(q.x, q.y, 0.0)))
-			_ci.draw_colored_polygon(pp, _lit(v.ground_color.lightened(0.06) if st["light"] else v.ground_color.darkened(0.04)))
+	_ci.draw_rect(Rect2(0, horizon - 2.0, W, H - horizon + 2.0), _lit(v.ground_edge_color.darkened(0.25)))
+	# Textured grass: a grid of small quads (each one inside a single mowing stripe, so
+	# the stripe colour simply tints the shared texture). Rows grow with distance, which
+	# keeps the perspective mapping accurate up close and the quad count low far away.
+	var light := _lit(v.ground_color.lightened(0.07))
+	var dark := _lit(v.ground_color.darkened(0.06))
+	var y0 := v.boundary_center.y - v.boundary_ry - 4.0 - 4.0
+	var y1 := v.boundary_center.y + v.boundary_ry + 8.0
+	var x_far := v.boundary_center.x - v.boundary_rx * 1.12
+	var x := CAM.x - 1.2
+	while x > x_far:
+		var step := clampf((CAM.x - x) * 0.3, 0.8, 9.0)
+		var xb := maxf(x - step, x_far)
+		var y := y0
+		var idx := 0
+		while y < y1:
+			var col: Color = light if idx % 2 == 0 else dark
+			col = Color(col.r / GRASS_TEX_MEAN, col.g / GRASS_TEX_MEAN, col.b / GRASS_TEX_MEAN)
+			var pts := PackedVector2Array([project(Vector3(x, y, 0)), project(Vector3(x, y + 4.0, 0)), project(Vector3(xb, y + 4.0, 0)), project(Vector3(xb, y, 0))])
+			var uvs := PackedVector2Array([Vector2(y, x) / GRASS_TILE_M, Vector2(y + 4.0, x) / GRASS_TILE_M, Vector2(y + 4.0, xb) / GRASS_TILE_M, Vector2(y, xb) / GRASS_TILE_M])
+			_ci.draw_polygon(pts, PackedColorArray([col, col, col, col]), uvs, grass_tex)
+			y += 4.0
+			idx += 1
+		x = xb
+	# Worn, slightly darker band just inside the rope, then the rope itself.
 	if w.atm.floodlights:
-		_ci.draw_colored_polygon(_ellipse_pts(0.55), Color(1.0, 1.0, 0.9, 0.06))
+		_ci.draw_colored_polygon(_ellipse_pts(0.55), Color(1.0, 1.0, 0.9, 0.05))
 	var rope := _ellipse_pts(1.0, 120)
-	# Only draw the rope segments in front of the camera.
 	for i in rope.size():
 		var a := TAU * i / 120.0
 		var wx := v.boundary_center.x + cos(a) * v.boundary_rx
@@ -268,28 +233,49 @@ func _ground() -> void:
 			var j := (i + 1) % rope.size()
 			var a2 := TAU * j / 120.0
 			if CAM.x - (v.boundary_center.x + cos(a2) * v.boundary_rx) > 1.5:
-				_ci.draw_line(rope[i], rope[j], _lit(v.boundary_color), 3.0, true)
+				var k := scale_at(Vector3(wx, 0, 0))
+				_ci.draw_line(rope[i], rope[j], _lit(v.boundary_color), clampf(0.08 * k, 1.5, 6.0), true)
+	# Inner fielding circle: a faint dashed white ring.
+	var ring_c := _lit(Color(1, 1, 1, 0.55))
+	for i in 64:
+		if i % 2 == 1:
+			continue
+		var a0 := TAU * i / 64.0
+		var a1 := TAU * (i + 1) / 64.0
+		var p0 := Vector3(-10.0 + cos(a0) * 27.4, sin(a0) * 27.4, 0)
+		var p1 := Vector3(-10.0 + cos(a1) * 27.4, sin(a1) * 27.4, 0)
+		if CAM.x - p0.x > 1.5 and CAM.x - p1.x > 1.5:
+			_ci.draw_line(project(p0), project(p1), ring_c, clampf(0.05 * scale_at(p0), 1.0, 3.0), true)
 	for p in _tufts:
 		if CAM.x - p.x < 2.0:
 			continue
 		var s := project(Vector3(p.x, p.y, 0))
 		var k := scale_at(Vector3(p.x, p.y, 0))
-		var gc := _lit(w.venue.ground_color.darkened(0.2))
-		gc.a = 0.7
+		var gc := _lit(w.venue.ground_color.darkened(0.25))
+		gc.a = 0.5
 		_ci.draw_line(s, s + Vector2(-0.06 * k, -0.12 * k), gc, maxf(1.0, 0.02 * k))
 		_ci.draw_line(s, s + Vector2(0.05 * k, -0.14 * k), gc, maxf(1.0, 0.02 * k))
 
 
 func _pitch() -> void:
 	var hw := 1.52
-	var q := PackedVector2Array([project(Vector3(-22.0, -hw, 0)), project(Vector3(-22.0, hw, 0)), project(Vector3(1.8, hw, 0)), project(Vector3(1.8, -hw, 0))])
-	_ci.draw_colored_polygon(q, _lit(w.venue.pitch_color))
-	for c in [Vector2(-1.3, 0.0), Vector2(-5.5, 0.1), Vector2(-18.9, 0.3)]:
-		var pts := PackedVector2Array()
-		for i in 20:
-			var a := TAU * i / 20.0
-			pts.append(project(Vector3(c.x + cos(a) * 1.3, c.y + sin(a) * 0.8, 0)))
-		_ci.draw_colored_polygon(pts, _lit(w.venue.pitch_color.darkened(0.1)))
+	var x0 := -22.0
+	var x1 := 1.8
+	# Textured strip in slices (perspective-correct enough), then creases on top.
+	var n := 14
+	var c := _lit(Color(1, 1, 1))
+	for i in n:
+		var xa := lerpf(x1, x0, float(i) / n)
+		var xb := lerpf(x1, x0, float(i + 1) / n)
+		var va := float(i) / n
+		var vb := float(i + 1) / n
+		var pts := PackedVector2Array([project(Vector3(xa, -hw, 0)), project(Vector3(xa, hw, 0)), project(Vector3(xb, hw, 0)), project(Vector3(xb, -hw, 0))])
+		var uvs := PackedVector2Array([Vector2(0, va), Vector2(1, va), Vector2(1, vb), Vector2(0, vb)])
+		_ci.draw_polygon(pts, PackedColorArray([c, c, c, c]), uvs, pitch_tex)
+	# Soft grass edge either side of the strip
+	for sgn in [-1.0, 1.0]:
+		var e0 := PackedVector2Array([project(Vector3(x1, sgn * hw, 0)), project(Vector3(x0, sgn * hw, 0)), project(Vector3(x0, sgn * (hw + 0.25), 0)), project(Vector3(x1, sgn * (hw + 0.25), 0))])
+		_ci.draw_colored_polygon(e0, _lit(Color(w.venue.pitch_color.r * 0.75, w.venue.pitch_color.g * 0.8, w.venue.pitch_color.b * 0.55, 0.45)))
 	var white := _lit(Color(0.98, 0.97, 0.94))
 	for end_x in [0.0, Delivery.BOWLING_STUMPS_X]:
 		var sgn := 1.0 if end_x == 0.0 else -1.0

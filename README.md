@@ -2,7 +2,7 @@
 
 A Pakistan-inspired, mobile-first arcade cricket game built with **Godot 4.7.2** (GDScript,
 Compatibility renderer). One-tap batting with believable ball flight, fielding and scoring —
-*from the neighbourhood pitch to the floodlights*.
+*One tap. Big hits. A packed stadium.*
 
 > "Tap Tap Cricket" is a provisional internal title and has **not** been cleared as a public
 > brand. Team names and all text are placeholders for review.
