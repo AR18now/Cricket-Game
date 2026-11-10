@@ -158,6 +158,13 @@ there too. Misses and bowled stay behind the batter.
 | Harder as you go | Levels 1-8: up every 12 balls or 25 runs; each level faster (up to +40%, ~140 km/h for the fastest bowler), more swing/spin, wider line, more slower balls; gentle start shortened to 12 balls; "LEVEL n - faster bowling!" toast + sound; level shown on the bowler card. Tests: level rules, top level faster yet every ball still hittable |
 | Better start/menu music | New bright acoustic-pop loop (strummed guitar, bass, kick + claps, shaker, marimba hook over G-D-Em-C) and a matching opening sting |
 
+## Owner feedback: realistic graphics for weak phones, left/right-handed batsman (implemented)
+
+| Request | Done |
+| --- | --- |
+| More realistic graphics, still smooth on weak Android phones | A full stadium replaces the street houses in both cameras: raked stands packed with a crowd, roof canopy, floodlight towers, white sightscreen behind the bowler, navy boundary boards; textured mown grass stripes and a textured pitch (cracks, footmarks); soft clouds and a broadcast-style vignette. Three small textures (`tools/gen_textures.py`, 256-512 px, mipmapped) drawn into cached layers, so CPU per frame is unchanged (headless perf harness: batter's view 1.26 ms avg / 2.33 ms p95, side view 1.18 / 2.25; before 1.18 / 2.29 and 1.29 / 2.37). Frame rate capped at 60 to save battery |
+| Choose a left- or right-handed batsman at the start | "Bat: RIGHT-HANDED / LEFT-HANDED" on the main menu, saved with the settings (default right). A left-hander's batting view is the mirror image: stance, field, ball line and shots. Tested: save default/migration/keep, harness captures with `--lefty` |
+
 ## What exists now (evidence)
 
 - Deterministic simulation: analytic delivery path (bounce, deviation), timing → contact at the

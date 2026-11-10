@@ -64,6 +64,8 @@ func depth_of(p: Vector3) -> float:
 func project(p: Vector3) -> Vector2:
 	var d := CAM.x - p.x
 	var lat := p.y - CAM.y
+	if w.left_handed:
+		lat = -lat   # mirror image: a left-hander's stance, field and ball line
 	var h := p.z - CAM.z
 	var depth := maxf(d * _ca - h * _sa, 0.6)
 	var v := d * _sa + h * _ca
@@ -121,7 +123,7 @@ func _draw() -> void:
 	# Landscape frames by height; a tall portrait screen frames by width (same scene
 	# scale as landscape, cropped at the sides, with more sky and ground).
 	F = H * 1.25 if W >= H else W * 1.4
-	var key := "%d:%d:%s" % [int(W), int(H), w.atm.id]
+	var key := "%d:%d:%s:%s" % [int(W), int(H), w.atm.id, "L" if w.left_handed else "R"]
 	if key != _static_key:
 		_static_key = key
 		static_layer.queue_redraw()
@@ -163,13 +165,18 @@ func _sky() -> void:
 	# Soft clouds (a few overlapping translucent puffs; drawn once into the cache).
 	var rc := DetRng.new(77)
 	var cloud_c := atm.sky_bottom.lerp(Color(1, 1, 1), 0.6)
-	cloud_c.a = 0.16 + 0.12 * atm.clouds
+	cloud_c.a = 0.1 + 0.12 * atm.clouds
 	for i in int(3 + atm.clouds * 6):
 		var cp := Vector2(rc.next_float() * W, horizon * rc.range_f(0.12, 0.62))
 		var cw := rc.range_f(0.12, 0.3) * W
-		for k in 6:
-			var off := Vector2(rc.range_f(-0.5, 0.5) * cw, rc.range_f(-0.08, 0.08) * cw)
-			_ci.draw_circle(cp + off, cw * rc.range_f(0.12, 0.22), cloud_c)
+		for k in 5:
+			var off := Vector2(rc.range_f(-0.45, 0.45) * cw, rc.range_f(-0.04, 0.04) * cw)
+			var r := Vector2(cw * rc.range_f(0.22, 0.36), cw * rc.range_f(0.05, 0.08))   # long, flat streaks
+			var pts := PackedVector2Array()
+			for q in 16:
+				var an := TAU * q / 16.0
+				pts.append(cp + off + Vector2(cos(an) * r.x, sin(an) * r.y))
+			_ci.draw_colored_polygon(pts, cloud_c)
 
 
 func _stands() -> void:

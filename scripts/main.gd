@@ -115,7 +115,10 @@ func _build_ui() -> void:
 	menu.play_pressed.connect(_on_play)
 	menu.settings_pressed.connect(open_settings)
 	menu.mute_pressed.connect(toggle_mute)
-	menu.option_changed.connect(func(k, v): save.set_setting(k, v))
+	menu.option_changed.connect(func(k, v):
+		save.set_setting(k, v)
+		if k == "hand":
+			_apply_settings())
 	if menu.visible:
 		menu.refresh(save.data)
 
@@ -128,6 +131,7 @@ func _apply_settings() -> void:
 		_theme_applied = UiTheme.theme_id
 		_build_ui()
 		_on_resized()
+	world.set_left_handed(String(s.get("hand", "right")) == "left")
 	world.reduced_motion = bool(s["reduced_motion"])
 	hud.truck.reduced_motion = world.reduced_motion
 	controller.reduced_motion = world.reduced_motion

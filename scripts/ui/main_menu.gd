@@ -20,7 +20,8 @@ var chips := {}
 var reduced_motion := false
 var portrait := false
 var _pulse: Tween
-var _values := {"time_of_day": "evening", "theme": "emerald"}
+var _values := {"time_of_day": "evening", "theme": "emerald", "hand": "right"}
+var _hand_btns := {}
 var _shade: MenuShade
 var _card: PanelContainer
 var _logo_top: TitleMark      # portrait: logo above the scene
@@ -84,6 +85,21 @@ func build() -> void:
 	best_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	best_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	col.add_child(best_label)
+	# Batting hand: right- or left-handed batsman (a clear two-way choice above PLAY).
+	var hand_row := HBoxContainer.new()
+	hand_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	hand_row.add_theme_constant_override("separation", 10)
+	col.add_child(hand_row)
+	var bat_lbl := UiTheme.label("Bat:", 22, UiTheme.SAND, "bold")
+	hand_row.add_child(bat_lbl)
+	for h in ["right", "left"]:
+		var hb := UiTheme.button("RIGHT-HANDED" if h == "right" else "LEFT-HANDED", 20, 190)
+		hb.custom_minimum_size = Vector2(190, 54)
+		hb.tooltip_text = "Bat right-handed" if h == "right" else "Bat left-handed"
+		var hk: String = h
+		hb.pressed.connect(func(): _set_hand(hk))
+		hand_row.add_child(hb)
+		_hand_btns[h] = hb
 	# PLAY
 	play_btn = UiTheme.button("PLAY", 54, 420)
 	play_btn.custom_minimum_size = Vector2(420, 112)
@@ -151,7 +167,30 @@ func _cycle(key: String) -> void:
 	option_changed.emit(key, _values[key])
 
 
+func _set_hand(h: String) -> void:
+	_tap()
+	if _values["hand"] == h:
+		return
+	_values["hand"] = h
+	_update_chips()
+	var b: Button = _hand_btns[h]
+	if not reduced_motion:
+		b.pivot_offset = b.size * 0.5
+		b.scale = Vector2(0.9, 0.9)
+		create_tween().tween_property(b, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	option_changed.emit("hand", h)
+
+
 func _update_chips() -> void:
+	for h in _hand_btns:
+		var on: bool = _values["hand"] == h
+		var hb: Button = _hand_btns[h]
+		var box := UiTheme.panel_box(UiTheme.GOLD if on else Color(1, 1, 1, 0.08), 27, UiTheme.GOLD if on else Color(1, 1, 1, 0.25), 2 if on else 1)
+		for st in ["normal", "hover", "pressed", "focus"]:
+			hb.add_theme_stylebox_override(st, box)
+		var fc := UiTheme.INK if on else UiTheme.OFF_WHITE
+		for st in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+			hb.add_theme_color_override(st, fc)
 	if chips.is_empty():
 		return
 	chips["time_of_day"].text = "Time: %s  >" % Atmosphere.LABELS[_values["time_of_day"]]
@@ -169,6 +208,7 @@ func refresh(save_data: Dictionary) -> void:
 	var s: Dictionary = save_data["settings"]
 	_values["time_of_day"] = String(s.get("time_of_day", "evening"))
 	_values["theme"] = String(s.get("theme", "emerald"))
+	_values["hand"] = "left" if String(s.get("hand", "right")) == "left" else "right"
 	_update_chips()
 	var played := int(b["classic_played"]) > 0
 	_greet.text = "Welcome back!" if played else "Welcome!"

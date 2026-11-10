@@ -38,6 +38,8 @@ var swing_time := -1.0
 var resolved: BallResolver
 var clock := -3.0
 var reduced_motion := false
+## Left-handed batsman: the batter's-eye view is drawn mirrored (stance, field, ball).
+var left_handed := false
 var menu_mode := true
 var idle_t := 0.0
 var release_root := Vector2(-19.1, 0.4)
@@ -786,3 +788,11 @@ func screen_of(p: Vector3) -> Vector2:
 	if _bv_on:
 		return batter_view.project(p)
 	return get_viewport().get_canvas_transform() * Proj.to_screen(p)
+
+
+func set_left_handed(on: bool) -> void:
+	if on == left_handed:
+		return
+	left_handed = on
+	if batter_view:
+		batter_view.invalidate()

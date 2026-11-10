@@ -150,3 +150,13 @@ func test_colour_themes() -> void:
 		check(UiTheme.PANEL_RGB.v < 0.3, "panels are dark so white text stays readable")
 	UiTheme.apply_theme("not-a-theme")
 	eq(UiTheme.theme_id, "emerald", "unknown theme falls back to the default")
+
+
+func test_batting_hand_setting() -> void:
+	eq(SaveScript.defaults()["settings"]["hand"], "right", "right-handed by default")
+	var old: Dictionary = SaveScript.defaults()
+	old["settings"].erase("hand")
+	eq(SaveScript.validate(old)["settings"]["hand"], "right", "older saves become right-handed")
+	var lefty: Dictionary = SaveScript.defaults()
+	lefty["settings"]["hand"] = "left"
+	eq(SaveScript.validate(lefty)["settings"]["hand"], "left", "left-handed choice is kept")

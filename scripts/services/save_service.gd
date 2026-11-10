@@ -31,7 +31,7 @@ static func defaults() -> Dictionary:
 		"settings": {"master": 1.0, "music": 0.6, "sfx": 1.0, "voice": 1.0, "muted": false,
 			"captions": true, "reduced_motion": false, "haptics": true,
 			"timing_guide": true, "bowling": "mixed", "time_of_day": "evening", "view": "batter", "hints": false,
-			"orientation": "portrait", "theme": "emerald"},
+			"orientation": "portrait", "theme": "emerald", "hand": "right"},
 		"profile": {"display_name": "You", "kit": 0, "onboarded": false},
 		"tutorial_done": false,
 		"stance_unlocked": false,

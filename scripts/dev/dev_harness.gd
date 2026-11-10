@@ -27,6 +27,8 @@ func run(main_node) -> void:
 	save.data = save.defaults()
 	if "--portrait" in OS.get_cmdline_user_args():
 		save.data["settings"]["orientation"] = "portrait"
+	if "--lefty" in OS.get_cmdline_user_args():
+		save.data["settings"]["hand"] = "left"
 	save.save()
 	app._apply_settings()
 	app.controller.swing_feedback.connect(func(r): _log("swing_feedback=" + r + " t=" + str(app.controller.clock.time)))
