@@ -23,7 +23,7 @@ def main(shot):
     k = max(W / src.width, H / src.height)
     src = src.resize((int(src.width * k), int(src.height * k)), Image.LANCZOS)
     x0 = (src.width - W) // 2
-    y0 = (src.height - H) // 2
+    y0 = int((src.height - H) * float(os.environ.get("FG_Y", "0.5")))   # vertical crop position (0 = top)
     img = src.crop((x0, y0, x0 + W, y0 + H))
     # Darken the left half for the title (left-to-right gradient).
     shade = Image.new("L", (W, H))
@@ -47,7 +47,7 @@ def main(shot):
 
     text((56, 238), "TAP TAP", font("Black", 74), white)
     text((56, 312), "CRICKET", font("Black", 74), gold)
-    text((60, 410), "One-tap street cricket. Time it. Hit it for six!", font("Bold", 28), sand)
+    text((60, 410), "One-tap stadium cricket. Time it. Hit it for six!", font("Bold", 28), sand)
     out = os.path.join(ROOT, "store", "feature_graphic_1024x500.png")
     os.makedirs(os.path.dirname(out), exist_ok=True)
     img.save(out)

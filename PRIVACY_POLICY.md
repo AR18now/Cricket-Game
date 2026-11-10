@@ -1,6 +1,6 @@
 # Tap Tap Cricket - Privacy Policy
 
-_Last updated: 29 October 2026_
+_Last updated: 10 November 2026_
 
 Tap Tap Cricket is an offline cricket game. We built it so that it does not collect,
 store on any server, share or sell any personal information.
@@ -12,7 +12,7 @@ tracking and no in-app purchases, and it does not connect to the internet.
 
 ## What stays on your device
 
-The game saves your settings (sound, screen orientation, camera view, hints) and your
+The game saves your settings (sound, batting hand, colour theme, hints) and your
 best scores in a small file on your own device so they are there next time. This file
 never leaves your device. Deleting the game deletes it.
 

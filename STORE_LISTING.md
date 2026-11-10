@@ -16,29 +16,31 @@ decision or your account; nothing here has been submitted anywhere.
 ## Text
 
 - **Name (30 chars max):** Tap Tap Cricket
-- **Short description (Play, 80 max):** One-tap street cricket: time your swing, hit sixes, chase your best score!
-- **Subtitle (App Store, 30 max):** One-tap street cricket
+- **Short description (Play, 80 max):** One-tap cricket in a packed stadium. Time your swing, hit sixes, beat your best!
+- **Subtitle (App Store, 30 max):** One-tap stadium cricket
 - **Full description:**
 
-> Grab your bat - the neighbourhood match is on!
+> Pads on, helmet on - the stadium is packed and it's your turn to bat!
 >
 > Tap Tap Cricket is simple, one-tap cricket. Watch the bowler run in, tap SWING at the
-> right moment, and send the ball over the rooftops. Mistime it and the stumps fly.
+> right moment, and send the ball into the crowd. Mistime it and the stumps fly.
 >
 > - One button, real cricket: timing decides everything - fours, sixes, catches, bowled
 > - Starts gentle and gets faster: pace and spin bowlers grow tougher ball by ball
 > - Batter's-eye view: face the bowler from behind the stumps
+> - Bat right-handed or left-handed
+> - Watch your shots race to the rope in the wide stadium view
 > - Day, evening, floodlit night and rain
 > - Decorated trucks blast their horns for every four and six
 > - Fifty and hundred celebrations - raise the bat!
-> - Optional hints show you exactly when to hit
+> - Optional hints (in Settings) show you exactly when to hit
 > - One hand, portrait screen - and four colour themes
 > - Fully offline: no ads, no account, no data collected
 >
 > How long can you bat?
 
 - **Category:** Games > Sports
-- **Tags / keywords (App Store, 100 chars):** cricket,batting,one tap,arcade,sixes,offline,street cricket,sports,casual
+- **Tags / keywords (App Store, 100 chars):** cricket,batting,one tap,arcade,sixes,offline,stadium,sports,casual,left handed
 
 ## Graphics (in the repo)
 
@@ -79,7 +81,7 @@ decision or your account; nothing here has been submitted anywhere.
 
 **Android (.aab for Google Play)** - built by CI on every push:
 1. Create an upload key once on your computer (keep it and its password safe; never
-   commit it):
+   commit it). On Windows just double-click `tools/make_play_upload_key.bat`; or:
    `keytool -genkeypair -v -keystore upload.keystore -alias upload -keyalg RSA -keysize 2048 -validity 10000`
 2. In GitHub: Settings -> Secrets and variables -> Actions, add
    `ANDROID_UPLOAD_KEYSTORE_BASE64` (the file, base64-encoded: `base64 -w0 upload.keystore`),

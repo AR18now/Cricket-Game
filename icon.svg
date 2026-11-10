@@ -1,10 +1,54 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <rect width="256" height="256" rx="56" fill="#08594a"/>
-  <circle cx="128" cy="128" r="96" fill="#0b6b57" stroke="#fcc954" stroke-width="8"/>
-  <g transform="rotate(-35 128 128)">
-    <rect x="112" y="40" width="32" height="120" rx="10" fill="#eed194" stroke="#1a1410" stroke-width="5"/>
-    <rect x="120" y="150" width="16" height="52" rx="6" fill="#d1683f" stroke="#1a1410" stroke-width="5"/>
+  <defs>
+    <radialGradient id="sky" cx="128" cy="64" r="220" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1f9a76"/>
+      <stop offset="0.55" stop-color="#0a5e4b"/>
+      <stop offset="1" stop-color="#042a22"/>
+    </radialGradient>
+    <radialGradient id="flood" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff6d8" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#fff6d8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="wood" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#c9954e"/>
+      <stop offset="0.35" stop-color="#f6dfa4"/>
+      <stop offset="1" stop-color="#d7ad66"/>
+    </linearGradient>
+    <radialGradient id="leather" cx="146" cy="146" r="66" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff6a4d"/>
+      <stop offset="0.45" stop-color="#d81e22"/>
+      <stop offset="1" stop-color="#6d0a10"/>
+    </radialGradient>
+  </defs>
+  <!--BG-->
+  <rect width="256" height="256" rx="56" fill="url(#sky)"/>
+  <circle cx="38" cy="36" r="46" fill="url(#flood)"/>
+  <circle cx="218" cy="36" r="46" fill="url(#flood)"/>
+  <path d="M-10 214 Q128 168 266 214 L266 266 L-10 266 Z" fill="#0d7a52"/>
+  <path d="M-10 226 Q128 184 266 226 L266 266 L-10 266 Z" fill="#11905f"/>
+  <!--/BG-->
+  <!-- speed lines behind the ball -->
+  <g stroke="#fcc954" stroke-linecap="round" fill="none">
+    <path d="M58 214 L112 182" stroke-width="10"/>
+    <path d="M44 184 L104 160" stroke-width="7" stroke-opacity="0.8"/>
+    <path d="M84 232 L126 200" stroke-width="7" stroke-opacity="0.8"/>
   </g>
-  <circle cx="170" cy="168" r="30" fill="#fff285" stroke="#1a1410" stroke-width="6"/>
-  <path d="M143 160 L197 176" stroke="#d91f1f" stroke-width="11" stroke-linecap="round"/>
+  <!-- bat -->
+  <g transform="rotate(-38 104 112)">
+    <rect x="96" y="6" width="16" height="58" rx="7" fill="#232323"/>
+    <g stroke="#d1683f" stroke-width="5">
+      <path d="M96 16 H112"/><path d="M96 30 H112"/><path d="M96 44 H112"/>
+    </g>
+    <rect x="80" y="58" width="48" height="146" rx="14" fill="url(#wood)" stroke="#3a2614" stroke-width="5"/>
+    <path d="M104 72 V190" stroke="#b8894a" stroke-width="4" stroke-linecap="round" stroke-opacity="0.7"/>
+  </g>
+  <!-- ball -->
+  <circle cx="158" cy="160" r="56" fill="url(#leather)" stroke="#3a0608" stroke-width="5"/>
+  <g transform="rotate(-30 158 160)" fill="none" stroke-linecap="round">
+    <path d="M118 148 Q158 140 198 148" stroke="#f7ead0" stroke-width="5"/>
+    <path d="M118 172 Q158 180 198 172" stroke="#f7ead0" stroke-width="5"/>
+    <path d="M122 156 Q158 149 194 156" stroke="#f7ead0" stroke-width="3" stroke-dasharray="4 5"/>
+    <path d="M122 164 Q158 171 194 164" stroke="#f7ead0" stroke-width="3" stroke-dasharray="4 5"/>
+  </g>
+  <ellipse cx="138" cy="132" rx="20" ry="12" transform="rotate(-35 138 132)" fill="#ffffff" fill-opacity="0.45"/>
 </svg>

@@ -17,6 +17,8 @@ permissions:
 jobs:
   test-and-export:
     runs-on: ubuntu-24.04
+    env:
+      HAS_UPLOAD_KEY: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 != '' }}
     timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
@@ -96,7 +98,7 @@ jobs:
         run: |
           BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
           "$BT/apksigner" verify --verbose --print-certs build/android/TapTapCricket-debug.apk
-          "$BT/aapt2" dump badging build/android/TapTapCricket-debug.apk | grep -iE "^package|sdkVersion|native-code|launchable-activity"
+          "$BT/aapt2" dump badging build/android/TapTapCricket-debug.apk | grep -iE "^package|sdkVersion|native-code|launchable-activity|uses-permission"
           "$BT/zipalign" -c -P 16 -v 4 build/android/TapTapCricket-debug.apk | tail -1
           ls -l build/android/TapTapCricket-debug.apk
           sha256sum build/android/TapTapCricket-debug.apk
@@ -159,7 +161,8 @@ jobs:
           }
           if [ -n "$UPLOAD_KS_B64" ]; then
             # Signed with the owner's upload key (kept only in GitHub Secrets, never in the repo).
-            echo "$UPLOAD_KS_B64" | base64 -d > "$RUNNER_TEMP/upload.keystore"
+            # Accepts plain base64 or Windows "certutil -encode" output (header lines, CRLF).
+            printf '%s' "$UPLOAD_KS_B64" | grep -v -- '-----' | tr -d ' \r\n' | base64 -d > "$RUNNER_TEMP/upload.keystore"
             export GODOT_ANDROID_KEYSTORE_RELEASE_PATH="$RUNNER_TEMP/upload.keystore"
             export GODOT_ANDROID_KEYSTORE_RELEASE_USER="$UPLOAD_KS_ALIAS"
             export GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD="$UPLOAD_KS_PASS"
@@ -179,6 +182,12 @@ jobs:
           if [ -n "${STORE_AAB:-}" ] && [ "${{ github.event_name }}" = "push" ]; then
             gh release upload "test-build-${GITHUB_RUN_NUMBER}" "$STORE_AAB" --clobber
           fi
+
+      - name: Upload key is set but the signed store bundle failed
+        if: env.HAS_UPLOAD_KEY == 'true' && env.STORE_AAB == ''
+        run: |
+          echo "::error::The Play upload key secrets are set, but the signed .aab was not built. Check the alias and password secrets (see docs/PLAY_STORE_UPLOAD.md)."
+          exit 1
 
       - uses: actions/upload-artifact@v4
         with:

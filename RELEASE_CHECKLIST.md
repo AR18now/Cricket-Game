@@ -1,5 +1,8 @@
 # Release checklist (Google Play + Apple App Store)
 
+**Start here for Google Play:** `docs/PLAY_STORE_UPLOAD.md` (step by step) and
+`docs/POLICY_COMPLIANCE.md` (policy review).
+
 Status legend: ✅ done · 🟡 in progress · ⬜ not started · 👤 needs owner action
 
 ## Identity (owner decisions)
@@ -7,15 +10,15 @@ Status legend: ✅ done · 🟡 in progress · ⬜ not started · 👤 needs own
 - 👤 Final game title (current "Tap Tap Cricket" is provisional; needs trademark/store search)
 - 👤 Publisher name and support contact email/URL
 - ✅ No team, player, bowler or commentator names are shown in the game
-- ✅ Icons for both stores (adaptive + themed Android, 1024 App Store without alpha, 512 Play) and Play feature graphic — from the game's own vector icon; replace if you want a designer icon
+- ✅ Icons for both stores (adaptive + themed Android, 1024 App Store without alpha, 512 Play 32-bit) from the new `icon.svg` (red ball and bat on a floodlit stadium green); Play feature graphic from gameplay
 
 ## Build & platform
 
 - ✅ Godot 4.7.2 + matching templates pinned and verified
 - ✅ Windows/Linux exports; release builds exclude the dev harness and tests
-- ✅ Android debug APK exported by CI every push (target SDK 36, min 24, arm64 + armv7, VIBRATE only, 16 KB aligned); version code = build number
+- ✅ Android debug APK exported by CI every push (target SDK 36, min 24, arm64 + armv7, VIBRATE only, 16 KB aligned, edge-to-edge); version code = build number; version name 1.0.0
 - 👤 Android application id confirmation (`com.taptapcricket.game` is a placeholder and becomes permanent at the first Play upload); ✅ versioning; ✅ adaptive icons
-- 👤 Android upload keystore: generate and back up **outside** the repository (password manager + offline copy); never commit
+- 👤 Android upload keystore: double-click `tools/make_play_upload_key.bat` on Windows (key stays on your PC); back it up; never commit
 - 🟡 App Bundle (.aab) built by CI (`Android Store` preset); signed for Play once the upload key is added as GitHub secrets (see STORE_LISTING.md)
 - 👤 Play Console account, identity verification, and check which testing-track requirements apply to the account (e.g. closed testing with testers before production for new personal accounts — verify current policy)
 - 👤 Mac access for iOS (Xcode version per current Godot docs), Apple Developer account, team selection, device pairing
