@@ -68,6 +68,8 @@ func _go() -> void:
 			await _duck_check()
 		"runs":
 			await _runs_check()
+		"runall":
+			await _run_every_hit()
 		"milestone":
 			await _milestone_check()
 		"store":
@@ -850,6 +852,52 @@ func _duck_check() -> void:
 
 ## A shot that is run (not a boundary): the wide camera keeps the runners in view.
 ## Then 12 balls in, the level goes up and the player is told.
+## Every kind of hit (runs, four, six, catch, hit to a fielder): both batsmen set off.
+func _run_every_hit() -> void:
+	await wait(1.6)
+	var c = app.controller
+	app.start_mode("classic")
+	await wait(0.2)
+	app._close_overlay()
+	var seen := {}
+	var offs := [0.0, 0.02, 0.035, 0.05, 0.065, 0.08, -0.03, -0.05, 0.1, -0.07]
+	for i in 40:
+		await until_phase(MatchController.Phase.FLIGHT)
+		await swing_at(ideal_swing() + float(offs[i % offs.size()]))
+		await until_clock(ideal_swing() + 0.15)
+		var r = app.world.resolved
+		if r != null and r.contact.is_contact():
+			var tc: float = r.contact.t_contact
+			await until_clock(tc + 0.2)
+			var s0: float = app.world.striker.position.x
+			var n0: float = app.world.non_striker.position.x
+			await until_clock(tc + 1.1)
+			var s1: float = app.world.striker.position.x
+			var n1: float = app.world.non_striker.position.x
+			var kind := String(r.outcome.kind)
+			var vp := get_viewport().get_visible_rect().size
+			var sp: Vector2 = app.world.get_viewport().get_canvas_transform() * app.world.striker.global_position
+			var on_screen := sp.x > 0 and sp.x < vp.x and sp.y > 0 and sp.y < vp.y
+			_log("hit %d -> %s: striker %.0f->%.0f, partner %.0f->%.0f, on screen %s" % [i, kind, s0, s1, n0, n1, str(on_screen)])
+			check(absf(s1 - s0) > 40.0, "batter sets off after the hit (%s)" % kind)
+			check(absf(n1 - n0) > 40.0, "partner sets off after the hit (%s)" % kind)
+			check(on_screen, "the running batter is on screen (%s)" % kind)
+			if not seen.has(kind):
+				seen[kind] = true
+				await shot("run_%s" % kind)
+		await until_phase(MatchController.Phase.OUTCOME)
+		if c.state.is_complete():
+			app.start_mode("classic")
+			await wait(0.2)
+			app._close_overlay()
+			continue
+		press_space()
+		if seen.size() >= 4:
+			break
+	_log("kinds seen: %s" % str(seen.keys()))
+	check(seen.size() >= 3, "several kinds of hit were checked")
+
+
 func _runs_check() -> void:
 	await wait(1.6)
 	var c = app.controller

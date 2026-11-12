@@ -470,36 +470,47 @@ func _render_batters(t: float) -> void:
 	var st_pos := base
 	if shot != null and t >= t_contact:
 		var ts := t - t_contact
-		var runs := shot.run_times.size()
-		if outcome.kind == BallOutcome.RUNS or outcome.kind == BallOutcome.DOT:
-			if runs > 0 and ts > 0.25:
-				var a_end := base.x - 0.3
-				var b_end := NON_STRIKER_BASE.x + 1.2
-				var sp := _run_position(ts, shot.run_times, a_end, b_end)
-				var np := _run_position(ts, shot.run_times, b_end, a_end)
-				st_pos = Vector2(sp.x, base.y - 0.6)
-				ns_pos = Vector2(np.x, NON_STRIKER_BASE.y + 0.4)
-				striker.facing = sp.y
-				non_striker.facing = np.y
-				pose = Poses.run(absf(sp.x) * 1.35, 1.0 if sp.z > 0.5 else 0.2, true)
-				ns_pose = Poses.run(absf(np.x) * 1.35, 1.0 if np.z > 0.5 else 0.2, true)
-				if sp.z < 0.5:
-					pose = Poses.bat_stance(t)
+		# Every hit: both batsmen set off. Runs are completed; on a boundary they run until
+		# the ball reaches the rope, then celebrate; on a catch they stop when it is taken;
+		# a hit straight to a fielder is a quick "yes... no!" (set off, then back).
+		var plan := run_plan()
+		var times: Array = plan["times"]
+		var stop: float = plan["stop"]
+		var back: bool = plan["back"]
+		if ts > 0.25 and (times.size() > 0 or back):
+			var a_end := base.x - 0.3
+			var b_end := NON_STRIKER_BASE.x + 1.2
+			var tr := minf(ts, stop)
+			var sp: Vector3
+			var np: Vector3
+			if back:
+				sp = _set_off_and_back(tr, a_end, b_end)
+				np = _set_off_and_back(tr, b_end, a_end)
+			else:
+				sp = _run_position(tr, times, a_end, b_end)
+				np = _run_position(tr, times, b_end, a_end)
+			st_pos = Vector2(sp.x, base.y - 0.6)
+			ns_pos = Vector2(np.x, NON_STRIKER_BASE.y + 0.4)
+			striker.facing = sp.y
+			non_striker.facing = np.y
+			var moving := sp.z > 0.5 and ts < stop
+			pose = Poses.run(absf(sp.x) * 1.35, 1.0, true) if moving else Poses.bat_stance(t)
+			ns_pose = Poses.run(absf(np.x) * 1.35, 1.0, true) if moving else Poses.bat_stance(t)
+			pose.erase("root_x")
+			if ts >= stop:
+				var after := ts - stop
+				if outcome.is_boundary():
+					pose = Poses.celebrate(after, true)
+					ns_pose = Poses.celebrate(after + 0.3, true)
+				elif outcome.kind == BallOutcome.CAUGHT and after > 0.2:
+					var wt := after - 0.2
+					pose = Poses.dejected(wt * 5.0)
+					striker.facing = 1.0
+					st_pos += Vector2(wt * 1.1, wt * 0.9)
 					ns_pose = Poses.bat_stance(t)
-				pose.erase("root_x")
-			elif ts > SWING_DUR:
-				pose = Poses.blend(Poses.bat_follow(), Poses.bat_stance(t), Poses.ease_io((ts - SWING_DUR) / 0.6))
-				pose["root_x"] = root_shift * clampf(1.0 - (ts - SWING_DUR) / 0.6, 0.0, 1.0)
-		elif outcome.is_boundary():
-			var tb := shot.boundary_t
-			if ts > tb:
-				pose = Poses.celebrate(ts - tb, true)
-				ns_pose = Poses.celebrate(ts - tb + 0.3, true)
-		elif outcome.kind == BallOutcome.CAUGHT and ts > shot.t_collect + 0.2:
-			var wt := ts - shot.t_collect - 0.2
-			pose = Poses.dejected(wt * 5.0)
-			striker.facing = 1.0
-			st_pos = base + Vector2(wt * 1.1, wt * 0.9)
+		elif ts > SWING_DUR:
+			pose = Poses.blend(Poses.bat_follow(), Poses.bat_stance(t), Poses.ease_io((ts - SWING_DUR) / 0.6))
+			pose["root_x"] = root_shift * clampf(1.0 - (ts - SWING_DUR) / 0.6, 0.0, 1.0)
 	elif outcome != null and outcome.kind == BallOutcome.BOWLED and t > delivery.stumps_time() + 0.35:
 		var wt2 := t - delivery.stumps_time() - 0.35
 		pose = Poses.dejected(wt2 * 5.0)
@@ -515,6 +526,49 @@ func _render_batters(t: float) -> void:
 	striker.set_pose(pose)
 	non_striker.position = Proj.ground_v(ns_pos)
 	non_striker.set_pose(ns_pose)
+
+
+## How the batsmen run after a hit (seconds after contact):
+##   times = end time of each run, stop = when they pull up, back = set off and turn back.
+func run_plan() -> Dictionary:
+	var plan := {"times": [], "stop": INF, "back": false}
+	if resolved == null or resolved.shot == null or not resolved.contact.is_contact():
+		return plan
+	var shot := resolved.shot
+	var outcome := resolved.outcome
+	if outcome.kind == BallOutcome.RUNS and shot.run_times.size() > 0:
+		plan["times"] = shot.run_times
+		return plan
+	var stop := INF
+	if outcome.is_boundary():
+		stop = shot.boundary_t
+	elif outcome.kind == BallOutcome.CAUGHT:
+		stop = shot.t_collect
+	if stop < INF:
+		# Keep running (and turning) until the ball crosses the rope or is caught.
+		var times: Array = []
+		var k := 0
+		while true:
+			var done := tuning.first_run_time + k * tuning.next_run_time
+			times.append(done)
+			if done >= stop:
+				break
+			k += 1
+		plan["times"] = times
+		plan["stop"] = stop
+		return plan
+	plan["back"] = true
+	return plan
+
+
+## A quick "yes... no!": a few strides toward the other end, then back to the crease.
+func _set_off_and_back(ts: float, from_x: float, to_x: float) -> Vector3:
+	var dur := 1.7
+	var u := clampf((ts - 0.25) / dur, 0.0, 1.0)
+	var dir := signf(to_x - from_x)
+	var x := from_x + dir * 3.2 * sin(PI * u)
+	var facing := dir if u < 0.5 else -dir
+	return Vector3(x, facing, 1.0 if u < 1.0 else 0.0)
 
 
 ## Runner position for automatic running: returns (x, facing, moving 0/1).
@@ -732,8 +786,11 @@ func update_camera(delta: float) -> void:
 				var focus := Proj.to_screen(Vector3(bp.x, bp.y, bp.z * 0.6))
 				center = Proj.ground(-2.0, 0.0).lerp(focus, 0.72) + Vector2(0, -60)
 				var shot := resolved.shot
-				if shot != null and resolved.outcome.kind == BallOutcome.RUNS and shot.run_times.size() > 0:
-					# Runs are being run: frame the ball AND the whole pitch so both are seen.
+				var rplan := run_plan()
+				var run_end: float = (rplan["times"].back() if rplan["times"].size() > 0 else 0.0) if not rplan["back"] else 2.0
+				var running: bool = shot != null and (rplan["times"].size() > 0 or rplan["back"]) and clock - contact.t_contact < minf(run_end, rplan["stop"]) + 0.6
+				if running:
+					# The batsmen are running: frame the ball AND the whole pitch so both are seen.
 					var pts := [focus, Proj.ground(0.6, 0.0) + Vector2(0, -60), Proj.ground(-20.6, 0.0) + Vector2(0, -60)]
 					var lo: Vector2 = pts[0]
 					var hi: Vector2 = pts[0]
@@ -743,7 +800,7 @@ func update_camera(delta: float) -> void:
 					center = (lo + hi) * 0.5
 					var vs := get_viewport_rect().size
 					var fit := view_fit()
-					zoom = clampf(minf(vs.x / (fit * (hi.x - lo.x + 260.0)), vs.y * 0.6 / (fit * (hi.y - lo.y + 240.0))), 0.3, 0.9)
+					zoom = clampf(minf(vs.x / (fit * (hi.x - lo.x + 260.0)), vs.y * 0.6 / (fit * (hi.y - lo.y + 240.0))), 0.22, 0.9)
 	if milestone_at >= 0.0 and clock >= milestone_at:
 		# Fifty / hundred: close on the batter raising his bat.
 		center = striker.position + Vector2(0, -200)   # batter in the lower half, card above
