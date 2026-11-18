@@ -165,6 +165,15 @@ there too. Misses and bowled stay behind the batter.
 | More realistic graphics, still smooth on weak Android phones | A full stadium replaces the street houses in both cameras: raked stands packed with a crowd, roof canopy, floodlight towers, white sightscreen behind the bowler, navy boundary boards; textured mown grass stripes and a textured pitch (cracks, footmarks); soft clouds and a broadcast-style vignette. Three small textures (`tools/gen_textures.py`, 256-512 px, mipmapped) drawn into cached layers, so CPU per frame is unchanged (headless perf harness: batter's view 1.26 ms avg / 2.33 ms p95, side view 1.18 / 2.25; before 1.18 / 2.29 and 1.29 / 2.37). Frame rate capped at 60 to save battery |
 | Choose a left- or right-handed batsman at the start | "Bat: RIGHT-HANDED / LEFT-HANDED" on the main menu, saved with the settings (default right). A left-hander's batting view is the mirror image: stance, field, ball line and shots. Tested: save default/migration/keep, harness captures with `--lefty` |
 
+## Owner feedback: running on every hit, tutorial, difficulty by score (implemented)
+
+| Request | Done |
+| --- | --- |
+| Both batsmen run when the ball is hit | Every hit: runs are run; on fours/sixes they run until the ball reaches the rope, then celebrate; on a catch until it is taken; a hit to a fielder is a quick set-off and back. Harness `runall` |
+| Tutorial in the first 6 balls: only fours and sixes | First Classic match (and Settings → Replay tutorial): 6 guided balls (ring, slow motion, tips); any hit = four, good timing = six; early taps are held so the bat meets the ball; can't be out. Tests + harness `intro` (taps from 300 ms early to 70 ms late all went for 4 or 6) |
+| First 50 runs extremely easy, 95% not out | Below 50: slow balls just outside off (a miss is a dot), perfect timing = six, other contact on the ground, timing bands ×2.2. `tools/sim_curve.gd`: out before 50 dropped from 97% (casual) / 100% (new) / 72% (good) to **0%** for all three |
+| Harder from 50 to 100, harder still after | 50–99: help fades, pace builds to the real bowlers (levels 2–4); 100+: +40% pace, more movement (levels 5–8). Simulated: most new/casual players are out between 50 and 100; good players reach 100 about half the time |
+
 ## What exists now (evidence)
 
 - Deterministic simulation: analytic delivery path (bounce, deviation), timing → contact at the

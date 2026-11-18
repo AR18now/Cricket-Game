@@ -917,8 +917,11 @@ func _run_every_hit() -> void:
 			var sp: Vector2 = app.world.get_viewport().get_canvas_transform() * app.world.striker.global_position
 			var on_screen := sp.x > 0 and sp.x < vp.x and sp.y > 0 and sp.y < vp.y
 			_log("hit %d -> %s: striker %.0f->%.0f, partner %.0f->%.0f, on screen %s" % [i, kind, s0, s1, n0, n1, str(on_screen)])
-			check(absf(s1 - s0) > 40.0, "batter sets off after the hit (%s)" % kind)
-			check(absf(n1 - n0) > 40.0, "partner sets off after the hit (%s)" % kind)
+			# A catch taken almost at once (e.g. an edge to the keeper) leaves no time to run.
+			var instant: bool = r.outcome.kind == BallOutcome.CAUGHT and r.shot.t_collect < 0.7
+			_log("  (catch after %.2f s)" % r.shot.t_collect if r.outcome.kind == BallOutcome.CAUGHT else "")
+			check(instant or absf(s1 - s0) > 40.0, "batter sets off after the hit (%s)" % kind)
+			check(instant or absf(n1 - n0) > 40.0, "partner sets off after the hit (%s)" % kind)
 			check(on_screen, "the running batter is on screen (%s)" % kind)
 			if not seen.has(kind):
 				seen[kind] = true

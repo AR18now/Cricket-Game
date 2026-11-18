@@ -26,7 +26,8 @@ decision or your account; nothing here has been submitted anywhere.
 > right moment, and send the ball into the crowd. Mistime it and the stumps fly.
 >
 > - One button, real cricket: timing decides everything - fours, sixes, catches, bowled
-> - Starts gentle and gets faster: pace and spin bowlers grow tougher ball by ball
+> - Learn in seconds: a 6-ball tutorial where every hit goes for four or six
+> - Easy to start, hard to master: gentle bowling up to 50, then faster and trickier
 > - Batter's-eye view: face the bowler from behind the stumps
 > - Bat right-handed or left-handed
 > - Watch your shots race to the rope in the wide stadium view

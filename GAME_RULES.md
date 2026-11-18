@@ -22,8 +22,9 @@ implemented in `scripts/sim/` and covered by tests in `tests/`.
 | Edge | very late, ball almost past the bat | thin edge behind square (catchable by the keeper) |
 | Too early / Too late | bat misses the ball | ball carries on; may hit the stumps |
 
-Timing windows never change with difficulty, cosmetics, or mode (practice only widens the
-Perfect/Good bands visibly; the tutorial widens them by ×1.5).
+Timing windows never change with cosmetics. In Classic they are wider while you are new
+to an innings (×2.2 below 50 runs, back to normal by 100), and the tutorial widens them
+too (see "Classic mode pacing").
 
 ### Shot stance (unlocked after the first challenge)
 
@@ -81,12 +82,23 @@ shown on the mini-map.
 - **Rates:** strike rate = runs × 100 ÷ balls; economy = runs × 6 ÷ legal balls; required rate
   = runs needed × 6 ÷ balls remaining. Zero-ball rates show "-" (never NaN/Infinity).
 
-## Classic mode pacing (Doodle-style)
+## Classic mode pacing (difficulty follows your score)
 
-The first balls are gentle (16 m/s ≈ 58 km/h, straighter, less spin, no slower balls) and ease
-up to each bowler's real pace over the first 36 balls; after that pace may rise by at most
-+12 % over the next 72 balls. Bowlers: *Mixed* (coach → Daniyal → Saad → Hamza, then the main
-three rotate every over), *Fast* (Hamza only) or *Spin* (Saad only). Timing windows never change.
+**Tutorial (first Classic match only, or Settings → Replay tutorial):** 6 slow balls with the
+timing ring, slow motion and a tip for each ball. Any swing that meets the ball goes for a
+**four**, or a **six** when the timing is Perfect or Good. A slightly early tap is held a
+moment so the bat still meets the ball. Leaving the ball is a dot ball. You can't be out.
+
+| Your score | Bowling | Help |
+| --- | --- | --- |
+| 0–49 (Level 1) | slow (≈58 km/h), straight-ish, just outside off stump | a miss is not bowled; Perfect timing clears the rope; any other contact stays on the ground (edges go into the ground); timing bands ×2.2 |
+| 50–99 (Levels 2–4) | builds smoothly to each bowler's real pace, swing and spin | the help fades out by 100 |
+| 100+ (Levels 5–8) | up to +40 % pace, more swing/spin, wider lines and more slower balls (full difficulty at 250) | none |
+
+Measured with `tools/sim_curve.gd` (thousands of simulated innings with human-like timing
+errors): 0 % of new, casual and good players are out before 50; most new and casual
+players are out between 50 and 100; good players reach 100 about half the time.
+Bowlers: a gentle first over, then a random mix of fast, medium and spin each over.
 
 ## Pacing (presentation only)
 
