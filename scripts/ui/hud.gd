@@ -351,7 +351,9 @@ func refresh() -> void:
 		bowler_badge.add_theme_stylebox_override("panel", UiTheme.panel_box(UiTheme.BOWLER_COLORS.get(p.style, UiTheme.GOLD), 6))
 		if controller.delivery != null:
 			speed_label.text = "%d km/h" % controller.delivery.speed_kmh()
-			if controller.state != null and controller.state.rules.progressive:
+			if controller.intro_left > 0:
+				speed_label.text += "  -  Tutorial"
+			elif controller.state != null and controller.state.rules.progressive:
 				speed_label.text += "  -  Level %d" % controller.state.level()
 	for ch in over_row.get_children():
 		ch.queue_free()
@@ -414,6 +416,14 @@ func _on_delivery(info: Dictionary) -> void:
 			"Same again - tap as the ring closes.", "A little quicker now. No ring this time!"]
 		hint(msgs[clampi(controller.tutorial_level, 0, 2)], 4.0)
 		guide.enabled = controller.tutorial_level < 2
+	elif int(info.get("intro", 0)) > 0:
+		# First-match tutorial: the ring shows when to tap; any hit goes for 4 or 6.
+		var k: int = info["intro"]
+		guide.enabled = true
+		var tips := ["Tap SWING when the ball reaches the ring!", "Watch the ring - tap as it closes!",
+			"Great! Time it again for a big hit!", "Tap a little earlier for a SIX!",
+			"Keep watching the ball onto the bat...", "Last tutorial ball - smash it!"]
+		hint("TUTORIAL %d/%d  -  %s" % [k, MatchController.INTRO_BALLS, tips[clampi(k - 1, 0, tips.size() - 1)]], 4.0)
 	elif controller.hints:
 		guide.enabled = true
 	elif _is_classic() and first_time and n < 3:

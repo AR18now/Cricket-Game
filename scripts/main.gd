@@ -46,6 +46,10 @@ func _ready() -> void:
 	_build_ui()
 	controller.match_over.connect(_on_match_over)
 	controller.tutorial_step.connect(_on_tutorial_step)
+	controller.intro_finished.connect(func():
+		hud.hint("Tutorial done! Now it's for real - the bowling stays gentle until you reach 50.", 4.0)
+		save.data["tutorial_done"] = true
+		save.save())
 	controller.commentary_line.connect(func(line): audio.say(line, ""))
 	controller.ball_settled.connect(_on_ball_settled)
 	controller.level_up.connect(func(_lv): audio.play("jingle", "UI", -4.0, 0.0))
@@ -311,7 +315,7 @@ func start_tutorial() -> void:
 	_begin(r, true)
 
 
-func start_mode(mode: String) -> void:
+func start_mode(mode: String, intro: bool = false) -> void:
 	current_mode = mode
 	var name := _player_name()
 	var seed_value := int(Time.get_unix_time_from_system()) ^ Time.get_ticks_usec()
@@ -329,7 +333,9 @@ func start_mode(mode: String) -> void:
 		_:
 			var rng := DetRng.new(seed_value)
 			r = MatchRules.quick_match(16 + rng.range_i(0, 8), name)
-	_begin(r, false, seed_value)
+	# The very first Classic match starts with the 6-ball tutorial (or on request).
+	var with_intro := mode == "classic" and (intro or not bool(save.data.get("tutorial_done", false)))
+	_begin(r, false, seed_value, with_intro)
 	if mode in ["quick", "challenge_first", "endless"]:
 		_show_rule_card(r)
 	elif world.atm.rain:
@@ -350,7 +356,7 @@ func _fade_in() -> void:
 	tw.tween_callback(f.queue_free)
 
 
-func _begin(r: MatchRules, tutorial: bool, seed_value: int = 1) -> void:
+func _begin(r: MatchRules, tutorial: bool, seed_value: int = 1, intro: bool = false) -> void:
 	_close_overlay()
 	_fade_in()
 	menu.visible = false
@@ -367,7 +373,7 @@ func _begin(r: MatchRules, tutorial: bool, seed_value: int = 1) -> void:
 	controller.venue = v
 	controller.hints = bool(save.data["settings"]["hints"])
 	hud.best_runs = int(save.data["best"]["classic_hint_runs" if controller.hints else "classic_runs"])
-	controller.start_match(r, seed_value, tutorial)
+	controller.start_match(r, seed_value, tutorial, intro)
 
 
 func _show_rule_card(r: MatchRules) -> void:
@@ -443,7 +449,7 @@ func open_settings() -> void:
 			open_pause())
 	s.replay_tutorial.connect(func():
 		_close_overlay()
-		start_tutorial())
+		start_mode("classic", true))
 	s.licences.connect(func():
 		_close_overlay()
 		var lp := LicencesPanel.new()

@@ -27,6 +27,8 @@ func run(main_node) -> void:
 	save.data = save.defaults()
 	if "--portrait" in OS.get_cmdline_user_args():
 		save.data["settings"]["orientation"] = "portrait"
+	# Tutorial already seen, unless a check asks for it.
+	save.data["tutorial_done"] = not ("--intro" in OS.get_cmdline_user_args())
 	if "--lefty" in OS.get_cmdline_user_args():
 		save.data["settings"]["hand"] = "left"
 	save.save()
@@ -520,6 +522,7 @@ func _smoke() -> void:
 	check(c.state.events.size() == recorded_before + 2 and c.state.card.runs == runs_before, "replay recorded nothing")
 	c.auto_continue = true
 	# Regression: get out in Classic, then "Play again" must start a running delivery.
+	c.assists_enabled = false   # beginner help makes an early dismissal near impossible
 	app.start_mode("classic")
 	await wait(0.2)
 	for i in 30:
@@ -819,6 +822,7 @@ func _themes_tour() -> void:
 func _duck_check() -> void:
 	await wait(1.6)
 	var c = app.controller
+	c.assists_enabled = false   # beginner help makes an early dismissal near impossible
 	for golden in [true, false]:
 		app.start_mode("classic")
 		await wait(0.2)
@@ -851,7 +855,7 @@ func _duck_check() -> void:
 
 
 ## A shot that is run (not a boundary): the wide camera keeps the runners in view.
-## Then 12 balls in, the level goes up and the player is told.
+## Then past 50 runs, the level goes up and the player is told.
 ## Every kind of hit (runs, four, six, catch, hit to a fielder): both batsmen set off.
 func _run_every_hit() -> void:
 	await wait(1.6)
@@ -938,14 +942,15 @@ func _runs_check() -> void:
 	var lv := [0]
 	var conn := func(l): lv[0] = l
 	c.level_up.connect(conn)
-	for k in 12:
+	for k in 9:   # 54 runs: past 50, so the bowling steps up (level 2)
 		var o2 := BallOutcome.new()
-		o2.kind = BallOutcome.DOT
+		o2.kind = BallOutcome.SIX
+		o2.runs = 6
 		c.state.record(930000 + k, o2, "harness")
 	await play_ball(0.0)
 	await until_phase(MatchController.Phase.RUNUP)
 	c.level_up.disconnect(conn)
-	check(lv[0] == 2, "level 2 after 12 balls (got %d)" % lv[0])
+	check(lv[0] == 2, "level 2 after 50 runs (got %d)" % lv[0])
 	_log("toast visible=%s text=%s" % [str(app.hud.toast.visible), app.hud.toast_label.text])
 	check(app.hud.toast.visible and app.hud.toast_label.text.begins_with("LEVEL 2"), "the player sees LEVEL 2")
 	await shot("r3_level_up")

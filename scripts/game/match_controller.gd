@@ -18,6 +18,7 @@ signal duck_out(golden: bool)
 signal level_up(level: int)
 signal match_over(state: MatchState)
 signal tutorial_step(level: int, success: bool)
+signal intro_finished
 signal commentary_line(line: Dictionary)
 
 enum Phase { IDLE, READY, RUNUP, FLIGHT, OUTCOME, OVER, REPLAY }
@@ -50,6 +51,13 @@ var fielders: Array = []
 var delivery_id := 0
 var stance := ContactResult.Stance.AUTO
 var tutorial_level := -1
+## First-match tutorial: the opening balls of Classic are guided and any hit goes for
+## four or six (and you can't be out). Counts down to 0.
+const INTRO_BALLS := 6
+var intro_left := 0
+## Beginner help for the first 50 runs (Classic). Only the developer test harness turns
+## it off, to check dismissals early in an innings.
+var assists_enabled := true
 var tutorial_attempts := 0
 var fielding_names := ["Imran", "Kashif", "Rizwan", "Tariq", "Nadeem", "Sohail", "Asif", "Waqar"]
 var keeper_name := "Usman"
@@ -91,7 +99,8 @@ func bowler_name(id: String) -> String:
 	return b.type_label() if b else id
 
 
-func start_match(r: MatchRules, seed_value: int, tutorial: bool = false) -> void:
+func start_match(r: MatchRules, seed_value: int, tutorial: bool = false, intro: bool = false) -> void:
+	intro_left = INTRO_BALLS if intro else 0
 	rules = r
 	state = MatchState.new(r, seed_value)
 	for id in bowlers.keys():
@@ -125,9 +134,12 @@ func _next_delivery() -> void:
 	if tutorial_level >= 0:
 		profile = bowlers["ayaan_coach"]
 		delivery = DeliveryGenerator.tutorial(tutorial_level, seed_value, tuning)
+	elif intro_left > 0:
+		profile = bowlers["ayaan_coach"]
+		delivery = DeliveryGenerator.tutorial_ball(seed_value, tuning)
 	else:
 		profile = bowlers[state.current_bowler_id()]
-		delivery = DeliveryGenerator.generate(profile, seed_value, tuning, state.difficulty(), state.ease_in())
+		delivery = DeliveryGenerator.generate(profile, seed_value, tuning, state.difficulty(), state.ease_in(), state.assist() if assists_enabled else 0.0)
 		var lv := state.level()
 		if lv > _level:
 			level_up.emit(lv)
@@ -155,7 +167,8 @@ func _next_delivery() -> void:
 	gate.arm(ContactResolver.window_open_time(delivery, tuning), ContactResolver.window_close_time(delivery, tuning))
 	world.render(ready_t)
 	_set_phase(Phase.READY)
-	var info := {"bowler": profile, "delivery": delivery, "ball": state.next_ball_index(), "tutorial": tutorial_level}
+	var info := {"bowler": profile, "delivery": delivery, "ball": state.next_ball_index(), "tutorial": tutorial_level,
+		"intro": (INTRO_BALLS - intro_left + 1) if intro_left > 0 else 0}
 	delivery_started.emit(info)
 
 
@@ -167,7 +180,18 @@ func _set_phase(p: int) -> void:
 func window_scale() -> float:
 	if tutorial_level >= 0:
 		return tuning.tutorial_window_scale
-	return rules.window_scale
+	if state == null or not assists_enabled:
+		return rules.window_scale
+	return state.window_scale()
+
+
+## Resolves the current ball for a swing at `t` (or -1 for no shot), applying the
+## tutorial / beginner help for this ball.
+func _resolve(t: float) -> BallResolver:
+	if intro_left > 0 and tutorial_level < 0:
+		return BallResolver.resolve_tutorial(delivery, t, fielders, venue, tuning)
+	var safe := assists_enabled and state != null and DetRng.new(DetRng.derive(delivery.seed, 7, 0x5AFE)).chance(state.assist())
+	return BallResolver.resolve(delivery, t, stance, fielders, venue, tuning, window_scale(), safe)
 
 
 ## Called for every swing input (tap, click, key). `usec` is the event arrival time.
@@ -192,8 +216,9 @@ func swing_input(usec: int) -> String:
 	var t := clock.time_of_input(usec, Engine.time_scale * _clock_speed)
 	var res := gate.try_swing(t)
 	if res == "accepted":
-		resolver = BallResolver.resolve(delivery, t, stance, fielders, venue, tuning, window_scale())
-		world.set_resolved(resolver, t)
+		resolver = _resolve(t)
+		# (Tutorial: an early tap is held, so the swing starts at the adjusted time.)
+		world.set_resolved(resolver, resolver.contact.t_swing if resolver.contact.swung else t)
 		_play("swing", "Impacts", -6.0)
 	swing_feedback.emit(res)
 	return res
@@ -246,7 +271,7 @@ func _process(delta: float) -> void:
 		var key_t := resolver.contact.t_contact if resolver.contact.is_contact() else delivery.stumps_time()
 		var ramp := clampf((clock.time - key_t) / 0.5, 0.0, 1.0)
 		speed = lerpf(1.0, POST_CONTACT_SPEED, ramp * ramp * (3.0 - 2.0 * ramp))
-	elif hints and resolver == null and delivery != null and phase == Phase.FLIGHT:
+	elif (hints or intro_left > 0) and resolver == null and delivery != null and phase == Phase.FLIGHT:
 		speed = hint_speed(clock.time)
 	_clock_speed = speed
 	clock.advance(delta * speed, Time.get_ticks_usec())
@@ -258,7 +283,7 @@ func _process(delta: float) -> void:
 	# Batting window closed without a swing: resolve as "no shot".
 	if resolver == null and t > gate.close_time:
 		gate.disarm()
-		resolver = BallResolver.resolve(delivery, -1.0, stance, fielders, venue, tuning, window_scale())
+		resolver = _resolve(-1.0)
 		world.set_resolved(resolver, -1.0)
 	world.render(t)
 	world.update_camera(delta)
@@ -330,6 +355,10 @@ static func milestone_crossed(before: int, after: int) -> int:
 
 
 func _advance_after_outcome() -> void:
+	if intro_left > 0 and tutorial_level < 0:
+		intro_left -= 1
+		if intro_left == 0:
+			intro_finished.emit()
 	if tutorial_level >= 0:
 		if resolver.contact.is_contact() or tutorial_attempts >= 2:
 			tutorial_level += 1

@@ -194,7 +194,10 @@ func test_classic_mode_rules() -> void:
 	check(st.current_bowler_id() in ["hamza", "daniyal", "saad"], "after the gentle over: a random fast/medium/spin bowler")
 	for i in 40:
 		_play(st, [0])
-	near(st.ease_in(), 1.0, 1e-6, "full pace after the intro")
+	near(st.ease_in(), 0.0, 1e-6, "still gentle below 50 runs, however many balls")
+	for i in 17:
+		_play(st, [6])
+	near(st.ease_in(), 1.0, 1e-6, "full pace from 100 runs")
 	# Bowler rotation cycles the main attack, never the gentle intro bowler again.
 	var probe := MatchState.new(MatchRules.classic(), 1)
 	for i in 120:

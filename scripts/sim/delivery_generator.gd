@@ -14,7 +14,7 @@ const START_SPEED := 16.0
 
 ## `ease_in` 0..1 blends from a slow, straight, gentle ball (0) to the bowler's real
 ## behaviour (1). Classic mode raises it gradually, Doodle-style.
-static func generate(profile: BowlerProfile, seed_value: int, tuning: GameTuning, difficulty: float = 0.0, ease_in: float = 1.0) -> Delivery:
+static func generate(profile: BowlerProfile, seed_value: int, tuning: GameTuning, difficulty: float = 0.0, ease_in: float = 1.0, assist: float = 0.0) -> Delivery:
 	var rng := DetRng.new(seed_value)
 	var d := Delivery.new()
 	d.seed = seed_value
@@ -48,6 +48,16 @@ static func generate(profile: BowlerProfile, seed_value: int, tuning: GameTuning
 	if not ok:
 		d.length = 5.0
 		d.build()
+	# Beginner help: with probability `assist` the ball is aimed just outside off stump,
+	# so leaving or missing it is a dot ball, never bowled.
+	if assist > 0.0 and rng.chance(assist):
+		d.line_y = rng.range_f(0.3, 0.42)
+		d.build()
+		var tries := 0
+		while d.hits_stumps() and tries < 6:
+			d.line_y += 0.08
+			d.build()
+			tries += 1
 	if d.kind == "stock":
 		if d.length <= 3.6:
 			d.kind = "full"
@@ -68,6 +78,23 @@ static func tutorial(level: int, seed_value: int, tuning: GameTuning) -> Deliver
 	d.speed = TUTORIAL_SPEEDS[clampi(level, 0, TUTORIAL_SPEEDS.size() - 1)]
 	d.length = 5.2
 	d.line_y = 0.02
+	return d.build()
+
+
+## First-match tutorial ball: slow, good length, just outside off stump (so a ball the
+## player leaves goes past the stumps - you can't be out in the tutorial).
+static func tutorial_ball(seed_value: int, tuning: GameTuning) -> Delivery:
+	var d := Delivery.new()
+	d.seed = seed_value
+	d.kind = "tutorial"
+	d.bowler_id = "ayaan_coach"
+	d.gravity = tuning.gravity
+	d.restitution = tuning.bounce_restitution
+	d.retention = tuning.pitch_retention
+	d.release = Vector3(tuning.release_x, 0.3, tuning.release_height)
+	d.speed = 14.0
+	d.length = 5.2
+	d.line_y = 0.32
 	return d.build()
 
 

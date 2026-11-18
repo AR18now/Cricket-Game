@@ -60,3 +60,10 @@ func range_i(a: int, b: int) -> int:
 
 func chance(p: float) -> bool:
 	return next_float() < p
+
+
+## Standard normal sample (Box-Muller), deterministic.
+func gaussian() -> float:
+	var u1 := maxf(next_float(), 1e-9)
+	var u2 := next_float()
+	return sqrt(-2.0 * log(u1)) * cos(TAU * u2)
