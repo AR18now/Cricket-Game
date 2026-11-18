@@ -423,7 +423,7 @@ func _on_delivery(info: Dictionary) -> void:
 		var tips := ["Tap SWING when the ball reaches the ring!", "Watch the ring - tap as it closes!",
 			"Great! Time it again for a big hit!", "Tap a little earlier for a SIX!",
 			"Keep watching the ball onto the bat...", "Last tutorial ball - smash it!"]
-		hint("TUTORIAL %d/%d  -  %s" % [k, MatchController.INTRO_BALLS, tips[clampi(k - 1, 0, tips.size() - 1)]], 4.0)
+		hint("TUTORIAL %d/%d  -  %s" % [k, MatchController.INTRO_BALLS, tips[clampi(k - 1, 0, tips.size() - 1)]], 7.0)
 	elif controller.hints:
 		guide.enabled = true
 	elif _is_classic() and first_time and n < 3:

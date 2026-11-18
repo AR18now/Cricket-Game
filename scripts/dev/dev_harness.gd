@@ -72,6 +72,8 @@ func _go() -> void:
 			await _runs_check()
 		"runall":
 			await _run_every_hit()
+		"intro":
+			await _intro_check()
 		"milestone":
 			await _milestone_check()
 		"store":
@@ -856,6 +858,38 @@ func _duck_check() -> void:
 
 ## A shot that is run (not a boundary): the wide camera keeps the runners in view.
 ## Then past 50 runs, the level goes up and the player is told.
+## First-match tutorial (run with --intro): 6 guided balls, any tap = four or six.
+func _intro_check() -> void:
+	await wait(1.6)
+	var c = app.controller
+	app.start_mode("classic")
+	await wait(0.2)
+	app._close_overlay()
+	check(c.intro_left == MatchController.INTRO_BALLS, "the first match starts with the tutorial")
+	var offs := [0.0, -0.3, 0.04, -0.12, 0.07, -0.05]   # on time, very early, late...
+	for i in MatchController.INTRO_BALLS:
+		await until_phase(MatchController.Phase.RUNUP)
+		check(app.hud.hint_label.text.begins_with("TUTORIAL %d/6" % (i + 1)), "tutorial tip shown (%s)" % app.hud.hint_label.text)
+		if i == 0:
+			await shot("i_tutorial_ball")
+		await until_phase(MatchController.Phase.FLIGHT)
+		await swing_at(ideal_swing() + float(offs[i]))
+		await until_phase(MatchController.Phase.OUTCOME)
+		var o: BallOutcome = c.resolver.outcome
+		_log("tutorial ball %d (tap %+d ms) -> %s" % [i + 1, int(float(offs[i]) * 1000.0), o.kind])
+		check(o.is_boundary(), "tutorial ball %d goes for four or six (got %s)" % [i + 1, o.kind])
+		if i == 1:
+			await wait(0.4)
+			await shot("i_tutorial_hit")
+		press_space()
+	await until_phase(MatchController.Phase.FLIGHT)
+	check(c.intro_left == 0, "tutorial over after 6 balls")
+	check(bool(get_node("/root/Save").data["tutorial_done"]), "tutorial remembered as done")
+	_log("after tutorial: runs %d, level %d, speed %d km/h" % [c.state.card.runs, c.state.level(), c.delivery.speed_kmh()])
+	check(c.delivery.speed_kmh() < 70, "gentle bowling after the tutorial")
+	await shot("i_after_tutorial")
+
+
 ## Every kind of hit (runs, four, six, catch, hit to a fielder): both batsmen set off.
 func _run_every_hit() -> void:
 	await wait(1.6)
