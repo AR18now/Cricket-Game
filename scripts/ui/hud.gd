@@ -36,6 +36,7 @@ var toast: PanelContainer
 var toast_label: Label
 var swing_btn: SwingButton
 var minimap: Minimap
+var run_inset: RunInset
 var guide: GuideOverlay
 var truck: TruckCelebration
 var milestone_fx: MilestoneCelebration
@@ -125,6 +126,10 @@ func build(c: MatchController, w: WorldView) -> void:
 	minimap = Minimap.new()
 	minimap.world = w
 	add_child(minimap)
+	# Close-up of the batsmen running (picture-in-picture while the camera follows the ball).
+	run_inset = RunInset.new()
+	add_child(run_inset)
+	run_inset.setup(w)
 	# --- Timing feedback
 	timing_panel = PanelContainer.new()
 	timing_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -261,6 +266,9 @@ func _layout() -> void:
 		minimap.position = Vector2(s.x - 170.0 - m, score_panel.position.y + ss.y + 10.0)
 		swing_btn.size = Vector2(220, 220)
 		swing_btn.position = Vector2((s.x - 220.0) * 0.5, s.y - 220.0 - m * 3.0)
+	var iw := minf(s.x * 0.52, 380.0)
+	run_inset.size = Vector2(iw, iw * 0.72)
+	run_inset.position = Vector2(s.x - iw - m, score_panel.position.y + ss.y + 14.0)
 	hint_label.size = Vector2(s.x, 40)
 	hint_label.position = Vector2(0, s.y * 0.7)
 	debug_label.position = Vector2(m, s.y * 0.42)

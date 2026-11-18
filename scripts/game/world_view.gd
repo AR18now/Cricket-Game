@@ -528,6 +528,20 @@ func _render_batters(t: float) -> void:
 	non_striker.set_pose(ns_pose)
 
 
+## True while the batsmen are running after a hit (drives the close-up window).
+func running_now() -> bool:
+	if menu_mode or resolved == null or resolved.shot == null or not resolved.contact.is_contact() or _bv_on:
+		return false
+	var plan := run_plan()
+	var times: Array = plan["times"]
+	if times.is_empty() and not plan["back"]:
+		return false
+	var end: float = 2.0 if plan["back"] else float(times.back())
+	end = minf(end, plan["stop"])
+	var ts := clock - resolved.contact.t_contact
+	return ts > 0.2 and ts < end + 0.6
+
+
 ## How the batsmen run after a hit (seconds after contact):
 ##   times = end time of each run, stop = when they pull up, back = set off and turn back.
 func run_plan() -> Dictionary:

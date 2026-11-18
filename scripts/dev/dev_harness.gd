@@ -74,6 +74,8 @@ func _go() -> void:
 			await _run_every_hit()
 		"intro":
 			await _intro_check()
+		"runseq":
+			await _run_sequence()
 		"milestone":
 			await _milestone_check()
 		"store":
@@ -858,6 +860,27 @@ func _duck_check() -> void:
 
 ## A shot that is run (not a boundary): the wide camera keeps the runners in view.
 ## Then past 50 runs, the level goes up and the player is told.
+## Frame sequence after a hit (what the player sees while the batsmen run).
+func _run_sequence() -> void:
+	await wait(1.6)
+	var c = app.controller
+	app.start_mode("classic")
+	await wait(0.2)
+	app._close_overlay()
+	for i in 3:
+		await until_phase(MatchController.Phase.FLIGHT)
+		await swing_at(ideal_swing() + [0.0, 0.05, 0.03][i])
+		await until_clock(ideal_swing() + 0.15)
+		var r = app.world.resolved
+		if r != null and r.contact.is_contact():
+			var tc: float = r.contact.t_contact
+			for dt in [0.3, 0.8, 1.4, 2.2, 3.2]:
+				await until_clock(tc + dt)
+				await shot("seq%d_%s_%.1f" % [i, String(r.outcome.kind), dt])
+		await until_phase(MatchController.Phase.OUTCOME)
+		press_space()
+
+
 ## First-match tutorial (run with --intro): 6 guided balls, any tap = four or six.
 func _intro_check() -> void:
 	await wait(1.6)
@@ -922,6 +945,7 @@ func _run_every_hit() -> void:
 			_log("  (catch after %.2f s)" % r.shot.t_collect if r.outcome.kind == BallOutcome.CAUGHT else "")
 			check(instant or absf(s1 - s0) > 40.0, "batter sets off after the hit (%s)" % kind)
 			check(instant or absf(n1 - n0) > 40.0, "partner sets off after the hit (%s)" % kind)
+			check(instant or app.hud.run_inset.visible, "close-up RUNNING window shown (%s)" % kind)
 			check(on_screen, "the running batter is on screen (%s)" % kind)
 			if not seen.has(kind):
 				seen[kind] = true

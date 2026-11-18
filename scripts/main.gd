@@ -138,6 +138,7 @@ func _apply_settings() -> void:
 	world.set_left_handed(String(s.get("hand", "right")) == "left")
 	world.reduced_motion = bool(s["reduced_motion"])
 	hud.truck.reduced_motion = world.reduced_motion
+	hud.run_inset.reduced_motion = world.reduced_motion
 	controller.reduced_motion = world.reduced_motion
 	hud.reduced_motion = world.reduced_motion
 	hud.confetti.reduced_motion = world.reduced_motion
